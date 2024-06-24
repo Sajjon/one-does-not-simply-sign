@@ -29,3 +29,42 @@ pub struct SerialBatchSigningRequest {
 pub trait SerialBatchSigningDriver {
     async fn sign(&self, request: SerialBatchSigningRequest) -> BatchSigningResponse;
 }
+
+pub struct SerialBatchSigningClient {
+    driver: Arc<dyn SerialBatchSigningDriver>,
+}
+impl SerialBatchSigningClient {
+    pub fn new(driver: Arc<dyn SerialBatchSigningDriver>) -> Self {
+        Self { driver }
+    }
+    pub async fn sign(&self, request: SerialBatchSigningRequest) -> BatchSigningResponse {
+        self.driver.sign(request).await
+    }
+}
+
+#[cfg(test)]
+pub struct TestSerialBatchSigningDriver {
+    pub simulated_user: SimulatedUser,
+}
+#[cfg(test)]
+impl TestSerialBatchSigningDriver {
+    pub fn new(simulated_user: SimulatedUser) -> Self {
+        Self { simulated_user }
+    }
+}
+
+#[cfg(test)]
+#[async_trait]
+impl SerialBatchSigningDriver for TestSerialBatchSigningDriver {
+    async fn sign(&self, request: SerialBatchSigningRequest) -> BatchSigningResponse {
+        match &self.simulated_user {
+            SimulatedUser::Lazy(laziness) => match laziness {
+                Laziness::AlwaysSkip => {
+                    todo!()
+                }
+                _ => todo!(),
+            },
+            _ => todo!(),
+        }
+    }
+}

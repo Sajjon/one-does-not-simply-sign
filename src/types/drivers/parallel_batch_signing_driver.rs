@@ -1,13 +1,11 @@
 use crate::prelude::*;
 
-
-
 /// A collection of factor sources to use to sign, transactions with multiple keys
 /// (derivations paths).
 pub struct ParallelBatchSigningRequest {
     /// Per factor source, a set of transactions to sign, with
     /// multiple derivations paths.
-    per_factor_source: IndexMap<FactorSourceID, IndexSet<BatchTXBatchKeySigningRequest>>,
+    pub per_factor_source: IndexMap<FactorSourceID, IndexSet<BatchTXBatchKeySigningRequest>>,
 }
 
 /// A driver for a factor source kind which supports performing:
@@ -26,9 +24,48 @@ pub struct ParallelBatchSigningRequest {
 /// The user does not have the ability to SKIP a certain factor source,
 /// instead either ALL factor sources are used to sign the transactions
 /// or none.
-/// 
+///
 /// Example of a Parallel Batch Signing Driver is that for DeviceFactorSource.
 #[async_trait::async_trait]
 pub trait ParallelBatchSigningDriver {
     async fn sign(&self, request: ParallelBatchSigningRequest) -> BatchSigningResponse;
+}
+
+#[cfg(test)]
+pub struct TestParallelBatchSigningDriver {
+    pub simulated_user: SimulatedUser,
+}
+#[cfg(test)]
+impl TestParallelBatchSigningDriver {
+    pub fn new(simulated_user: SimulatedUser) -> Self {
+        Self { simulated_user }
+    }
+}
+#[cfg(test)]
+#[async_trait]
+impl ParallelBatchSigningDriver for TestParallelBatchSigningDriver {
+    async fn sign(&self, request: ParallelBatchSigningRequest) -> BatchSigningResponse {
+        match &self.simulated_user {
+            SimulatedUser::Lazy(laziness) => match laziness {
+                Laziness::AlwaysSkip => {
+                    todo!()
+                }
+                _ => todo!(),
+            },
+            _ => todo!(),
+        }
+    }
+}
+
+pub struct ParallelBatchSigningClient {
+    driver: Arc<dyn ParallelBatchSigningDriver>,
+}
+
+impl ParallelBatchSigningClient {
+    pub fn new(driver: Arc<dyn ParallelBatchSigningDriver>) -> Self {
+        Self { driver }
+    }
+    pub async fn sign(&self, request: ParallelBatchSigningRequest) -> BatchSigningResponse {
+        self.driver.sign(request).await
+    }
 }

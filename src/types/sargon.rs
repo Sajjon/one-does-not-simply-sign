@@ -369,37 +369,8 @@ impl TransactionIntent {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct TransactionsPayloads {
-    pub intents: IndexMap<IntentHash, TransactionIntent>,
-}
-
 #[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
 pub struct Signature;
-
-#[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
-pub struct SignatureByOwnedFactorForPayload {
-    pub intent_hash: IntentHash,
-    pub owned_factor_instance: OwnedFactorInstance,
-    pub signature: Signature,
-}
-
-impl SignatureByOwnedFactorForPayload {
-    pub fn new(
-        intent_hash: IntentHash,
-        owned_factor_instance: OwnedFactorInstance,
-        signature: Signature,
-    ) -> Self {
-        Self {
-            intent_hash,
-            owned_factor_instance,
-            signature,
-        }
-    }
-    pub fn factor_source_id(&self) -> &FactorSourceID {
-        &self.owned_factor_instance.factor_instance.factor_source_id
-    }
-}
 
 pub type Result<T, E = CommonError> = std::result::Result<T, E>;
 
