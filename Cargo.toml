@@ -4,3 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+actix-rt = "2.10.0"
+indexmap = "2.2.6"
+indexset = "0.4.0"
+itertools = "0.13.0"
+rand = "0.8.5"
+thiserror = "1.0.61"
+uuid = { version = "1.9.0", features = ["v4"] }
