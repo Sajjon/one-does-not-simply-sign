@@ -9,6 +9,13 @@ impl MaybeSignedTransactions {
     pub fn new(transactions: IndexMap<IntentHash, IndexSet<HDSignature>>) -> Self {
         Self { transactions }
     }
+    pub fn all_signatures(&self) -> IndexSet<HDSignature> {
+        self.transactions
+            .values()
+            .flat_map(|v| v.iter())
+            .cloned()
+            .collect()
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -25,5 +32,13 @@ impl SignaturesOutcome {
             successful_transactions,
             failed_transactions,
         }
+    }
+    /// All signatures from both successful transactions and failed transactions.
+    pub fn all_signatures(&self) -> IndexSet<HDSignature> {
+        self.successful_transactions
+            .all_signatures()
+            .union(&self.failed_transactions.all_signatures())
+            .cloned()
+            .collect()
     }
 }

@@ -39,6 +39,12 @@ pub trait IsSigningDriversContext {
 pub struct TestSigningDriversContext {
     pub simulated_user: SimulatedUser,
 }
+#[cfg(test)]
+impl TestSigningDriversContext {
+    pub fn new(simulated_user: SimulatedUser) -> Self {
+        Self { simulated_user }
+    }
+}
 
 #[cfg(test)]
 impl IsSigningDriversContext for TestSigningDriversContext {
