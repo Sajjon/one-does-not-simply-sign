@@ -1,6 +1,7 @@
 use crate::prelude::*;
 
 /// A factor instance which is has a known owner: AccountAddressOrIdentityAddress.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct OwnedHDFactorInstance {
     /// The factor source which owns the key.
     pub factor_source_id: FactorSourceID,
@@ -16,6 +17,7 @@ pub struct OwnedHDFactorInstance {
 }
 
 /// A signature of `intent_hash` by `entity` using `factor_source_id` and `derivation_path`, with `public_key` used for verification.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct HDSignature {
     /// Hash which was signed.
     intent_hash: IntentHash,
