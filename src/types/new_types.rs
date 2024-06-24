@@ -31,3 +31,9 @@ pub struct HDSignature {
     /// with.
     pub owned_factor_instance: OwnedHDFactorInstance,
 }
+
+#[derive(Debug, Clone, PartialEq, Eq, std::hash::Hash)]
+pub enum SignWithFactorSourceOrSourcesOutcome {
+    Signed(Vec<HDSignature>), // want IndexSet
+    Skipped,
+}

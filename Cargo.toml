@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 actix-rt = "2.10.0"
 async-trait = "0.1.80"
+derivative = "2.2.0"
 indexmap = "2.2.6"
 indexset = "0.4.0"
 itertools = "0.13.0"
