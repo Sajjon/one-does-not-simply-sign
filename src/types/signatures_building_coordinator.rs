@@ -28,3 +28,50 @@ impl SignaturesBuildingCoordinator {
         todo!()
     }
 }
+
+impl SignaturesBuildingCoordinator {
+    /// If all transactions already would fail, or if all transactions already are done, then
+    /// no point in continuing.
+    fn continue_if_necessary(&self) -> Result<()> {
+        todo!()
+    }
+
+    fn get_driver(&self, kind: FactorSourceKind) -> SigningDriver {
+        self.signing_drivers_context
+            .driver_for_factor_source_kind(kind)
+    }
+
+    async fn sign_with_factor_sources(
+        &self,
+        factor_sources: IndexSet<FactorSource>,
+        kind: FactorSourceKind,
+    ) -> Result<()> {
+        assert!(factor_sources.iter().all(|f| f.kind() == kind));
+
+        let signing_driver = self.get_driver(kind);
+
+        signing_driver.sign(kind, factor_sources, self).await;
+
+        todo!()
+    }
+
+    async fn do_sign(&self) -> Result<()> {
+        let factors_of_kind = self.factors_of_kind.clone();
+        for (kind, factor_sources) in factors_of_kind.into_iter() {
+            self.sign_with_factor_sources(factor_sources, kind).await?;
+            self.continue_if_necessary()?;
+        }
+        Ok(())
+    }
+}
+
+impl SignaturesBuildingCoordinator {
+    pub async fn sign(&self) -> Result<SignaturesOutcome> {
+        self.do_sign().await?;
+        let outcome = SignaturesOutcome::new(
+            MaybeSignedTransactions::new(IndexMap::new()),
+            MaybeSignedTransactions::new(IndexMap::new()),
+        );
+        Ok(outcome)
+    }
+}
