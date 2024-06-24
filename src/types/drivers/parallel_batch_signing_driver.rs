@@ -7,6 +7,13 @@ pub struct ParallelBatchSigningRequest {
     /// multiple derivations paths.
     pub per_factor_source: IndexMap<FactorSourceID, IndexSet<BatchTXBatchKeySigningRequest>>,
 }
+impl ParallelBatchSigningRequest {
+    pub fn new(
+        per_factor_source: IndexMap<FactorSourceID, IndexSet<BatchTXBatchKeySigningRequest>>,
+    ) -> Self {
+        Self { per_factor_source }
+    }
+}
 
 /// A driver for a factor source kind which supports performing:
 /// *Batch* signing *in parallel*.

@@ -6,14 +6,14 @@ use crate::prelude::*;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BatchKeySigningRequest {
     /// Hash to sign
-    intent_hash: IntentHash,
+    pub intent_hash: IntentHash,
 
     /// ID of factor to use to sign
-    factor_source_id: FactorSourceID,
+    pub factor_source_id: FactorSourceID,
 
     /// The derivation paths to use to derive the private keys to sign with. The
     /// `factor_source_id` of each item must match `factor_source_id`.
-    owned_factor_instances: IndexSet<OwnedHDFactorInstance>,
+    pub owned_factor_instances: IndexSet<OwnedHDFactorInstance>,
 }
 
 /// A batch of transactions each batching over multiple keys (derivation paths)
@@ -21,8 +21,20 @@ pub struct BatchKeySigningRequest {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BatchTXBatchKeySigningRequest {
     /// The ID of the factor source used to sign each per_transaction
-    factor_source_id: FactorSourceID,
+    pub factor_source_id: FactorSourceID,
 
     // The `factor_source_id` of each item must match `self.factor_source_id`.
-    per_transaction: IndexMap<IntentHash, Vec<BatchKeySigningRequest>>,
+    pub per_transaction: IndexMap<IntentHash, Vec<BatchKeySigningRequest>>,
+}
+
+impl BatchTXBatchKeySigningRequest {
+    pub fn new(
+        factor_source_id: FactorSourceID,
+        per_transaction: IndexMap<IntentHash, Vec<BatchKeySigningRequest>>,
+    ) -> Self {
+        Self {
+            factor_source_id,
+            per_transaction,
+        }
+    }
 }

@@ -50,7 +50,7 @@ impl SignaturesBuildingCoordinator {
 
         let signing_driver = self.get_driver(kind);
 
-        signing_driver.sign(kind, factor_sources, self).await;
+        signing_driver.sign(factor_sources, self).await;
 
         todo!()
     }
@@ -62,6 +62,22 @@ impl SignaturesBuildingCoordinator {
             self.continue_if_necessary()?;
         }
         Ok(())
+    }
+}
+
+impl SignaturesBuildingCoordinator {
+    pub(crate) fn input_for_parallel_batch_driver(
+        &self,
+        factor_source: FactorSource,
+    ) -> IndexSet<BatchTXBatchKeySigningRequest> {
+        todo!()
+    }
+    pub(crate) fn process_batch_response(
+        &self,
+        response: BatchSigningResponse,
+        factor_sources: IndexSet<FactorSource>,
+    ) {
+        todo!()
     }
 }
 
