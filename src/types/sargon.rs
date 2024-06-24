@@ -360,6 +360,7 @@ pub struct TransactionIntent {
     pub intent_hash: IntentHash,
     pub entities_requiring_auth: Vec<Entity>, // should be a set but Sets are not `Hash`.
 }
+
 impl TransactionIntent {
     pub fn new(entities_requiring_auth: impl IntoIterator<Item = Entity>) -> Self {
         Self {
