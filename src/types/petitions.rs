@@ -1,9 +1,5 @@
 use crate::prelude::*;
 
-use std::ops::Index;
-
-use crate::prelude::*;
-
 #[derive(Derivative)]
 #[derivative(PartialOrd, Ord, PartialEq, Eq, Hash, Clone, Debug)]
 pub struct TransactionIndex {
@@ -26,13 +22,15 @@ pub struct PetitionOfTransactionByEntity {
     pub entity: AccountAddressOrIdentityAddress,
 
     /// Index and hash of transaction
-    transaction_index: TransactionIndex,
+    pub transaction_index: TransactionIndex,
 
     #[derivative(Hash = "ignore", Ord = "ignore", PartialOrd = "ignore")]
-    threshold_factors: RefCell<PetitionWithFactors>,
+    pub threshold_factors: RefCell<PetitionWithFactors>,
+
     #[derivative(Hash = "ignore", Ord = "ignore", PartialOrd = "ignore")]
-    override_factors: RefCell<PetitionWithFactors>,
+    pub override_factors: RefCell<PetitionWithFactors>,
 }
+
 impl PetitionOfTransactionByEntity {
     pub fn new(
         transaction_index: TransactionIndex,
