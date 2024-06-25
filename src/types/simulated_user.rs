@@ -43,12 +43,12 @@ pub enum Laziness {
 
 #[cfg(test)]
 impl SimulatedUser {
-    async fn sign_or_skip(
+    pub fn sign_or_skip(
         &self,
-        factor_source: &FactorSource,
-        invalid_tx_if_skipped: IndexSet<InvalidTransactionIfSkipped>,
+        invalid_tx_if_skipped: impl IntoIterator<Item = InvalidTransactionIfSkipped>,
     ) -> SigningUserInput {
         use rand::prelude::*;
+        let invalid_tx_if_skipped = invalid_tx_if_skipped.into_iter().collect::<HashSet<_>>();
         match self {
             SimulatedUser::Prudent => SigningUserInput::Sign,
             SimulatedUser::Lazy(laziness) => match laziness {

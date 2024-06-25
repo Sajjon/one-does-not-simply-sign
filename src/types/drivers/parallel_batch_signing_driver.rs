@@ -50,15 +50,30 @@ impl TestParallelBatchSigningDriver {
 #[async_trait]
 impl ParallelBatchSigningDriver for TestParallelBatchSigningDriver {
     async fn sign(&self, request: ParallelBatchSigningRequest) -> BatchSigningResponse {
-        match &self.simulated_user {
-            SimulatedUser::Lazy(laziness) => match laziness {
-                Laziness::AlwaysSkip => {
-                    todo!()
-                }
-                _ => todo!(),
-            },
-            _ => todo!(),
-        }
+        let signatures = request
+            .per_factor_source
+            .values()
+            .clone()
+            .into_iter()
+            .map(|x| {
+                let signatures = x
+                    .per_transaction
+                    .clone()
+                    .into_iter()
+                    .flat_map(|b| {
+                        let intent_hash = &b.intent_hash;
+                        b.owned_factor_instances
+                            .clone()
+                            .into_iter()
+                            .map(|c| HDSignature::new(intent_hash.clone(), Signature, c.clone()))
+                            .collect::<IndexSet<HDSignature>>()
+                    })
+                    .collect::<IndexSet<HDSignature>>();
+                (x.factor_source_id, signatures)
+            })
+            .collect::<IndexMap<FactorSourceID, IndexSet<HDSignature>>>();
+
+        BatchSigningResponse::new(signatures)
     }
 }
 

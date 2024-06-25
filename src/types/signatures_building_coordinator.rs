@@ -61,7 +61,8 @@ impl SignaturesBuildingCoordinator {
         for (index, transaction) in transactions.into_iter().enumerate() {
             let transaction_index = TransactionIndex::new(index, transaction.intent_hash.clone());
 
-            let mut petitions_for_entities = BTreeSet::<PetitionOfTransactionByEntity>::new();
+            let mut petitions_for_entities =
+                HashMap::<AccountAddressOrIdentityAddress, PetitionOfTransactionByEntity>::new();
 
             for entity in transaction.clone().entities_requiring_auth {
                 let address = entity.address;
@@ -89,7 +90,7 @@ impl SignaturesBuildingCoordinator {
                             address.clone(),
                             primary_role_matrix,
                         );
-                        petitions_for_entities.insert(petition);
+                        petitions_for_entities.insert(address.clone(), petition);
                     }
                     EntitySecurityState::Unsecured(uec) => {
                         let factor_instance = uec;
@@ -109,7 +110,7 @@ impl SignaturesBuildingCoordinator {
                             address.clone(),
                             factor_instance,
                         );
-                        petitions_for_entities.insert(petition);
+                        petitions_for_entities.insert(address.clone(), petition);
                     }
                 }
             }
@@ -199,7 +200,8 @@ impl SignaturesBuildingCoordinator {
         response: BatchSigningResponse,
         factor_sources: IndexSet<FactorSource>,
     ) {
-        todo!()
+        let petitions = self.petitions.borrow_mut();
+        petitions.process_batch_response(response, factor_sources)
     }
 }
 

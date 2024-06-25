@@ -6,6 +6,10 @@ use crate::prelude::*;
 /// Radix network.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BatchSigningResponse {
-    /// The `IntentHash` should match the `intent_hash` of each HDSignature.
-    signatures: HashMap<IntentHash, IndexSet<HDSignature>>,
+    pub signatures: IndexMap<FactorSourceID, IndexSet<HDSignature>>,
+}
+impl BatchSigningResponse {
+    pub fn new(signatures: IndexMap<FactorSourceID, IndexSet<HDSignature>>) -> Self {
+        Self { signatures }
+    }
 }

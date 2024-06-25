@@ -19,6 +19,21 @@ pub struct HDSignature {
     pub owned_factor_instance: OwnedFactorInstance,
 }
 
+
+impl HDSignature {
+    pub fn new(
+        intent_hash: IntentHash,
+        signature: Signature,
+        owned_factor_instance: OwnedFactorInstance,
+    ) -> Self {
+        Self {
+            intent_hash,
+            signature,
+            owned_factor_instance,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, std::hash::Hash)]
 pub enum SignWithFactorSourceOrSourcesOutcome {
     Signed(Vec<HDSignature>), // want IndexSet

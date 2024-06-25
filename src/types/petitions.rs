@@ -79,17 +79,26 @@ impl PetitionOfTransactionByEntity {
             .collect::<IndexSet<_>>()
     }
 
-    pub fn process_outcome(
-        &self,
-        outcome: &SignWithFactorSourceOrSourcesOutcome,
-        factor_source: &FactorSource,
-    ) {
+    // pub fn process_outcome(
+    //     &self,
+    //     outcome: &SignWithFactorSourceOrSourcesOutcome,
+    //     factor_source: &FactorSource,
+    // ) {
+    //     self.threshold_factors
+    //         .borrow_mut()
+    //         .process_outcome(outcome, factor_source);
+    //     self.override_factors
+    //         .borrow_mut()
+    //         .process_outcome(outcome, factor_source);
+    // }
+
+    pub fn add_signature(&self, signature: HDSignature) {
         self.threshold_factors
             .borrow_mut()
-            .process_outcome(outcome, factor_source);
+            .add_signature_if_matching_factor(&signature);
         self.override_factors
             .borrow_mut()
-            .process_outcome(outcome, factor_source);
+            .add_signature_if_matching_factor(&signature);
     }
 
     pub fn invalid_transactions_if_skipped(
@@ -246,28 +255,33 @@ impl PetitionWithFactors {
             .did_skip(factor_instance, should_assert);
     }
 
-    pub fn process_outcome(
-        &self,
-        outcome: &SignWithFactorSourceOrSourcesOutcome,
-        factor_source: &FactorSource,
-    ) {
+    pub fn add_signature_if_matching_factor(&self, signature: &HDSignature) {
         let state = self.state.borrow_mut();
-        match outcome {
-            SignWithFactorSourceOrSourcesOutcome::Signed(signatures) => {
-                for signature in signatures {
-                    state.did_sign(&SignatureByFactor::new(
-                        signature.signature.clone(),
-                        signature.owned_factor_instance.factor_instance.clone(),
-                    ));
-                }
-            }
-            SignWithFactorSourceOrSourcesOutcome::Skipped => {
-                self.did_skip(factor_source, true);
-            } // SignWithFactorSourceOrSourcesOutcome::Interrupted(_) => {
-              //     self.did_skip(factor_source, true);
-              // }
-        }
+        state.add_signature_if_matching_factor(signature)
     }
+
+    // pub fn process_outcome(
+    //     &self,
+    //     outcome: &SignWithFactorSourceOrSourcesOutcome,
+    //     factor_source: &FactorSource,
+    // ) {
+    //     let state = self.state.borrow_mut();
+    //     match outcome {
+    //         SignWithFactorSourceOrSourcesOutcome::Signed(signatures) => {
+    //             for signature in signatures {
+    //                 state.did_sign(&SignatureByFactor::new(
+    //                     signature.signature.clone(),
+    //                     signature.owned_factor_instance.factor_instance.clone(),
+    //                 ));
+    //             }
+    //         }
+    //         SignWithFactorSourceOrSourcesOutcome::Skipped => {
+    //             self.did_skip(factor_source, true);
+    //         } // SignWithFactorSourceOrSourcesOutcome::Interrupted(_) => {
+    //           //     self.did_skip(factor_source, true);
+    //           // }
+    //     }
+    // }
 
     pub fn references_factor_source(&self, factor_source: &FactorSource) -> bool {
         self.reference_to_factor_source(factor_source).is_some()
@@ -285,7 +299,7 @@ impl PetitionWithFactors {
 #[derive(Clone)]
 struct PetitionWithFactorsStateSnapshot {
     /// Factors that have signed.
-    signed: IndexSet<SignatureByFactor>,
+    signed: IndexSet<HDSignature>,
     /// Factors that user skipped.
     skipped: IndexSet<FactorInstance>,
 }
@@ -310,6 +324,12 @@ pub trait FactorSourceReferencing: std::hash::Hash + PartialEq + Eq + Clone {
 impl FactorSourceReferencing for FactorInstance {
     fn factor_source_id(&self) -> FactorSourceID {
         self.factor_source_id
+    }
+}
+
+impl FactorSourceReferencing for HDSignature {
+    fn factor_source_id(&self) -> FactorSourceID {
+        self.owned_factor_instance.factor_instance.factor_source_id
     }
 }
 
@@ -347,7 +367,7 @@ impl<F: FactorSourceReferencing> PetitionWithFactorsStateFactors<F> {
 #[derive(Clone, PartialEq, Eq, Debug)]
 struct PetitionWithFactorsState {
     /// Factors that have signed.
-    signed: RefCell<PetitionWithFactorsStateFactors<SignatureByFactor>>,
+    signed: RefCell<PetitionWithFactorsStateFactors<HDSignature>>,
     /// Factors that user skipped.
     skipped: RefCell<PetitionWithFactorsStateFactors<FactorInstance>>,
 }
@@ -367,8 +387,8 @@ impl PetitionWithFactorsState {
         self.skipped.borrow_mut().insert(factor_instance)
     }
 
-    pub(crate) fn did_sign(&self, signature_by_factor: &SignatureByFactor) {
-        self.signed.borrow_mut().insert(signature_by_factor)
+    pub(crate) fn add_signature_if_matching_factor(&self, signature: &HDSignature) {
+        self.signed.borrow_mut().insert(signature)
     }
 
     fn new() -> Self {
@@ -393,22 +413,6 @@ impl PetitionWithFactorsState {
                 .skipped
                 .borrow()
                 .references_factor_source_by_id(factor_source_id)
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
-struct SignatureByFactor {
-    signature: Signature,
-    factor: FactorInstance,
-}
-impl SignatureByFactor {
-    pub fn new(signature: Signature, factor: FactorInstance) -> Self {
-        Self { signature, factor }
-    }
-}
-impl FactorSourceReferencing for SignatureByFactor {
-    fn factor_source_id(&self) -> FactorSourceID {
-        self.factor.factor_source_id
     }
 }
 
@@ -552,7 +556,7 @@ impl Petitions {
                     .for_entities
                     .borrow()
                     .iter()
-                    .try_for_each(|petition| petition.continue_if_necessary())
+                    .try_for_each(|(_, petition)| petition.continue_if_necessary())
             })
     }
 
@@ -574,20 +578,37 @@ impl Petitions {
         BatchTXBatchKeySigningRequest::new(factor_source_id, per_transaction)
     }
 
-    pub(super) fn process_outcome(
+    pub(crate) fn process_batch_response(
         &self,
-        outcome: SignWithFactorSourceOrSourcesOutcome,
+        response: BatchSigningResponse,
         factor_sources: IndexSet<FactorSource>,
     ) {
-        for factor_source in factor_sources {
-            let txids = self.factor_to_txid.get(&factor_source.id).unwrap();
-            for txid in txids {
+        //    for factor_source in factor_sources {
+        //     self.factor_to_txid.
+        //    }
+        for (factor_source_id, signatures) in response.signatures {
+            for signature in signatures {
                 let binding = self.txid_to_petition.borrow();
-                let petition = binding.get(txid).unwrap();
-                petition.process_outcome(&outcome, &factor_source);
+                let petition = binding.get(&signature.intent_hash).unwrap();
+                petition.add_signature(signature)
             }
         }
     }
+
+    // pub(super) fn process_outcome(
+    //     &self,
+    //     outcome: SignWithFactorSourceOrSourcesOutcome,
+    //     factor_sources: IndexSet<FactorSource>,
+    // ) {
+    //     for factor_source in factor_sources {
+    //         let txids = self.factor_to_txid.get(&factor_source.id).unwrap();
+    //         for txid in txids {
+    //             let binding = self.txid_to_petition.borrow();
+    //             let petition = binding.get(txid).unwrap();
+    //             petition.process_outcome(&outcome, &factor_source);
+    //         }
+    //     }
+    // }
 }
 
 /// Essentially a wrapper around `IndexSet<PetitionOfTransactionByEntity>>`.
@@ -595,7 +616,8 @@ pub(crate) struct PetitionOfTransaction {
     /// Hash of transaction to sign
     pub intent_hash: IntentHash,
 
-    pub for_entities: RefCell<BTreeSet<PetitionOfTransactionByEntity>>,
+    pub for_entities:
+        RefCell<HashMap<AccountAddressOrIdentityAddress, PetitionOfTransactionByEntity>>,
 }
 
 impl PetitionOfTransaction {
@@ -603,8 +625,16 @@ impl PetitionOfTransaction {
         self.for_entities
             .borrow()
             .iter()
-            .flat_map(|petition| petition.all_factor_instances())
+            .flat_map(|(_, petition)| petition.all_factor_instances())
             .collect()
+    }
+
+    pub fn add_signature(&self, signature: HDSignature) {
+        let mut for_entities = self.for_entities.borrow_mut();
+        let mut for_entity = for_entities
+            .get(&signature.owned_factor_instance.owner)
+            .unwrap();
+        for_entity.add_signature(signature)
     }
 
     pub(crate) fn input_for_parallel_batch_driver(
@@ -625,25 +655,33 @@ impl PetitionOfTransaction {
         self.for_entities
             .borrow()
             .iter()
-            .flat_map(|petition| petition.invalid_transactions_if_skipped(factor_source))
+            .flat_map(|(_, petition)| petition.invalid_transactions_if_skipped(factor_source))
             .collect()
     }
 
-    pub fn process_outcome(
+    pub(crate) fn process_batch_response(
         &self,
-        outcome: &SignWithFactorSourceOrSourcesOutcome,
-        factor_source: &FactorSource,
+        response: BatchSigningResponse,
+        factor_sources: IndexSet<FactorSource>,
     ) {
-        self.for_entities.borrow_mut().iter().for_each(|petition| {
-            petition.process_outcome(outcome, factor_source);
-        });
+        todo!()
     }
+
+    // pub fn process_outcome(
+    //     &self,
+    //     outcome: &SignWithFactorSourceOrSourcesOutcome,
+    //     factor_source: &FactorSource,
+    // ) {
+    //     self.for_entities.borrow_mut().iter().for_each(|petition| {
+    //         petition.process_outcome(outcome, factor_source);
+    //     });
+    // }
 }
 
 impl PetitionOfTransaction {
     pub(crate) fn new(
         intent_hash: IntentHash,
-        for_entities: BTreeSet<PetitionOfTransactionByEntity>,
+        for_entities: HashMap<AccountAddressOrIdentityAddress, PetitionOfTransactionByEntity>,
     ) -> Self {
         Self {
             intent_hash,
