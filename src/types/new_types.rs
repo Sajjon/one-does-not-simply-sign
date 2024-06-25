@@ -1,7 +1,8 @@
 use crate::prelude::*;
 
 /// A signature of `intent_hash` by `entity` using `factor_source_id` and `derivation_path`, with `public_key` used for verification.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, derive_more::Debug)]
+#[debug("HDSignature {{ instance: {:?} }}", owned_factor_instance)]
 pub struct HDSignature {
     /// Hash which was signed.
     pub intent_hash: IntentHash,
@@ -33,8 +34,10 @@ impl HDSignature {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, std::hash::Hash)]
+#[derive(Clone, PartialEq, Eq, std::hash::Hash, derive_more::Debug)]
 pub enum SignWithFactorSourceOrSourcesOutcome<T> {
+    #[debug("Signed")]
     Signed(T),
+    #[debug("Skipped")]
     Skipped(Vec<FactorSourceID>),
 }

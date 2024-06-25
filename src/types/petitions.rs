@@ -253,18 +253,16 @@ impl PetitionOfTransactionByEntity {
         &self,
         factor_source_id: &FactorSourceID,
     ) -> PetitionForFactorListStatus {
-        println!("🐞 🦋 status: {:?}", self.status());
         let simulation = self.clone();
-        simulation.did_skip(factor_source_id, false);
+        simulation.did_skip(factor_source_id, true);
 
-        println!("🦋 if skipping, simulated_status: ",);
-
+        print!("🕹️ if skipping, simulated status: ",);
         let simulated_status = simulation.status();
         println!("{:?}", simulated_status);
         simulated_status
     }
 
-    pub fn did_skip(&self, factor_source_id: &FactorSourceID, should_assert: bool) {
+    pub fn did_skip(&self, factor_source_id: &FactorSourceID, simulated: bool) {
         let Some(petition) = self.petition(factor_source_id) else {
             return;
         };
@@ -274,13 +272,13 @@ impl PetitionOfTransactionByEntity {
                 .as_ref()
                 .expect("Should have threshold factors!")
                 .borrow_mut()
-                .did_skip(factor_source_id, should_assert),
+                .did_skip(factor_source_id, simulated),
             Petition::Override => self
                 .override_factors
                 .as_ref()
                 .expect("Should have override factors!")
                 .borrow_mut()
-                .did_skip(factor_source_id, should_assert),
+                .did_skip(factor_source_id, simulated),
         }
     }
 
@@ -369,11 +367,9 @@ impl PetitionWithFactors {
         }
     }
 
-    pub fn did_skip(&self, factor_source_id: &FactorSourceID, should_assert: bool) {
+    pub fn did_skip(&self, factor_source_id: &FactorSourceID, simulated: bool) {
         let factor_instance = self.expect_reference_to_factor_source_with_id(factor_source_id);
-        self.state
-            .borrow_mut()
-            .did_skip(factor_instance, should_assert);
+        self.state.borrow_mut().did_skip(factor_instance, simulated);
     }
 
     pub fn has_instance_with_id(&self, factor_instance: &OwnedFactorInstance) -> bool {
@@ -497,15 +493,16 @@ impl PetitionWithFactorsState {
         }
     }
 
-    pub(crate) fn did_skip(&self, factor_instance: &FactorInstance, should_assert: bool) {
-        println!("🐞 did_skip: {:?}", factor_instance);
-        if should_assert {
+    pub(crate) fn did_skip(&self, factor_instance: &FactorInstance, simulated: bool) {
+        if !simulated {
+            println!("🙅🏻‍♀️ did_skip: {:?}", factor_instance);
             self.assert_not_referencing_factor_source(factor_instance.factor_source_id);
         }
         self.skipped.borrow_mut().insert(factor_instance);
     }
 
     pub(crate) fn add_signature(&self, signature: &HDSignature) {
+        println!("🖊️ add_signature: {:?}", signature);
         self.assert_not_referencing_factor_source(signature.factor_source_id());
         self.signed.borrow_mut().insert(signature)
     }
@@ -530,7 +527,10 @@ impl PetitionWithFactorsState {
             .borrow()
             .references_factor_source_by_id(factor_source_id)
         {
-            println!("🐍 Found factor_source_id in signed list");
+            println!(
+                "🐍 Found factor_source_id: {:?} in signed list",
+                factor_source_id
+            );
             return true;
         }
 
@@ -539,7 +539,10 @@ impl PetitionWithFactorsState {
             .borrow()
             .references_factor_source_by_id(factor_source_id)
         {
-            println!("🐍 Found factor_source_id in skipped list");
+            println!(
+                "🐍 Found factor_source_id: {:?} in skipped list",
+                factor_source_id
+            );
             return true;
         }
 
@@ -887,11 +890,13 @@ impl PetitionOfTransaction {
     }
 
     pub fn add_signature(&self, signature: HDSignature) {
+        println!("❓ Adding signature...");
         let for_entities = self.for_entities.borrow_mut();
         let for_entity = for_entities
             .get(&signature.owned_factor_instance.owner)
             .unwrap();
-        for_entity.add_signature(signature)
+        for_entity.add_signature(signature.clone());
+        println!("⁉️ Added signature? {:?}", signature);
     }
 
     pub fn skipped_factor_source(&self, factor_source_id: &FactorSourceID) {

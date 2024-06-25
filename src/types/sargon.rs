@@ -155,7 +155,8 @@ impl FactorInstance {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
+#[derive(Clone, PartialEq, Eq, std::hash::Hash, derive_more::Debug)]
+#[debug("{:?}: {:?}", owner, factor_instance)]
 pub struct OwnedFactorInstance {
     pub factor_instance: FactorInstance,
     pub owner: AccountAddressOrIdentityAddress,
@@ -210,7 +211,8 @@ pub struct AccountAddress;
 #[derive(Clone, Copy, Debug, PartialEq, Eq, std::hash::Hash)]
 pub struct IdentityAddress;
 
-#[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
+#[derive(Clone, PartialEq, Eq, std::hash::Hash, derive_more::Debug)]
+#[debug("{name}")]
 pub struct AccountAddressOrIdentityAddress {
     pub name: String,
     id: Uuid,

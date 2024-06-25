@@ -51,8 +51,13 @@ impl SigningDriver {
             Self::SerialBatch(driver) => {
                 println!("🚗 Signing with Serial Batch driver... #{} factor sources, signing with one factor source at a time", factor_source_count);
                 for factor_source in factor_sources {
+                    println!(
+                        "🚗 Signing with Serial Batch driver, signing with factor source: {:?}",
+                        factor_source.id
+                    );
                     let batch_signing_request = signatures_building_coordinator
                         .input_for_parallel_batch_driver(factor_source.clone());
+
                     let request = SerialBatchSigningRequest::new(
                         batch_signing_request,
                         signatures_building_coordinator
@@ -60,7 +65,9 @@ impl SigningDriver {
                             .into_iter()
                             .collect_vec(),
                     );
+
                     let response = driver.sign(request).await;
+
                     println!(
                         "☑️ Got 1 response (of #{}) from Serial Batch driver: {:?}",
                         factor_source_count, &response
@@ -87,7 +94,7 @@ impl SigningDriver {
                             let should_continue_with_factor_source =
                                 signatures_building_coordinator.process_single_response(response);
                             if !should_continue_with_factor_source {
-                                println!("Breaking, should continue with next factor source....");
+                                println!("⁉️ Breaking, should continue with next factor source....");
                                 break;
                             }
                         }
