@@ -1,5 +1,3 @@
-use std::io::Write;
-
 use crate::prelude::*;
 
 /// A coordinator which gathers signatures from several factor sources of different
@@ -47,7 +45,7 @@ impl SignaturesBuildingCoordinator {
             if let Some(ref mut txids) = factor_to_payloads.get_mut(id) {
                 txids.insert(txid.clone());
             } else {
-                factor_to_payloads.insert(id.clone(), IndexSet::from_iter([txid.clone()]));
+                factor_to_payloads.insert(*id, IndexSet::from_iter([txid.clone()]));
             }
 
             assert!(!factor_to_payloads.is_empty());

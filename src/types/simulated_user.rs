@@ -1,5 +1,3 @@
-use crate::prelude::*;
-
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum SigningUserInput {
     Sign,
@@ -51,10 +49,12 @@ pub enum Laziness {
 impl SimulatedUser {
     pub fn sign_or_skip(
         &self,
-        invalid_tx_if_skipped: impl IntoIterator<Item = InvalidTransactionIfSkipped>,
+        invalid_tx_if_skipped: impl IntoIterator<Item = crate::prelude::InvalidTransactionIfSkipped>,
     ) -> SigningUserInput {
         use rand::prelude::*;
-        let invalid_tx_if_skipped = invalid_tx_if_skipped.into_iter().collect::<HashSet<_>>();
+        let invalid_tx_if_skipped = invalid_tx_if_skipped
+            .into_iter()
+            .collect::<std::collections::HashSet<_>>();
         match self {
             SimulatedUser::Prudent => SigningUserInput::Sign,
             SimulatedUser::Lazy(laziness) => match laziness {
