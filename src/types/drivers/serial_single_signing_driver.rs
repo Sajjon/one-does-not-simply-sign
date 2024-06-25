@@ -90,15 +90,15 @@ impl SerialSingleSigningDriver for TestSerialSingleSigningDriver {
             .sign_or_skip(request.invalid_transactions_if_skipped)
         {
             SigningUserInput::Sign => {
-                SignWithFactorSourceOrSourcesOutcome::Signed(HDSignature::new(
+                SignWithFactorSourceOrSourcesOutcome::signed(HDSignature::new(
                     request.input.intent_hash,
                     Signature,
                     request.input.owned_factor_instance,
                 ))
             }
-            SigningUserInput::Skip => {
-                SignWithFactorSourceOrSourcesOutcome::Skipped(vec![request.input.factor_source_id])
-            }
+            SigningUserInput::Skip => SignWithFactorSourceOrSourcesOutcome::skipped_factor_source(
+                request.input.factor_source_id,
+            ),
         }
     }
 }

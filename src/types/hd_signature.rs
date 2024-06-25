@@ -19,3 +19,18 @@ pub struct HDSignature {
     /// with.
     pub owned_factor_instance: OwnedFactorInstance,
 }
+
+impl HDSignature {
+    /// Constructs a HDSignature from an already produced `Signature`.
+    pub fn new(
+        intent_hash: IntentHash,
+        signature: Signature,
+        owned_factor_instance: OwnedFactorInstance,
+    ) -> Self {
+        Self {
+            intent_hash,
+            signature,
+            owned_factor_instance,
+        }
+    }
+}

@@ -1,8 +1,13 @@
 use crate::prelude::*;
 
 /// A coordinator which gathers signatures from several factor sources of different
-/// kinds for many transactions and for potentially multiple derivation paths
+/// kinds, in increasing friction order, for many transactions and for
+/// potentially multiple entities and for many factor instances (derivation paths)
 /// for each transaction.
+///
+/// By increasing friction order we mean, the quickest and easiest to use FactorSourceKind
+/// is last; namely `DeviceFactorSource`, and the most tedious FactorSourceKind is
+/// first; namely `LedgerFactorSource`, which user might also lack access to.
 pub struct SignaturesBuildingCoordinator {
     /// A context of drivers used to sign with factor sources.
     signing_drivers_context: Arc<dyn IsSigningDriversContext>,

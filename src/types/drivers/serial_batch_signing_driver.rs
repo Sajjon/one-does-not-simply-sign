@@ -98,11 +98,11 @@ impl SerialBatchSigningDriver for TestSerialBatchSigningDriver {
                     })
                     .collect::<IndexMap<FactorSourceID, IndexSet<HDSignature>>>();
                 let response = BatchSigningResponse::new(signatures);
-                SignWithFactorSourceOrSourcesOutcome::Signed(response)
+                SignWithFactorSourceOrSourcesOutcome::signed(response)
             }
-            SigningUserInput::Skip => {
-                SignWithFactorSourceOrSourcesOutcome::Skipped(vec![request.input.factor_source_id])
-            }
+            SigningUserInput::Skip => SignWithFactorSourceOrSourcesOutcome::skipped_factor_source(
+                request.input.factor_source_id,
+            ),
         }
     }
 }

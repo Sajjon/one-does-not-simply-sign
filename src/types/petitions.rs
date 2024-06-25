@@ -771,12 +771,14 @@ impl Petitions {
         response: SignWithFactorSourceOrSourcesOutcome<HDSignature>,
     ) {
         match response {
-            SignWithFactorSourceOrSourcesOutcome::Signed(signature) => {
-                self.add_signature(&signature)
-            }
-            SignWithFactorSourceOrSourcesOutcome::Skipped(skipped_factor_source_ids) => {
-                assert_eq!(skipped_factor_source_ids.len(), 1);
-                let skipped_factor_source_id = skipped_factor_source_ids.last().unwrap();
+            SignWithFactorSourceOrSourcesOutcome::Signed {
+                produced_signatures: signature,
+            } => self.add_signature(&signature),
+            SignWithFactorSourceOrSourcesOutcome::Skipped {
+                ids_of_skipped_factors_sources,
+            } => {
+                assert_eq!(ids_of_skipped_factors_sources.len(), 1);
+                let skipped_factor_source_id = ids_of_skipped_factors_sources.last().unwrap();
                 self.skip_factor_source_with_id(skipped_factor_source_id)
             }
         }
@@ -787,15 +789,19 @@ impl Petitions {
         response: SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse>,
     ) {
         match response {
-            SignWithFactorSourceOrSourcesOutcome::Signed(signatures) => {
-                signatures
+            SignWithFactorSourceOrSourcesOutcome::Signed {
+                produced_signatures,
+            } => {
+                produced_signatures
                     .signatures
                     .values()
                     .flatten()
                     .for_each(|s| self.add_signature(s));
             }
-            SignWithFactorSourceOrSourcesOutcome::Skipped(skipped_factor_source_ids) => {
-                for skipped_factor_source_id in skipped_factor_source_ids.iter() {
+            SignWithFactorSourceOrSourcesOutcome::Skipped {
+                ids_of_skipped_factors_sources,
+            } => {
+                for skipped_factor_source_id in ids_of_skipped_factors_sources.iter() {
                     self.skip_factor_source_with_id(skipped_factor_source_id)
                 }
             }
