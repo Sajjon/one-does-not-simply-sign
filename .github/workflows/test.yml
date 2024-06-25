@@ -17,7 +17,7 @@ env:
 jobs:
   # cargo fmt check
   check-formatting:
-    runs-on: macos-14-xlarge
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -33,7 +33,7 @@ jobs:
 
   # clippy
   check-clippy:
-    runs-on: macos-14-xlarge
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -49,7 +49,7 @@ jobs:
 
   # Rust unit, doc and integration
   test-rust:
-    runs-on: macos-14-xlarge
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -64,7 +64,7 @@ jobs:
 
   # Code Coverage uses Tarpaulin and uploads to CodeCov.io
   code-coverage:
-    runs-on: macos-14-xlarge
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
