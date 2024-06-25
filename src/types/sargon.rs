@@ -1,5 +1,3 @@
-use strum::EnumString;
-
 use crate::prelude::*;
 
 #[derive(Clone, Copy, PartialEq, Eq, std::hash::Hash, derive_more::Debug)]
@@ -72,12 +70,6 @@ impl Ord for FactorSource {
     }
 }
 
-impl FactorSource {
-    fn sign(&self, _intent_hash: &IntentHash, _factor_instance: &FactorInstance) -> Signature {
-        Signature
-    }
-}
-
 #[repr(u32)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, std::hash::Hash, PartialOrd, Ord, strum::Display)]
 pub enum FactorSourceKind {
@@ -134,16 +126,6 @@ impl IsFactorSource for DeviceMnemonicFactorSource {
 pub struct FactorInstance {
     pub index: u32, // actually `DerivationPath`...
     pub factor_source_id: FactorSourceID,
-}
-
-pub trait FactorSourceReferencing {
-    fn factor_source_id(&self) -> FactorSourceID;
-}
-
-impl FactorSourceReferencing for FactorInstance {
-    fn factor_source_id(&self) -> FactorSourceID {
-        self.factor_source_id
-    }
 }
 
 impl FactorInstance {
@@ -347,6 +329,12 @@ impl OwnedMatrixOfFactorInstances {
 pub struct IntentHash {
     hash: Hash,
 }
+impl Default for IntentHash {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl IntentHash {
     pub fn generate() -> Self {
         Self {

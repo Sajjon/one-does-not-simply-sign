@@ -90,19 +90,14 @@ impl ParallelBatchSigningDriver for TestParallelBatchSigningDriver {
                                     .collect_vec()
                             })
                             .collect::<IndexSet<HDSignature>>();
-                        (k.clone(), value)
+                        (*k, value)
                     })
                     .collect::<IndexMap<FactorSourceID, IndexSet<HDSignature>>>();
 
                 SignWithFactorSourceOrSourcesOutcome::Signed(BatchSigningResponse::new(signatures))
             }
             SigningUserInput::Skip => SignWithFactorSourceOrSourcesOutcome::Skipped(
-                request
-                    .per_factor_source
-                    .keys()
-                    .into_iter()
-                    .map(|x| x.clone())
-                    .collect_vec(),
+                request.per_factor_source.keys().copied().collect_vec(),
             ),
         }
     }

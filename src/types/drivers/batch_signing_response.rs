@@ -5,7 +5,7 @@ use crate::prelude::*;
 /// enough keys (derivation paths) needed for it to be valid when submitted to the
 /// Radix network.
 #[derive(Clone, PartialEq, Eq, derive_more::Debug)]
-#[debug("BatchSigningResponse {{ signatures: {:?} }}", signatures.values().into_iter().map(|f| format!("{:?}", f)).join(", "))]
+#[debug("BatchSigningResponse {{ signatures: {:?} }}", signatures.values().map(|f| format!("{:?}", f)).join(", "))]
 pub struct BatchSigningResponse {
     pub signatures: IndexMap<FactorSourceID, IndexSet<HDSignature>>,
 }

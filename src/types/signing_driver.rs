@@ -1,8 +1,4 @@
-use std::io::Write;
-
 use crate::prelude::*;
-
-use super::signatures_building_coordinator;
 
 pub enum SigningDriver {
     ParallelBatch(ParallelBatchSigningClient),
@@ -36,7 +32,7 @@ impl SigningDriver {
                     .clone()
                     .into_iter()
                     .map(|f| {
-                        let key = f.id.clone();
+                        let key = f.id;
                         let value =
                             signatures_building_coordinator.input_for_parallel_batch_driver(&f.id);
                         (key, value)

@@ -508,7 +508,7 @@ mod tests {
                 MatrixOfFactorInstances::override_only(
                     FactorSource::all()
                         .into_iter()
-                        .map(|f| FactorInstance::new(idx, f.id.clone())),
+                        .map(|f| FactorInstance::new(idx, f.id)),
                 )
             })]),
         ]);
