@@ -1,1 +1,1 @@
-[![Average](https://codecov.io/gh/sajjon/one-does-not-simply-sign/graph/badge.svg?token=8QPKIUSAQD)](https://codecov.io/github/sajjon/one-does-not-simply-sign)
+[![codecov](https://codecov.io/github/Sajjon/one-does-not-simply-sign/branch/main/graph/badge.svg?token=PTFupnAjyZ)](https://codecov.io/github/Sajjon/one-does-not-simply-sign)
