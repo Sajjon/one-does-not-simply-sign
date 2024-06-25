@@ -1,3 +1,5 @@
+use std::io::Write;
+
 use crate::prelude::*;
 
 /// A coordinator which gathers signatures from several factor sources of different
@@ -233,6 +235,7 @@ impl SignaturesBuildingCoordinator {
         &self,
         response: SignWithFactorSourceOrSourcesOutcome<HDSignature>,
     ) -> bool {
+        println!("🔥 process_single_response: {:?}", response);
         {
             let petitions = self.petitions.borrow_mut();
             petitions.process_single_response(response);
@@ -243,6 +246,7 @@ impl SignaturesBuildingCoordinator {
         &self,
         response: SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse>,
     ) {
+        println!("🔥 process_batch_response: {:?}", response);
         let petitions = self.petitions.borrow_mut();
         petitions.process_batch_response(response)
     }

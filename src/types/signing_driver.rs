@@ -1,3 +1,5 @@
+use std::io::Write;
+
 use crate::prelude::*;
 
 use super::signatures_building_coordinator;
@@ -12,12 +14,15 @@ impl SigningDriver {
     pub fn parallel_batch(driver: Arc<dyn ParallelBatchSigningDriver>) -> Self {
         Self::ParallelBatch(ParallelBatchSigningClient::new(driver))
     }
+
     pub fn serial_batch(driver: Arc<dyn SerialBatchSigningDriver>) -> Self {
         Self::SerialBatch(SerialBatchSigningClient::new(driver))
     }
+
     pub fn serial_single(driver: Arc<dyn SerialSingleSigningDriver>) -> Self {
         Self::SerialSingle(SerialSingleSigningClient::new(driver))
     }
+
     pub async fn sign(
         &self,
         factor_sources: IndexSet<FactorSource>,
@@ -90,6 +95,7 @@ impl SigningDriver {
                                 "🐌 Signing with Serial Single, signing with instance: {:?}",
                                 request.owned_factor_instance
                             );
+                            std::io::stdout().flush().unwrap();
                             let response = driver.sign(request).await;
                             let should_continue_with_factor_source =
                                 signatures_building_coordinator.process_single_response(response);

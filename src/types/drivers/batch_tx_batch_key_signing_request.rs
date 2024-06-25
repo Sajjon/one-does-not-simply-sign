@@ -23,6 +23,9 @@ impl BatchKeySigningRequest {
         factor_source_id: FactorSourceID,
         owned_factor_instances: IndexSet<OwnedFactorInstance>,
     ) -> Self {
+        assert!(owned_factor_instances
+            .iter()
+            .all(|f| f.factor_instance.factor_source_id == factor_source_id));
         Self {
             intent_hash,
             factor_source_id,
@@ -47,6 +50,9 @@ impl BatchTXBatchKeySigningRequest {
         factor_source_id: FactorSourceID,
         per_transaction: IndexSet<BatchKeySigningRequest>,
     ) -> Self {
+        assert!(per_transaction
+            .iter()
+            .all(|f| f.factor_source_id == factor_source_id));
         Self {
             factor_source_id,
             per_transaction: per_transaction.into_iter().collect(),

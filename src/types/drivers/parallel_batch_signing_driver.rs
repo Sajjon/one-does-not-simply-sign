@@ -72,26 +72,25 @@ impl ParallelBatchSigningDriver for TestParallelBatchSigningDriver {
             SigningUserInput::Sign => {
                 let signatures = request
                     .per_factor_source
-                    .values()
-                    .clone()
-                    .into_iter()
-                    .map(|x| {
-                        let signatures = x
+                    .iter()
+                    .map(|(k, v)| {
+                        let value = v
                             .per_transaction
-                            .clone()
-                            .into_iter()
-                            .flat_map(|b| {
-                                let intent_hash = &b.intent_hash;
-                                b.owned_factor_instances
-                                    .clone()
-                                    .into_iter()
-                                    .map(|c| {
-                                        HDSignature::new(intent_hash.clone(), Signature, c.clone())
+                            .iter()
+                            .flat_map(|x| {
+                                x.owned_factor_instances
+                                    .iter()
+                                    .map(|y| {
+                                        HDSignature::new(
+                                            x.intent_hash.clone(),
+                                            Signature,
+                                            y.clone(),
+                                        )
                                     })
-                                    .collect::<IndexSet<HDSignature>>()
+                                    .collect_vec()
                             })
                             .collect::<IndexSet<HDSignature>>();
-                        (x.factor_source_id, signatures)
+                        (k.clone(), value)
                     })
                     .collect::<IndexMap<FactorSourceID, IndexSet<HDSignature>>>();
 

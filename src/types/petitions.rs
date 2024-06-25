@@ -781,12 +781,14 @@ impl Petitions {
     }
 
     fn skip_factor_source_with_id(&self, skipped_factor_source_id: &FactorSourceID) {
+        println!("🚫 Skipping factor source: {:?}", skipped_factor_source_id);
         let binding = self.txid_to_petition.borrow();
         let txids = self.factor_to_txid.get(&skipped_factor_source_id).unwrap();
         txids.into_iter().for_each(|txid| {
             let petition = binding.get(txid).unwrap();
             petition.skipped_factor_source(&skipped_factor_source_id)
         });
+        println!("🚫 Skipped factor source: {:?}", skipped_factor_source_id);
     }
 
     pub(crate) fn process_single_response(
@@ -890,7 +892,7 @@ impl PetitionOfTransaction {
     }
 
     pub fn add_signature(&self, signature: HDSignature) {
-        println!("❓ Adding signature...");
+        println!("❓ Adding signature: {:?}", signature);
         let for_entities = self.for_entities.borrow_mut();
         let for_entity = for_entities
             .get(&signature.owned_factor_instance.owner)
