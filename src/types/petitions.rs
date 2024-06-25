@@ -1,3 +1,5 @@
+use std::borrow::Borrow;
+
 use crate::prelude::*;
 
 #[derive(Derivative)]
@@ -25,24 +27,29 @@ pub struct PetitionOfTransactionByEntity {
     pub transaction_index: TransactionIndex,
 
     #[derivative(Hash = "ignore", Ord = "ignore", PartialOrd = "ignore")]
-    pub threshold_factors: RefCell<PetitionWithFactors>,
+    pub threshold_factors: Option<RefCell<PetitionWithFactors>>,
 
     #[derivative(Hash = "ignore", Ord = "ignore", PartialOrd = "ignore")]
-    pub override_factors: RefCell<PetitionWithFactors>,
+    pub override_factors: Option<RefCell<PetitionWithFactors>>,
 }
 
 impl PetitionOfTransactionByEntity {
     pub fn new(
         transaction_index: TransactionIndex,
         entity: AccountAddressOrIdentityAddress,
-        threshold_factors: PetitionWithFactors,
-        override_factors: PetitionWithFactors,
+        threshold_factors: impl Into<Option<PetitionWithFactors>>,
+        override_factors: impl Into<Option<PetitionWithFactors>>,
     ) -> Self {
+        let threshold_factors = threshold_factors.into();
+        let override_factors = override_factors.into();
+        if threshold_factors.is_none() && override_factors.is_none() {
+            panic!("Programmer error! Must have at least one factors list.");
+        }
         Self {
             entity,
             transaction_index,
-            threshold_factors: RefCell::new(threshold_factors),
-            override_factors: RefCell::new(override_factors),
+            threshold_factors: threshold_factors.map(|p| RefCell::new(p)),
+            override_factors: override_factors.map(|p| RefCell::new(p)),
         }
     }
     pub fn new_securified(
@@ -66,14 +73,24 @@ impl PetitionOfTransactionByEntity {
             transaction_index,
             entity,
             PetitionWithFactors::new_unsecurified(instance),
-            PetitionWithFactors::new_not_used(),
+            None,
         )
     }
+
     pub fn all_factor_instances(&self) -> IndexSet<OwnedFactorInstance> {
-        self.override_factors
-            .borrow()
-            .factor_instances()
-            .union(&self.threshold_factors.borrow().factor_instances())
+        let o: IndexSet<FactorInstance> = self
+            .override_factors
+            .as_ref()
+            .map(|f| f.borrow().factor_instances())
+            .unwrap_or_default();
+
+        let t: IndexSet<FactorInstance> = self
+            .threshold_factors
+            .as_ref()
+            .map(|f| f.borrow().factor_instances())
+            .unwrap_or_default();
+
+        o.union(&t)
             .into_iter()
             .map(|f| OwnedFactorInstance::new(f.clone(), self.entity.clone()))
             .collect::<IndexSet<_>>()
@@ -87,53 +104,68 @@ impl PetitionOfTransactionByEntity {
     }
 
     pub fn all_signatures(&self) -> IndexSet<HDSignature> {
-        self.override_factors
-            .borrow()
-            .all_signatures()
-            .union(&self.threshold_factors.borrow().all_signatures())
+        let o: IndexSet<HDSignature> = self
+            .override_factors
+            .as_ref()
+            .map(|f| f.borrow().all_signatures())
+            .unwrap_or_default();
+
+        let t: IndexSet<HDSignature> = self
+            .threshold_factors
+            .as_ref()
+            .map(|f| f.borrow().all_signatures())
+            .unwrap_or_default();
+
+        o.union(&t)
             .into_iter()
             .map(|x| x.to_owned())
             .collect::<IndexSet<_>>()
     }
 
     pub fn references_factor_source_with_id(&self, factor_source_id: &FactorSourceID) -> bool {
-        self.threshold_factors
-            .borrow()
-            .references_factor_source_with_id(factor_source_id)
-            || self
-                .override_factors
-                .borrow()
+        if let Some(references) = self.override_factors.as_ref().map(|o| {
+            o.borrow()
                 .references_factor_source_with_id(factor_source_id)
+        }) {
+            return references;
+        }
+
+        if let Some(references) = self.threshold_factors.as_ref().map(|t| {
+            t.borrow()
+                .references_factor_source_with_id(factor_source_id)
+        }) {
+            return references;
+        }
+
+        panic!("Programmer error! Should have at least one factors list.");
     }
 
     pub fn skipped_factor_source_if_relevant(&self, factor_source_id: &FactorSourceID) {
-        if self
-            .threshold_factors
-            .borrow()
-            .references_factor_source_with_id(factor_source_id)
-        {
-            self.threshold_factors
-                .borrow_mut()
-                .did_skip(factor_source_id, true);
-        }
-        if self
-            .override_factors
-            .borrow()
-            .references_factor_source_with_id(factor_source_id)
-        {
-            self.override_factors
-                .borrow_mut()
-                .did_skip(factor_source_id, true);
-        }
+        self.threshold_factors.as_ref().map(|t| {
+            if t.borrow()
+                .references_factor_source_with_id(factor_source_id)
+            {
+                t.borrow_mut().did_skip(factor_source_id, true);
+            }
+        });
+
+        self.override_factors.as_ref().map(|o| {
+            if o.borrow()
+                .references_factor_source_with_id(factor_source_id)
+            {
+                o.borrow_mut().did_skip(factor_source_id, true);
+            }
+        });
     }
 
     pub fn add_signature(&self, signature: HDSignature) {
         self.threshold_factors
-            .borrow_mut()
-            .add_signature_if_matching_factor(&signature);
+            .as_ref()
+            .map(|o| o.borrow_mut().add_signature_if_matching_factor(&signature));
+
         self.override_factors
-            .borrow_mut()
-            .add_signature_if_matching_factor(&signature);
+            .as_ref()
+            .map(|o| o.borrow_mut().add_signature_if_matching_factor(&signature));
     }
 
     pub fn invalid_transactions_if_skipped(
@@ -178,30 +210,38 @@ enum Petition {
 
 impl PetitionOfTransactionByEntity {
     fn petition(&self, factor_source_id: &FactorSourceID) -> Option<Petition> {
-        if self
-            .threshold_factors
-            .borrow()
-            .references_factor_source_with_id(factor_source_id)
-        {
-            Some(Petition::Threshold)
-        } else if self
-            .override_factors
-            .borrow()
-            .references_factor_source_with_id(factor_source_id)
-        {
-            Some(Petition::Override)
-        } else {
-            None
+        if let Some(t) = self.threshold_factors.as_ref() {
+            if t.borrow()
+                .references_factor_source_with_id(factor_source_id)
+            {
+                return Some(Petition::Threshold);
+            }
         }
+
+        if let Some(o) = self.override_factors.as_ref() {
+            if o.borrow()
+                .references_factor_source_with_id(factor_source_id)
+            {
+                return Some(Petition::Override);
+            }
+        }
+
+        return None;
     }
 
     pub fn status_if_skipped_factor_source(
         &self,
         factor_source_id: &FactorSourceID,
     ) -> PetitionForFactorListStatus {
+        println!("🐞 🦋 status: {:?}", self.status());
         let simulation = self.clone();
         simulation.did_skip(factor_source_id, false);
-        simulation.status()
+        let simulated_status = simulation.status();
+        println!(
+            "🦋 if skipping {:?}, simulated_status: {:?}",
+            factor_source_id, simulated_status
+        );
+        simulated_status
     }
 
     pub fn did_skip(&self, factor_source_id: &FactorSourceID, should_assert: bool) {
@@ -211,10 +251,14 @@ impl PetitionOfTransactionByEntity {
         match petition {
             Petition::Threshold => self
                 .threshold_factors
+                .as_ref()
+                .expect("Should have threshold factors!")
                 .borrow_mut()
                 .did_skip(factor_source_id, should_assert),
             Petition::Override => self
                 .override_factors
+                .as_ref()
+                .expect("Should have override factors!")
                 .borrow_mut()
                 .did_skip(factor_source_id, should_assert),
         }
@@ -223,30 +267,48 @@ impl PetitionOfTransactionByEntity {
     pub fn status(&self) -> PetitionForFactorListStatus {
         use PetitionForFactorListStatus::*;
         use PetitionForFactorListStatusFinished::*;
-        let threshold = self.threshold_factors.borrow().status();
-        let r#override = self.override_factors.borrow().status();
 
-        match (threshold, r#override) {
-            (InProgress, InProgress) => PetitionForFactorListStatus::InProgress,
-            (Finished(Fail), InProgress) => PetitionForFactorListStatus::InProgress,
-            (InProgress, Finished(Fail)) => PetitionForFactorListStatus::InProgress,
-            (Finished(Fail), Finished(Fail)) => PetitionForFactorListStatus::Finished(Fail),
-            (Finished(Success), _) => PetitionForFactorListStatus::Finished(Success),
-            (_, Finished(Success)) => PetitionForFactorListStatus::Finished(Success),
+        let maybe_threshold = self.threshold_factors.as_ref().map(|t| t.borrow().status());
+        let maybe_override = self.override_factors.as_ref().map(|o| o.borrow().status());
+
+        match (maybe_threshold, maybe_override) {
+            (None, None) => panic!("Programmer error! Should have at least one factors list."),
+            (Some(threshold), None) => {
+                println!("🦀 ONLY threshold.status: {:?}", threshold);
+                return threshold;
+            }
+            (None, Some(r#override)) => {
+                println!("🦀 ONLY override.status: {:?}", r#override);
+                return r#override;
+            }
+            (Some(threshold), Some(r#override)) => {
+                println!("🦀 threshold.status: {:?}", threshold);
+                println!("🦀 override.status: {:?}", r#override);
+                match (threshold, r#override) {
+                    (InProgress, InProgress) => PetitionForFactorListStatus::InProgress,
+                    (Finished(Fail), InProgress) => PetitionForFactorListStatus::InProgress,
+                    (InProgress, Finished(Fail)) => PetitionForFactorListStatus::InProgress,
+                    (Finished(Fail), Finished(Fail)) => PetitionForFactorListStatus::Finished(Fail),
+                    (Finished(Success), _) => PetitionForFactorListStatus::Finished(Success),
+                    (_, Finished(Success)) => PetitionForFactorListStatus::Finished(Success),
+                }
+            }
         }
     }
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct PetitionWithFactors {
+    petition_kind: Petition,
     /// Factors to sign with and the required number of them.
     input: PetitionWithFactorsInput,
     state: RefCell<PetitionWithFactorsState>,
 }
 
 impl PetitionWithFactors {
-    pub fn new(input: PetitionWithFactorsInput) -> Self {
+    pub fn new(petition_kind: Petition, input: PetitionWithFactorsInput) -> Self {
         Self {
+            petition_kind,
             input,
             state: RefCell::new(PetitionWithFactorsState::new()),
         }
@@ -260,23 +322,31 @@ impl PetitionWithFactors {
         self.state.borrow().all_signatures()
     }
 
-    pub fn new_threshold(factors: Vec<FactorInstance>, threshold: i8) -> Self {
-        Self::new(PetitionWithFactorsInput::new_threshold(
-            IndexSet::from_iter(factors),
-            threshold,
+    pub fn new_threshold(factors: Vec<FactorInstance>, threshold: i8) -> Option<Self> {
+        if factors.is_empty() {
+            return None;
+        }
+        Some(Self::new(
+            Petition::Threshold,
+            PetitionWithFactorsInput::new_threshold(IndexSet::from_iter(factors), threshold),
         ))
     }
 
     pub fn new_unsecurified(factor: FactorInstance) -> Self {
-        Self::new_threshold(vec![factor], 1) // define as 1/1 threshold factor, which is a good definition.
+        Self::new_threshold(vec![factor], 1).unwrap() // define as 1/1 threshold factor, which is a good definition.
     }
-    pub fn new_override(factors: Vec<FactorInstance>) -> Self {
-        Self::new(PetitionWithFactorsInput::new_override(IndexSet::from_iter(
-            factors,
-        )))
+    pub fn new_override(factors: Vec<FactorInstance>) -> Option<Self> {
+        if factors.is_empty() {
+            return None;
+        }
+        Some(Self::new(
+            Petition::Override,
+            PetitionWithFactorsInput::new_override(IndexSet::from_iter(factors)),
+        ))
     }
     pub fn new_not_used() -> Self {
         Self {
+            petition_kind: Petition::Override, // does not matter..
             input: PetitionWithFactorsInput {
                 factors: IndexSet::new(),
                 required: 0,
@@ -318,7 +388,7 @@ impl PetitionWithFactors {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 struct PetitionWithFactorsStateSnapshot {
     /// Factors that have signed.
     signed: IndexSet<HDSignature>,
@@ -411,7 +481,10 @@ impl PetitionWithFactorsState {
         if should_assert {
             self.assert_not_referencing_factor_source(factor_instance.factor_source_id);
         }
-        self.skipped.borrow_mut().insert(factor_instance)
+        self.skipped.borrow_mut().insert(factor_instance);
+        println!("skipped: {:?}", self.skipped.borrow().snapshot());
+        println!("signed: {:?}", self.signed.borrow().snapshot());
+        println!("\n");
     }
 
     pub(crate) fn add_signature_if_matching_factor(&self, signature: &HDSignature) {
@@ -515,6 +588,12 @@ impl PetitionWithFactors {
     }
 
     fn is_finished_successfully(&self) -> bool {
+        println!(
+            "🐯 PetitionWithFactors kind: {:?}, input: {:?}, state_snapshot: {:?}",
+            self.petition_kind,
+            self.input,
+            self.state_snapshot()
+        );
         self.input.is_fulfilled_by(self.state_snapshot())
     }
 
