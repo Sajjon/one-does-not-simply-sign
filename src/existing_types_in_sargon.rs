@@ -6,6 +6,7 @@ pub struct FactorSourceID {
     pub kind: FactorSourceKind,
     pub id: Uuid,
 }
+
 impl FactorSourceID {
     pub fn new(kind: FactorSourceKind) -> Self {
         Self {
@@ -21,6 +22,7 @@ pub struct FactorSource {
     pub last_used: SystemTime,
     pub id: FactorSourceID,
 }
+
 impl FactorSource {
     pub fn kind(&self) -> FactorSourceKind {
         self.id.kind
@@ -79,47 +81,6 @@ pub enum FactorSourceKind {
     SecurityQuestions,
     OffDeviceMnemonic,
     Device,
-}
-
-pub trait IsFactorSource {
-    fn kind() -> FactorSourceKind;
-}
-pub struct ArculusFactorSource;
-impl IsFactorSource for ArculusFactorSource {
-    fn kind() -> FactorSourceKind {
-        FactorSourceKind::Arculus
-    }
-}
-pub struct LedgerFactorSource;
-impl IsFactorSource for LedgerFactorSource {
-    fn kind() -> FactorSourceKind {
-        FactorSourceKind::Ledger
-    }
-}
-pub struct YubikeyFactorSource;
-impl IsFactorSource for YubikeyFactorSource {
-    fn kind() -> FactorSourceKind {
-        FactorSourceKind::Yubikey
-    }
-}
-pub struct SecurityQuestionsFactorSource;
-impl IsFactorSource for SecurityQuestionsFactorSource {
-    fn kind() -> FactorSourceKind {
-        FactorSourceKind::SecurityQuestions
-    }
-}
-
-pub struct OffDeviceMnemonicFactorSource;
-impl IsFactorSource for OffDeviceMnemonicFactorSource {
-    fn kind() -> FactorSourceKind {
-        FactorSourceKind::OffDeviceMnemonic
-    }
-}
-pub struct DeviceMnemonicFactorSource;
-impl IsFactorSource for DeviceMnemonicFactorSource {
-    fn kind() -> FactorSourceKind {
-        FactorSourceKind::Device
-    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
@@ -194,16 +155,11 @@ impl AccountAddressOrIdentityAddress {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
-pub struct DerivationPath(String);
-
-#[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
-pub struct PublicKey(String);
-
-#[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
 pub struct Entity {
     pub address: AccountAddressOrIdentityAddress,
     pub security_state: EntitySecurityState,
 }
+
 impl Entity {
     fn new(name: impl AsRef<str>, security_state: impl Into<EntitySecurityState>) -> Self {
         Self {
@@ -211,6 +167,7 @@ impl Entity {
             security_state: security_state.into(),
         }
     }
+
     pub fn securified(
         index: u32,
         name: impl AsRef<str>,
@@ -218,6 +175,7 @@ impl Entity {
     ) -> Self {
         Self::new(name, make_matrix(index))
     }
+
     pub fn unsecurified(
         index: u32,
         name: impl AsRef<str>,
@@ -236,6 +194,7 @@ pub struct MatrixOfFactorInstances {
     pub threshold: u8,
     pub override_factors: Vec<FactorInstance>,
 }
+
 impl MatrixOfFactorInstances {
     /// Panics if threshold > threshold_factor.len()
     pub fn new(
@@ -284,6 +243,7 @@ impl From<FactorInstance> for MatrixOfFactorInstances {
 pub struct IntentHash {
     hash: Hash,
 }
+
 impl Default for IntentHash {
     fn default() -> Self {
         Self::new()
@@ -296,9 +256,11 @@ impl IntentHash {
             hash: Hash::generate(),
         }
     }
+
     pub fn new() -> Self {
         Self::generate()
     }
+
     pub fn hash(&self) -> Hash {
         self.hash.clone()
     }
