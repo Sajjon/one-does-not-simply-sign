@@ -236,11 +236,11 @@ impl PetitionOfTransactionByEntity {
         println!("🐞 🦋 status: {:?}", self.status());
         let simulation = self.clone();
         simulation.did_skip(factor_source_id, false);
+
+        println!("🦋 if skipping, simulated_status: ",);
+
         let simulated_status = simulation.status();
-        println!(
-            "🦋 if skipping {:?}, simulated_status: {:?}",
-            factor_source_id, simulated_status
-        );
+        println!("{:?}", simulated_status);
         simulated_status
     }
 
@@ -274,25 +274,19 @@ impl PetitionOfTransactionByEntity {
         match (maybe_threshold, maybe_override) {
             (None, None) => panic!("Programmer error! Should have at least one factors list."),
             (Some(threshold), None) => {
-                println!("🦀 ONLY threshold.status: {:?}", threshold);
                 return threshold;
             }
             (None, Some(r#override)) => {
-                println!("🦀 ONLY override.status: {:?}", r#override);
                 return r#override;
             }
-            (Some(threshold), Some(r#override)) => {
-                println!("🦀 threshold.status: {:?}", threshold);
-                println!("🦀 override.status: {:?}", r#override);
-                match (threshold, r#override) {
-                    (InProgress, InProgress) => PetitionForFactorListStatus::InProgress,
-                    (Finished(Fail), InProgress) => PetitionForFactorListStatus::InProgress,
-                    (InProgress, Finished(Fail)) => PetitionForFactorListStatus::InProgress,
-                    (Finished(Fail), Finished(Fail)) => PetitionForFactorListStatus::Finished(Fail),
-                    (Finished(Success), _) => PetitionForFactorListStatus::Finished(Success),
-                    (_, Finished(Success)) => PetitionForFactorListStatus::Finished(Success),
-                }
-            }
+            (Some(threshold), Some(r#override)) => match (threshold, r#override) {
+                (InProgress, InProgress) => PetitionForFactorListStatus::InProgress,
+                (Finished(Fail), InProgress) => PetitionForFactorListStatus::InProgress,
+                (InProgress, Finished(Fail)) => PetitionForFactorListStatus::InProgress,
+                (Finished(Fail), Finished(Fail)) => PetitionForFactorListStatus::Finished(Fail),
+                (Finished(Success), _) => PetitionForFactorListStatus::Finished(Success),
+                (_, Finished(Success)) => PetitionForFactorListStatus::Finished(Success),
+            },
         }
     }
 }
@@ -472,7 +466,6 @@ impl PetitionWithFactorsState {
 
     fn assert_not_referencing_factor_source(&self, factor_source_id: FactorSourceID) {
         if self.references_factor_source_by_id(factor_source_id) {
-            println!("bad!");
             panic!("Programmer error! Factor source already used, should only be referenced once.");
         }
     }
@@ -482,9 +475,6 @@ impl PetitionWithFactorsState {
             self.assert_not_referencing_factor_source(factor_instance.factor_source_id);
         }
         self.skipped.borrow_mut().insert(factor_instance);
-        println!("skipped: {:?}", self.skipped.borrow().snapshot());
-        println!("signed: {:?}", self.signed.borrow().snapshot());
-        println!("\n");
     }
 
     pub(crate) fn add_signature_if_matching_factor(&self, signature: &HDSignature) {
@@ -588,12 +578,12 @@ impl PetitionWithFactors {
     }
 
     fn is_finished_successfully(&self) -> bool {
-        println!(
-            "🐯 PetitionWithFactors kind: {:?}, input: {:?}, state_snapshot: {:?}",
-            self.petition_kind,
-            self.input,
-            self.state_snapshot()
-        );
+        // println!(
+        //     "🐯 PetitionWithFactors kind: {:?}, input: {:?}, state_snapshot: {:?}",
+        //     self.petition_kind,
+        //     self.input,
+        //     self.state_snapshot()
+        // );
         self.input.is_fulfilled_by(self.state_snapshot())
     }
 

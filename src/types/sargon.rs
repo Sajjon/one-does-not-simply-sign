@@ -1,6 +1,9 @@
+use strum::EnumString;
+
 use crate::prelude::*;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, std::hash::Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, std::hash::Hash, derive_more::Debug)]
+#[debug("{kind}:{id}")]
 pub struct FactorSourceID {
     pub kind: FactorSourceKind,
     pub id: Uuid,
@@ -14,7 +17,8 @@ impl FactorSourceID {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
+#[derive(Clone, PartialEq, Eq, std::hash::Hash, derive_more::Debug)]
+#[debug("{:?}", id)]
 pub struct FactorSource {
     pub last_used: SystemTime,
     pub id: FactorSourceID,
@@ -75,7 +79,7 @@ impl FactorSource {
 }
 
 #[repr(u32)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, std::hash::Hash, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, std::hash::Hash, PartialOrd, Ord, strum::Display)]
 pub enum FactorSourceKind {
     Ledger,
     Arculus,

@@ -25,6 +25,7 @@ impl SigningDriver {
     ) {
         match self {
             Self::ParallelBatch(driver) => {
+                println!("🚀 Signing with Parallel Batch driver...");
                 let per_factor_source = factor_sources
                     .clone()
                     .into_iter()
@@ -47,6 +48,7 @@ impl SigningDriver {
                 signatures_building_coordinator.process_batch_response(response);
             }
             Self::SerialBatch(driver) => {
+                println!("🚗 Signing with Serial Batch driver...");
                 for factor_source in factor_sources {
                     let batch_signing_request = signatures_building_coordinator
                         .input_for_parallel_batch_driver(factor_source.clone());
@@ -62,6 +64,7 @@ impl SigningDriver {
                 }
             }
             Self::SerialSingle(driver) => {
+                println!("🐌 Signing with Serial Single driver...");
                 for factor_source in factor_sources {
                     let requests_per_transaction = signatures_building_coordinator
                         .inputs_for_serial_single_driver(factor_source);

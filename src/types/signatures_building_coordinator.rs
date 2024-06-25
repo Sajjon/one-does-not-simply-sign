@@ -170,20 +170,19 @@ impl SignaturesBuildingCoordinator {
         kind: FactorSourceKind,
     ) -> Result<()> {
         assert!(factor_sources.iter().all(|f| f.kind() == kind));
-
         let signing_driver = self.get_driver(kind);
-
         signing_driver.sign(factor_sources, self).await;
-
         Ok(())
     }
 
     async fn do_sign(&self) -> Result<()> {
         let factors_of_kind = self.factors_of_kind.clone();
         for (kind, factor_sources) in factors_of_kind.into_iter() {
+            println!("✍🏻 sign with factor sources: {:?}", factor_sources);
             self.sign_with_factor_sources(factor_sources, kind).await?;
             let should_continue = self.continue_if_necessary()?;
             if !should_continue {
+                println!("🌈 finished early");
                 return Ok(()); // finished early, we have fulfilled signing requirements of all transactions
             }
         }
