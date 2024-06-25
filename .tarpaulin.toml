@@ -2,7 +2,8 @@
 exclude-files = ["src/existing_types_in_sargon.rs"]
 verbose = false
 force-clean = true
+timeout = "2m"
 locked = true
 all-features = true
 jobs = 1
-out = ["Xml"]
+out = ["html"]
