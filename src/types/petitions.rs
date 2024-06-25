@@ -547,7 +547,7 @@ impl Petitions {
         }
     }
 
-    pub(super) fn continue_if_necessary(&self) -> Result<()> {
+    pub fn continue_if_necessary(&self) -> Result<()> {
         self.txid_to_petition
             .borrow()
             .iter()

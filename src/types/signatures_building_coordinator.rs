@@ -154,7 +154,7 @@ impl SignaturesBuildingCoordinator {
     /// If all transactions already would fail, or if all transactions already are done, then
     /// no point in continuing.
     fn continue_if_necessary(&self) -> Result<()> {
-        todo!()
+        self.petitions.borrow().continue_if_necessary()
     }
 
     fn get_driver(&self, kind: FactorSourceKind) -> SigningDriver {
@@ -173,7 +173,7 @@ impl SignaturesBuildingCoordinator {
 
         signing_driver.sign(factor_sources, self).await;
 
-        todo!()
+        Ok(())
     }
 
     async fn do_sign(&self) -> Result<()> {
