@@ -1,12 +1,31 @@
 use crate::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct SerialSingleSigningRequest {
+pub struct SerialSingleSigningRequestFull {
+    pub input: SerialSingleSigningRequestPartial,
+    pub invalid_transactions_if_skipped: Vec<InvalidTransactionIfSkipped>,
+}
+impl SerialSingleSigningRequestFull {
+    pub fn new(
+        input: SerialSingleSigningRequestPartial,
+        invalid_transactions_if_skipped: IndexSet<InvalidTransactionIfSkipped>,
+    ) -> Self {
+        Self {
+            input,
+            invalid_transactions_if_skipped: invalid_transactions_if_skipped
+                .into_iter()
+                .collect_vec(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct SerialSingleSigningRequestPartial {
     pub factor_source_id: FactorSourceID,
     pub intent_hash: IntentHash,
     pub owned_factor_instance: OwnedFactorInstance,
 }
-impl SerialSingleSigningRequest {
+impl SerialSingleSigningRequestPartial {
     pub fn new(
         factor_source_id: FactorSourceID,
         intent_hash: IntentHash,
@@ -29,7 +48,7 @@ impl SerialSingleSigningRequest {
 pub trait SerialSingleSigningDriver {
     async fn sign(
         &self,
-        request: SerialSingleSigningRequest,
+        request: SerialSingleSigningRequestFull,
     ) -> SignWithFactorSourceOrSourcesOutcome<HDSignature>;
 }
 
@@ -42,7 +61,7 @@ impl SerialSingleSigningClient {
     }
     pub async fn sign(
         &self,
-        request: SerialSingleSigningRequest,
+        request: SerialSingleSigningRequestFull,
     ) -> SignWithFactorSourceOrSourcesOutcome<HDSignature> {
         self.driver.sign(request).await
     }
@@ -64,18 +83,21 @@ impl TestSerialSingleSigningDriver {
 impl SerialSingleSigningDriver for TestSerialSingleSigningDriver {
     async fn sign(
         &self,
-        request: SerialSingleSigningRequest,
+        request: SerialSingleSigningRequestFull,
     ) -> SignWithFactorSourceOrSourcesOutcome<HDSignature> {
-        match self.simulated_user.sign_or_skip([]) {
+        match self
+            .simulated_user
+            .sign_or_skip(request.invalid_transactions_if_skipped)
+        {
             SigningUserInput::Sign => {
                 SignWithFactorSourceOrSourcesOutcome::Signed(HDSignature::new(
-                    request.intent_hash,
+                    request.input.intent_hash,
                     Signature,
-                    request.owned_factor_instance,
+                    request.input.owned_factor_instance,
                 ))
             }
             SigningUserInput::Skip => {
-                SignWithFactorSourceOrSourcesOutcome::Skipped(vec![request.factor_source_id])
+                SignWithFactorSourceOrSourcesOutcome::Skipped(vec![request.input.factor_source_id])
             }
         }
     }

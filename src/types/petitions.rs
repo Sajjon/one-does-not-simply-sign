@@ -767,7 +767,7 @@ impl Petitions {
     pub(crate) fn inputs_for_serial_single_driver(
         &self,
         factor_source_id: &FactorSourceID,
-    ) -> IndexMap<IntentHash, IndexSet<SerialSingleSigningRequest>> {
+    ) -> IndexMap<IntentHash, IndexSet<SerialSingleSigningRequestPartial>> {
         let txids = self.factor_to_txid.get(&factor_source_id).unwrap();
         txids
             .into_iter()
@@ -777,7 +777,7 @@ impl Petitions {
                 let value = petition.inputs_for_serial_single_driver(factor_source_id);
                 (txid.clone(), value)
             })
-            .collect::<IndexMap<IntentHash, IndexSet<SerialSingleSigningRequest>>>()
+            .collect::<IndexMap<IntentHash, IndexSet<SerialSingleSigningRequestPartial>>>()
     }
 
     pub(crate) fn input_for_parallel_batch_driver(
@@ -944,7 +944,7 @@ impl PetitionOfTransaction {
     pub(crate) fn inputs_for_serial_single_driver(
         &self,
         factor_source_id: &FactorSourceID,
-    ) -> IndexSet<SerialSingleSigningRequest> {
+    ) -> IndexSet<SerialSingleSigningRequestPartial> {
         let owned_factors = self
             .all_factor_instances_of_source(factor_source_id)
             .into_iter()
@@ -954,7 +954,7 @@ impl PetitionOfTransaction {
         owned_factors
             .into_iter()
             .map(|f| {
-                SerialSingleSigningRequest::new(
+                SerialSingleSigningRequestPartial::new(
                     factor_source_id.clone(),
                     self.intent_hash.clone(),
                     f,

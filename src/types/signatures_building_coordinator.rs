@@ -196,7 +196,7 @@ impl SignaturesBuildingCoordinator {
     pub(crate) fn inputs_for_serial_single_driver(
         &self,
         factor_source_id: &FactorSourceID,
-    ) -> IndexMap<IntentHash, IndexSet<SerialSingleSigningRequest>> {
+    ) -> IndexMap<IntentHash, IndexSet<SerialSingleSigningRequestPartial>> {
         self.petitions
             .borrow()
             .inputs_for_serial_single_driver(factor_source_id)

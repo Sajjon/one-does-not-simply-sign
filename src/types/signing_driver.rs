@@ -83,6 +83,9 @@ impl SigningDriver {
             Self::SerialSingle(driver) => {
                 println!("🐌 Signing with Serial Single driver...#{} factor sources, signing with one factor source at a time, many times, one time for each factor instance", factor_source_count);
                 for factor_source in factor_sources {
+                    let invalid_transactions_if_skipped = signatures_building_coordinator
+                        .invalid_transactions_if_skipped(&factor_source.id);
+
                     println!(
                         "🐌 Signing with Serial Single, signing with factor source: {:?}",
                         factor_source.id
@@ -90,12 +93,15 @@ impl SigningDriver {
                     let requests_per_transaction = signatures_building_coordinator
                         .inputs_for_serial_single_driver(&factor_source.id);
                     for (_, requests_for_transaction) in requests_per_transaction {
-                        for request in requests_for_transaction {
+                        for partial_request in requests_for_transaction {
+                            let request = SerialSingleSigningRequestFull::new(
+                                partial_request,
+                                invalid_transactions_if_skipped.clone(),
+                            );
                             println!(
                                 "🐌 Signing with Serial Single, signing with instance: {:?}",
-                                request.owned_factor_instance
+                                &request.input.owned_factor_instance
                             );
-                            std::io::stdout().flush().unwrap();
                             let response = driver.sign(request).await;
                             let should_continue_with_factor_source =
                                 signatures_building_coordinator.process_single_response(response);
