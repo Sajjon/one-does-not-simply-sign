@@ -137,21 +137,6 @@ impl FactorInstance {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, std::hash::Hash, derive_more::Debug)]
-#[debug("{:?}: {:?}", owner, factor_instance)]
-pub struct OwnedFactorInstance {
-    pub factor_instance: FactorInstance,
-    pub owner: AccountAddressOrIdentityAddress,
-}
-impl OwnedFactorInstance {
-    pub fn new(factor_instance: FactorInstance, owner: AccountAddressOrIdentityAddress) -> Self {
-        Self {
-            factor_instance,
-            owner,
-        }
-    }
-}
-
 #[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
 pub struct Hash {
     id: Uuid,
@@ -245,19 +230,6 @@ impl Entity {
     }
 }
 
-impl From<&Entity> for OwnedMatrixOfFactorInstances {
-    fn from(value: &Entity) -> Self {
-        let matrix = match value.security_state.clone() {
-            EntitySecurityState::Securified(matrix) => matrix.clone(),
-            EntitySecurityState::Unsecured(instance) => MatrixOfFactorInstances::from(instance),
-        };
-        OwnedMatrixOfFactorInstances {
-            address_of_owner: value.address.clone(),
-            matrix,
-        }
-    }
-}
-
 #[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
 pub struct MatrixOfFactorInstances {
     pub threshold_factors: Vec<FactorInstance>,
@@ -304,23 +276,6 @@ impl From<FactorInstance> for MatrixOfFactorInstances {
             threshold: 1,
             threshold_factors: vec![value],
             override_factors: Vec::new(),
-        }
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
-pub struct OwnedMatrixOfFactorInstances {
-    pub address_of_owner: AccountAddressOrIdentityAddress,
-    pub matrix: MatrixOfFactorInstances,
-}
-impl OwnedMatrixOfFactorInstances {
-    pub fn new(
-        address_of_owner: AccountAddressOrIdentityAddress,
-        matrix: MatrixOfFactorInstances,
-    ) -> Self {
-        Self {
-            address_of_owner,
-            matrix,
         }
     }
 }
@@ -376,21 +331,4 @@ pub enum CommonError {
 
     #[error("Failed")]
     Failure,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
-pub struct InvalidTransactionIfSkipped {
-    pub intent_hash: IntentHash,
-    pub entities_which_would_fail_auth: Vec<AccountAddressOrIdentityAddress>,
-}
-impl InvalidTransactionIfSkipped {
-    pub fn new(
-        intent_hash: IntentHash,
-        entities_which_would_fail_auth: Vec<AccountAddressOrIdentityAddress>,
-    ) -> Self {
-        Self {
-            intent_hash,
-            entities_which_would_fail_auth,
-        }
-    }
 }

@@ -91,7 +91,7 @@ impl PetitionOfTransactionByEntity {
             .unwrap_or_default();
 
         o.union(&t)
-            .map(|f| OwnedFactorInstance::new(f.clone(), self.entity.clone()))
+            .map(|f| OwnedFactorInstance::owned_factor_instance(self.entity.clone(), f.clone()))
             .collect::<IndexSet<_>>()
     }
 
@@ -207,7 +207,7 @@ impl PetitionOfTransactionByEntity {
 
     /// `Ok(true)` means "continue", `Ok(false)` means "stop, we are done". `Err(_)` means "stop, we have failed".
     pub(super) fn continue_if_necessary(&self) -> Result<bool> {
-        let status = match self.status() {
+        match self.status() {
             PetitionForFactorListStatus::InProgress => Ok(true),
             PetitionForFactorListStatus::Finished(PetitionForFactorListStatusFinished::Fail) => {
                 Err(CommonError::Failure)
@@ -215,9 +215,7 @@ impl PetitionOfTransactionByEntity {
             PetitionForFactorListStatus::Finished(PetitionForFactorListStatusFinished::Success) => {
                 Ok(false)
             }
-        };
-        println!("🚦 status: {:?}", &status);
-        status
+        }
     }
 }
 
@@ -254,11 +252,7 @@ impl PetitionOfTransactionByEntity {
     ) -> PetitionForFactorListStatus {
         let simulation = self.clone();
         simulation.did_skip(factor_source_id, true);
-
-        print!("🕹️ if skipping, simulated status: ",);
-        let simulated_status = simulation.status();
-        println!("{:?}", simulated_status);
-        simulated_status
+        simulation.status()
     }
 
     pub fn did_skip(&self, factor_source_id: &FactorSourceID, simulated: bool) {
@@ -290,26 +284,16 @@ impl PetitionOfTransactionByEntity {
 
         match (maybe_threshold, maybe_override) {
             (None, None) => panic!("Programmer error! Should have at least one factors list."),
-            (Some(threshold), None) => {
-                println!("🦀 ONLY threshold status: {:?}", threshold);
-                threshold
-            }
-            (None, Some(r#override)) => {
-                println!("🦀 ONLY override status: {:?}", r#override);
-                r#override
-            }
-            (Some(threshold), Some(r#override)) => {
-                println!("🦀 threshold status: {:?}", threshold);
-                println!("🦀 override status: {:?}", r#override);
-                match (threshold, r#override) {
-                    (InProgress, InProgress) => PetitionForFactorListStatus::InProgress,
-                    (Finished(Fail), InProgress) => PetitionForFactorListStatus::InProgress,
-                    (InProgress, Finished(Fail)) => PetitionForFactorListStatus::InProgress,
-                    (Finished(Fail), Finished(Fail)) => PetitionForFactorListStatus::Finished(Fail),
-                    (Finished(Success), _) => PetitionForFactorListStatus::Finished(Success),
-                    (_, Finished(Success)) => PetitionForFactorListStatus::Finished(Success),
-                }
-            }
+            (Some(threshold), None) => threshold,
+            (None, Some(r#override)) => r#override,
+            (Some(threshold), Some(r#override)) => match (threshold, r#override) {
+                (InProgress, InProgress) => PetitionForFactorListStatus::InProgress,
+                (Finished(Fail), InProgress) => PetitionForFactorListStatus::InProgress,
+                (InProgress, Finished(Fail)) => PetitionForFactorListStatus::InProgress,
+                (Finished(Fail), Finished(Fail)) => PetitionForFactorListStatus::Finished(Fail),
+                (Finished(Success), _) => PetitionForFactorListStatus::Finished(Success),
+                (_, Finished(Success)) => PetitionForFactorListStatus::Finished(Success),
+            },
         }
     }
 }
@@ -352,6 +336,7 @@ impl PetitionWithFactors {
     pub fn new_unsecurified(factor: FactorInstance) -> Self {
         Self::new_threshold(vec![factor], 1).unwrap() // define as 1/1 threshold factor, which is a good definition.
     }
+
     pub fn new_override(factors: Vec<FactorInstance>) -> Option<Self> {
         if factors.is_empty() {
             return None;
@@ -361,6 +346,7 @@ impl PetitionWithFactors {
             PetitionWithFactorsInput::new_override(IndexSet::from_iter(factors)),
         ))
     }
+
     pub fn new_not_used() -> Self {
         Self {
             petition_kind: Petition::Override, // does not matter..
@@ -377,11 +363,11 @@ impl PetitionWithFactors {
         self.state.borrow_mut().did_skip(factor_instance, simulated);
     }
 
-    pub fn has_instance_with_id(&self, factor_instance: &OwnedFactorInstance) -> bool {
+    pub fn has_instance_with_id(&self, owned_factor_instance: &OwnedFactorInstance) -> bool {
         self.input
             .factors
             .iter()
-            .any(|f| f == &factor_instance.factor_instance)
+            .any(|f| f == owned_factor_instance.factor_instance())
     }
 
     pub fn add_signature(&self, signature: &HDSignature) {
@@ -444,7 +430,9 @@ impl FactorSourceReferencing for FactorInstance {
 
 impl FactorSourceReferencing for HDSignature {
     fn factor_source_id(&self) -> FactorSourceID {
-        self.owned_factor_instance.factor_instance.factor_source_id
+        self.owned_factor_instance
+            .factor_instance()
+            .factor_source_id
     }
 }
 
@@ -500,14 +488,12 @@ impl PetitionWithFactorsState {
 
     pub(crate) fn did_skip(&self, factor_instance: &FactorInstance, simulated: bool) {
         if !simulated {
-            println!("🙅🏻‍♀️ did_skip: {:?}", factor_instance);
             self.assert_not_referencing_factor_source(factor_instance.factor_source_id);
         }
         self.skipped.borrow_mut().insert(factor_instance);
     }
 
     pub(crate) fn add_signature(&self, signature: &HDSignature) {
-        println!("🖊️ add_signature: {:?}", signature);
         self.assert_not_referencing_factor_source(signature.factor_source_id());
         self.signed.borrow_mut().insert(signature)
     }
@@ -532,10 +518,6 @@ impl PetitionWithFactorsState {
             .borrow()
             .references_factor_source_by_id(factor_source_id)
         {
-            println!(
-                "🐍 Found factor_source_id: {:?} in signed list",
-                factor_source_id
-            );
             return true;
         }
 
@@ -544,10 +526,6 @@ impl PetitionWithFactorsState {
             .borrow()
             .references_factor_source_by_id(factor_source_id)
         {
-            println!(
-                "🐍 Found factor_source_id: {:?} in skipped list",
-                factor_source_id
-            );
             return true;
         }
 
@@ -599,28 +577,13 @@ impl PetitionWithFactorsInput {
     }
 
     fn factors_left_to_prompt(&self, snapshot: PetitionWithFactorsStateSnapshot) -> i8 {
-        let left = self.factors_count() - snapshot.prompted_count();
-        println!(
-            "🐙 factors_count: {}, prompted_count: {}, left: {}",
-            self.factors_count(),
-            snapshot.prompted_count(),
-            left
-        );
-        left
+        self.factors_count() - snapshot.prompted_count()
     }
 
     fn is_failure_with(&self, snapshot: PetitionWithFactorsStateSnapshot) -> bool {
         let signed_or_pending =
             self.factors_left_to_prompt(snapshot.clone()) + snapshot.signed_count();
-        let is_failure = signed_or_pending < self.required;
-        println!(
-            "🐳 factors_left_to_prompt: {}, required: {}, signed_or_pending: {} => is_failure: {} (factors_left_to_prompt < required)",
-            self.factors_left_to_prompt(snapshot),
-            self.required,
-            signed_or_pending,
-            is_failure
-        );
-        is_failure
+        signed_or_pending < self.required
     }
 }
 
@@ -644,12 +607,6 @@ impl PetitionWithFactors {
     }
 
     fn is_finished_successfully(&self) -> bool {
-        println!(
-            "🐯 PetitionWithFactors kind: {:?}, input: {:?}, state_snapshot: {:?}",
-            self.petition_kind,
-            self.input,
-            self.state_snapshot()
-        );
         self.input.is_fulfilled_by(self.state_snapshot())
     }
 
@@ -801,14 +758,12 @@ impl Petitions {
     }
 
     fn skip_factor_source_with_id(&self, skipped_factor_source_id: &FactorSourceID) {
-        println!("🚫 Skipping factor source: {:?}", skipped_factor_source_id);
         let binding = self.txid_to_petition.borrow();
         let txids = self.factor_to_txid.get(skipped_factor_source_id).unwrap();
         txids.into_iter().for_each(|txid| {
             let petition = binding.get(txid).unwrap();
             petition.skipped_factor_source(skipped_factor_source_id)
         });
-        println!("🚫 Skipped factor source: {:?}", skipped_factor_source_id);
     }
 
     pub(crate) fn process_single_response(
@@ -846,21 +801,6 @@ impl Petitions {
             }
         }
     }
-
-    // pub(super) fn process_outcome(
-    //     &self,
-    //     outcome: SignWithFactorSourceOrSourcesOutcome,
-    //     factor_sources: IndexSet<FactorSource>,
-    // ) {
-    //     for factor_source in factor_sources {
-    //         let txids = self.factor_to_txid.get(&factor_source.id).unwrap();
-    //         for txid in txids {
-    //             let binding = self.txid_to_petition.borrow();
-    //             let petition = binding.get(txid).unwrap();
-    //             petition.process_outcome(&outcome, &factor_source);
-    //         }
-    //     }
-    // }
 }
 
 /// Essentially a wrapper around `Iterator<Item = PetitionOfTransactionByEntity>`.
@@ -915,18 +855,16 @@ impl PetitionOfTransaction {
     ) -> IndexSet<OwnedFactorInstance> {
         self._all_factor_instances()
             .into_iter()
-            .filter(|f| f.factor_instance.factor_source_id == *factor_source_id)
+            .filter(|f| f.factor_instance().factor_source_id == *factor_source_id)
             .collect()
     }
 
     pub fn add_signature(&self, signature: HDSignature) {
-        println!("❓ Adding signature: {:?}", signature);
         let for_entities = self.for_entities.borrow_mut();
         let for_entity = for_entities
             .get(&signature.owned_factor_instance.owner)
             .unwrap();
         for_entity.add_signature(signature.clone());
-        println!("⁉️ Added signature? {:?}", signature);
     }
 
     pub fn skipped_factor_source(&self, factor_source_id: &FactorSourceID) {
@@ -943,7 +881,7 @@ impl PetitionOfTransaction {
         let owned_factors = self
             .all_factor_instances_of_source(factor_source_id)
             .into_iter()
-            .filter(|fi| fi.factor_instance.factor_source_id() == *factor_source_id)
+            .filter(|fi| fi.by_factor_source(factor_source_id))
             .collect::<IndexSet<_>>();
 
         owned_factors

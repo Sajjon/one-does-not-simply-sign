@@ -79,12 +79,6 @@ impl SignaturesBuildingCoordinator {
 
                         add(primary_role_matrix.override_factors.clone());
                         add(primary_role_matrix.threshold_factors.clone());
-
-                        // let builder = SignaturesBuilderLevel2::new_securified(
-                        //     address.clone(),
-                        //     primary_role_matrix,
-                        // );
-                        // builders_level_2.insert(address.clone(), builder);
                         let petition = PetitionOfTransactionByEntity::new_securified(
                             transaction_index.clone(),
                             address.clone(),
@@ -96,15 +90,6 @@ impl SignaturesBuildingCoordinator {
                         let factor_instance = uec;
                         let factor_source_id = factor_instance.factor_source_id;
                         use_factor_in_tx(&factor_source_id, &transaction.intent_hash);
-
-                        // let builder =
-                        //     SignaturesBuilderLevel2::new_unsecurified(
-                        //         address.clone(),
-                        //         factor_instance,
-                        //     );
-                        // builders_level_2
-                        //     .insert(address.clone(), builder);
-
                         let petition = PetitionOfTransactionByEntity::new_unsecurified(
                             transaction_index.clone(),
                             address.clone(),
@@ -114,14 +99,6 @@ impl SignaturesBuildingCoordinator {
                     }
                 }
             }
-            // builders_level_0.insert(
-            //     transaction.intent_hash.clone(),
-            //     SignaturesBuilderLevel1::new(
-            //         transaction.intent_hash.clone(),
-            //         builders_level_2,
-            //     ),
-            // );
-
             let petition_of_tx =
                 PetitionOfTransaction::new(transaction.intent_hash.clone(), petitions_for_entities);
 
@@ -178,11 +155,9 @@ impl SignaturesBuildingCoordinator {
     async fn do_sign(&self) -> Result<()> {
         let factors_of_kind = self.factors_of_kind.clone();
         for (kind, factor_sources) in factors_of_kind.into_iter() {
-            println!("✍🏻 sign with factor sources: {:?}", factor_sources);
             self.sign_with_factor_sources(factor_sources, kind).await?;
             let should_continue = self.continue_if_necessary()?;
             if !should_continue {
-                println!("🌈 finished early");
                 return Ok(()); // finished early, we have fulfilled signing requirements of all transactions
             }
         }
@@ -233,7 +208,6 @@ impl SignaturesBuildingCoordinator {
         &self,
         response: SignWithFactorSourceOrSourcesOutcome<HDSignature>,
     ) -> bool {
-        println!("🔥 process_single_response: {:?}", response);
         {
             let petitions = self.petitions.borrow_mut();
             petitions.process_single_response(response);
@@ -244,7 +218,6 @@ impl SignaturesBuildingCoordinator {
         &self,
         response: SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse>,
     ) {
-        println!("🔥 process_batch_response: {:?}", response);
         let petitions = self.petitions.borrow_mut();
         petitions.process_batch_response(response)
     }
@@ -253,7 +226,6 @@ impl SignaturesBuildingCoordinator {
 impl SignaturesBuildingCoordinator {
     pub async fn sign(self) -> Result<SignaturesOutcome> {
         self.do_sign().await?;
-        println!("🤷‍♂️ finished signing?");
         let outcome = self.petitions.into_inner().outcome();
         Ok(outcome)
     }

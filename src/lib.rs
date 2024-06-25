@@ -2,9 +2,11 @@
 //! SingleSigningDrivers other than the fact that BatchSigningDerivers can sign
 //! many transactions with many derivations paths at once?
 
+mod existing_types_in_sargon;
 mod types;
 
 pub mod prelude {
+    pub use crate::existing_types_in_sargon::*;
     pub use crate::types::*;
 
     pub use async_trait::async_trait;
@@ -359,7 +361,7 @@ mod tests {
         let signature = &context.sign().await.unwrap().all_signatures()[0];
 
         assert_eq!(
-            &signature.owned_factor_instance.factor_instance,
+            signature.owned_factor_instance.factor_instance(),
             account
                 .security_state
                 .all_factor_instances()
@@ -495,7 +497,7 @@ mod tests {
         assert_eq!(
             signature
                 .owned_factor_instance
-                .factor_instance
+                .factor_instance()
                 .factor_source_id,
             FactorSourceID::fs4()
         );
@@ -518,7 +520,7 @@ mod tests {
         assert_eq!(
             signature
                 .owned_factor_instance
-                .factor_instance
+                .factor_instance()
                 .factor_source_id
                 .kind,
             FactorSourceKind::Device
