@@ -177,7 +177,7 @@ impl PetitionOfTransactionByEntity {
                 .has_instance_with_id(&signature.owned_factor_instance);
             if has {
                 o.borrow_mut().add_signature(&signature);
-                added_to_override = false;
+                added_to_override = true;
             }
         });
 
