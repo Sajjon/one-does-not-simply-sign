@@ -29,7 +29,7 @@ jobs:
           profile: minimal
 
       - name: Install typos
-        uses: RDXWorks-actions/cargo-install@main
+        uses: actions-rs/install@v0.1
         with:
           crate: typos-cli
           locked: true
@@ -113,7 +113,7 @@ jobs:
           default: true
 
       - name: Install cargo tarpaulin
-        uses: RDXWorks-actions/cargo-install@main
+        uses: actions-rs/install@v0.1
         with:
           crate: cargo-tarpaulin
           tag: 0.27.3
@@ -123,7 +123,7 @@ jobs:
         run: cargo tarpaulin
 
       - name: Code Coverage - Upload to CodeCov.io
-        uses: RDXWorks-actions/codecov-action@main
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true

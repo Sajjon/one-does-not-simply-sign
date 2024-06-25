@@ -1,2 +1,1 @@
-# Step by step
-As we progress in the signing process we must ensure we do not sign with same `FactorSource` many times. The functions in the Signatures Building Coordinator that return the input(s) for the Signing Drivers must ensure that we dont provide input for the same FactorSource twice.
+[![Average](https://codecov.io/gh/sajjon/one-does-not-simply-sign/graph/badge.svg?token=8QPKIUSAQD)](https://codecov.io/github/sajjon/one-does-not-simply-sign)
