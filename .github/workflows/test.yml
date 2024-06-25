@@ -89,4 +89,3 @@ jobs:
         with:
           token: ${{ secrets.CODECOV }}
           fail_ci_if_error: true
-          flags: rust
