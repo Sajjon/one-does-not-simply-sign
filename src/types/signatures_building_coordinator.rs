@@ -206,12 +206,9 @@ impl SignaturesBuildingCoordinator {
 }
 
 impl SignaturesBuildingCoordinator {
-    pub async fn sign(&self) -> Result<SignaturesOutcome> {
+    pub async fn sign(self) -> Result<SignaturesOutcome> {
         self.do_sign().await?;
-        let outcome = SignaturesOutcome::new(
-            MaybeSignedTransactions::new(IndexMap::new()),
-            MaybeSignedTransactions::new(IndexMap::new()),
-        );
+        let outcome = self.petitions.into_inner().outcome();
         Ok(outcome)
     }
 }

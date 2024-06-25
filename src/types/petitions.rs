@@ -79,6 +79,23 @@ impl PetitionOfTransactionByEntity {
             .collect::<IndexSet<_>>()
     }
 
+    /// Returns `true` signatures requirement has been fulfilled, either by
+    /// override factors or by threshold factors
+    pub fn has_signatures_requirement_been_fulfilled(&self) -> bool {
+        self.status()
+            == PetitionForFactorListStatus::Finished(PetitionForFactorListStatusFinished::Success)
+    }
+
+    pub fn all_signatures(&self) -> IndexSet<HDSignature> {
+        self.override_factors
+            .borrow()
+            .all_signatures()
+            .union(&self.threshold_factors.borrow().all_signatures())
+            .into_iter()
+            .map(|x| x.to_owned())
+            .collect::<IndexSet<_>>()
+    }
+
     // pub fn process_outcome(
     //     &self,
     //     outcome: &SignWithFactorSourceOrSourcesOutcome,
@@ -219,6 +236,10 @@ impl PetitionWithFactors {
 
     pub fn factor_instances(&self) -> IndexSet<FactorInstance> {
         self.input.factors.clone()
+    }
+
+    pub fn all_signatures(&self) -> IndexSet<HDSignature> {
+        self.state.borrow().all_signatures()
     }
 
     pub fn new_threshold(factors: Vec<FactorInstance>, threshold: i8) -> Self {
@@ -373,6 +394,10 @@ struct PetitionWithFactorsState {
 }
 
 impl PetitionWithFactorsState {
+    pub fn all_signatures(&self) -> IndexSet<HDSignature> {
+        self.signed.borrow().snapshot()
+    }
+
     fn assert_not_referencing_factor_source(&self, factor_source_id: FactorSourceID) {
         assert!(
             self.references_factor_source_by_id(factor_source_id),
@@ -468,6 +493,7 @@ impl PetitionWithFactorsInput {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PetitionForFactorListStatus {
     /// In progress, still gathering signatures
     InProgress,
@@ -475,6 +501,7 @@ pub enum PetitionForFactorListStatus {
     Finished(PetitionForFactorListStatusFinished),
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PetitionForFactorListStatusFinished {
     Success,
     Fail,
@@ -537,6 +564,22 @@ pub(crate) struct Petitions {
     pub txid_to_petition: RefCell<IndexMap<IntentHash, PetitionOfTransaction>>,
 }
 impl Petitions {
+    pub fn outcome(self) -> SignaturesOutcome {
+        let txid_to_petition = self.txid_to_petition.into_inner();
+        let mut failed_transactions = MaybeSignedTransactions::empty();
+        let mut successful_transactions = MaybeSignedTransactions::empty();
+        for (txid, petition_of_transaction) in txid_to_petition.into_iter() {
+            let (successful, signatures) = petition_of_transaction.outcome();
+            if successful {
+                successful_transactions.add_signatures(txid, signatures);
+            } else {
+                failed_transactions.add_signatures(txid, signatures);
+            }
+        }
+
+        SignaturesOutcome::new(successful_transactions, failed_transactions)
+    }
+
     pub(crate) fn new(
         factor_to_txid: HashMap<FactorSourceID, IndexSet<IntentHash>>,
         txid_to_petition: IndexMap<IntentHash, PetitionOfTransaction>,
@@ -611,7 +654,7 @@ impl Petitions {
     // }
 }
 
-/// Essentially a wrapper around `IndexSet<PetitionOfTransactionByEntity>>`.
+/// Essentially a wrapper around `Iterator<Item = PetitionOfTransactionByEntity>`.
 pub(crate) struct PetitionOfTransaction {
     /// Hash of transaction to sign
     pub intent_hash: IntentHash,
@@ -621,6 +664,35 @@ pub(crate) struct PetitionOfTransaction {
 }
 
 impl PetitionOfTransaction {
+    /// Returns `(true, _)` if this transaction has been successfully signed by
+    /// all required factor instances.
+    ///
+    /// Returns `(false, _)` if not enough factor instances have signed.
+    ///
+    /// The second value in the tuple `(_, IndexSet<HDSignature>)` contains all
+    /// the signatures, even if it the transaction was failed, all signatures
+    /// will be returned (which might be empty).
+    pub fn outcome(self) -> (bool, IndexSet<HDSignature>) {
+        let for_entities = self
+            .for_entities
+            .into_inner()
+            .values()
+            .into_iter()
+            .map(|x| x.to_owned())
+            .collect_vec();
+
+        let successful = for_entities.iter().fold(true, |a, b| {
+            a && b.has_signatures_requirement_been_fulfilled()
+        });
+
+        let signatures = for_entities
+            .into_iter()
+            .flat_map(|x| x.all_signatures())
+            .collect::<IndexSet<_>>();
+
+        (successful, signatures)
+    }
+
     pub fn all_factor_instances(&self) -> IndexSet<OwnedFactorInstance> {
         self.for_entities
             .borrow()
@@ -630,8 +702,8 @@ impl PetitionOfTransaction {
     }
 
     pub fn add_signature(&self, signature: HDSignature) {
-        let mut for_entities = self.for_entities.borrow_mut();
-        let mut for_entity = for_entities
+        let for_entities = self.for_entities.borrow_mut();
+        let for_entity = for_entities
             .get(&signature.owned_factor_instance.owner)
             .unwrap();
         for_entity.add_signature(signature)
