@@ -457,7 +457,8 @@ mod tests {
         let context = SignaturesBuildingCoordinator::test_lazy_sign_minimum([
             TransactionIntent::new([Entity::a4()]),
         ]);
-        let signatures = context.sign().await.unwrap().all_signatures();
+        let outcome = context.sign().await;
+        let signatures = outcome.unwrap().all_signatures();
         assert_eq!(signatures.len(), 2);
     }
 

@@ -1,4 +1,4 @@
-use std::borrow::Borrow;
+use std::{borrow::Borrow, os::macos::raw::stat};
 
 use crate::prelude::*;
 
@@ -210,7 +210,7 @@ impl PetitionOfTransactionByEntity {
 
     /// `Ok(true)` means "continue", `Ok(false)` means "stop, we are done". `Err(_)` means "stop, we have failed".
     pub(super) fn continue_if_necessary(&self) -> Result<bool> {
-        match self.status() {
+        let status = match self.status() {
             PetitionForFactorListStatus::InProgress => Ok(true),
             PetitionForFactorListStatus::Finished(PetitionForFactorListStatusFinished::Fail) => {
                 Err(CommonError::Failure)
@@ -218,7 +218,9 @@ impl PetitionOfTransactionByEntity {
             PetitionForFactorListStatus::Finished(PetitionForFactorListStatusFinished::Success) => {
                 Ok(false)
             }
-        }
+        };
+        println!("🚦 status: {:?}", &status);
+        status
     }
 }
 
@@ -292,19 +294,25 @@ impl PetitionOfTransactionByEntity {
         match (maybe_threshold, maybe_override) {
             (None, None) => panic!("Programmer error! Should have at least one factors list."),
             (Some(threshold), None) => {
+                println!("🦀 ONLY threshold status: {:?}", threshold);
                 return threshold;
             }
             (None, Some(r#override)) => {
+                println!("🦀 ONLY override status: {:?}", r#override);
                 return r#override;
             }
-            (Some(threshold), Some(r#override)) => match (threshold, r#override) {
-                (InProgress, InProgress) => PetitionForFactorListStatus::InProgress,
-                (Finished(Fail), InProgress) => PetitionForFactorListStatus::InProgress,
-                (InProgress, Finished(Fail)) => PetitionForFactorListStatus::InProgress,
-                (Finished(Fail), Finished(Fail)) => PetitionForFactorListStatus::Finished(Fail),
-                (Finished(Success), _) => PetitionForFactorListStatus::Finished(Success),
-                (_, Finished(Success)) => PetitionForFactorListStatus::Finished(Success),
-            },
+            (Some(threshold), Some(r#override)) => {
+                println!("🦀 threshold status: {:?}", threshold);
+                println!("🦀 override status: {:?}", r#override);
+                match (threshold, r#override) {
+                    (InProgress, InProgress) => PetitionForFactorListStatus::InProgress,
+                    (Finished(Fail), InProgress) => PetitionForFactorListStatus::InProgress,
+                    (InProgress, Finished(Fail)) => PetitionForFactorListStatus::InProgress,
+                    (Finished(Fail), Finished(Fail)) => PetitionForFactorListStatus::Finished(Fail),
+                    (Finished(Success), _) => PetitionForFactorListStatus::Finished(Success),
+                    (_, Finished(Success)) => PetitionForFactorListStatus::Finished(Success),
+                }
+            }
         }
     }
 }
@@ -594,11 +602,28 @@ impl PetitionWithFactorsInput {
     }
 
     fn factors_left_to_prompt(&self, snapshot: PetitionWithFactorsStateSnapshot) -> i8 {
-        self.factors_count() - snapshot.prompted_count()
+        let left = self.factors_count() - snapshot.prompted_count();
+        println!(
+            "🐙 factors_count: {}, prompted_count: {}, left: {}",
+            self.factors_count(),
+            snapshot.prompted_count(),
+            left
+        );
+        left
     }
 
     fn is_failure_with(&self, snapshot: PetitionWithFactorsStateSnapshot) -> bool {
-        self.factors_left_to_prompt(snapshot) < self.required
+        let signed_or_pending =
+            self.factors_left_to_prompt(snapshot.clone()) + snapshot.signed_count();
+        let is_failure = signed_or_pending < self.required;
+        println!(
+            "🐳 factors_left_to_prompt: {}, required: {}, signed_or_pending: {} => is_failure: {} (factors_left_to_prompt < required)",
+            self.factors_left_to_prompt(snapshot),
+            self.required,
+            signed_or_pending,
+            is_failure
+        );
+        is_failure
     }
 }
 
@@ -622,12 +647,12 @@ impl PetitionWithFactors {
     }
 
     fn is_finished_successfully(&self) -> bool {
-        // println!(
-        //     "🐯 PetitionWithFactors kind: {:?}, input: {:?}, state_snapshot: {:?}",
-        //     self.petition_kind,
-        //     self.input,
-        //     self.state_snapshot()
-        // );
+        println!(
+            "🐯 PetitionWithFactors kind: {:?}, input: {:?}, state_snapshot: {:?}",
+            self.petition_kind,
+            self.input,
+            self.state_snapshot()
+        );
         self.input.is_fulfilled_by(self.state_snapshot())
     }
 

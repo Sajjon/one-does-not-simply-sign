@@ -255,6 +255,7 @@ impl SignaturesBuildingCoordinator {
 impl SignaturesBuildingCoordinator {
     pub async fn sign(self) -> Result<SignaturesOutcome> {
         self.do_sign().await?;
+        println!("🤷‍♂️ finished signing?");
         let outcome = self.petitions.into_inner().outcome();
         Ok(outcome)
     }
