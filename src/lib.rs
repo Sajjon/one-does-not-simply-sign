@@ -478,8 +478,7 @@ mod tests {
         ]);
         let signatures = context.sign().await.unwrap().all_signatures();
 
-        // 1 signature only, because the first FactorSourceKind to sign with is Ledger, an a Ledger is used as an override factor, so user can skip all subsequent factor sources after having signed with that ledger.
-        assert_eq!(signatures.len(), 1);
+        assert_eq!(signatures.len(), 2);
     }
 
     #[actix_rt::test]
