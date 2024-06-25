@@ -502,7 +502,7 @@ mod tests {
     }
 
     #[actix_rt::test]
-    async fn lazy_sign_minimum_override_factors_only_all_used_only_signed_with_device() {
+    async fn lazy_sign_minimum_all_known_factors_used_as_override_factors_signed_with_device() {
         let context = SignaturesBuildingCoordinator::test_lazy_sign_minimum([
             TransactionIntent::new([Entity::securified(0, "all override", |idx| {
                 MatrixOfFactorInstances::override_only(
