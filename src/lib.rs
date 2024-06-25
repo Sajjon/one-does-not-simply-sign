@@ -332,7 +332,9 @@ mod tests {
     async fn prudent_user_single_tx_a0() {
         let context =
             SignaturesBuildingCoordinator::test_prudent([TransactionIntent::new([Entity::a0()])]);
-        let signatures = context.sign().await.unwrap().all_signatures();
+        let outcome = context.sign().await.unwrap();
+        assert!(outcome.successful());
+        let signatures = outcome.all_signatures();
         assert_eq!(signatures.len(), 1);
     }
 
@@ -374,7 +376,9 @@ mod tests {
     async fn prudent_user_single_tx_a1() {
         let context =
             SignaturesBuildingCoordinator::test_prudent([TransactionIntent::new([Entity::a1()])]);
-        let signatures = context.sign().await.unwrap().all_signatures();
+        let outcome = context.sign().await.unwrap();
+        assert!(outcome.successful());
+        let signatures = outcome.all_signatures();
         assert_eq!(signatures.len(), 1);
     }
 
@@ -382,7 +386,9 @@ mod tests {
     async fn prudent_user_single_tx_a2() {
         let context =
             SignaturesBuildingCoordinator::test_prudent([TransactionIntent::new([Entity::a2()])]);
-        let signatures = context.sign().await.unwrap().all_signatures();
+        let outcome = context.sign().await.unwrap();
+        assert!(outcome.successful());
+        let signatures = outcome.all_signatures();
         assert_eq!(signatures.len(), 1);
     }
 
@@ -390,7 +396,9 @@ mod tests {
     async fn prudent_user_single_tx_a3() {
         let context =
             SignaturesBuildingCoordinator::test_prudent([TransactionIntent::new([Entity::a3()])]);
-        let signatures = context.sign().await.unwrap().all_signatures();
+        let outcome = context.sign().await.unwrap();
+        assert!(outcome.successful());
+        let signatures = outcome.all_signatures();
         assert_eq!(signatures.len(), 1);
     }
 
@@ -398,7 +406,9 @@ mod tests {
     async fn prudent_user_single_tx_a4() {
         let context =
             SignaturesBuildingCoordinator::test_prudent([TransactionIntent::new([Entity::a4()])]);
-        let signatures = context.sign().await.unwrap().all_signatures();
+        let outcome = context.sign().await.unwrap();
+        assert!(outcome.successful());
+        let signatures = outcome.all_signatures();
         assert_eq!(signatures.len(), 3);
     }
 
@@ -406,7 +416,9 @@ mod tests {
     async fn prudent_user_single_tx_a5() {
         let context =
             SignaturesBuildingCoordinator::test_prudent([TransactionIntent::new([Entity::a5()])]);
-        let signatures = context.sign().await.unwrap().all_signatures();
+        let outcome = context.sign().await.unwrap();
+        assert!(outcome.successful());
+        let signatures = outcome.all_signatures();
         assert_eq!(signatures.len(), 2);
     }
 
@@ -414,7 +426,9 @@ mod tests {
     async fn prudent_user_single_tx_a6() {
         let context =
             SignaturesBuildingCoordinator::test_prudent([TransactionIntent::new([Entity::a6()])]);
-        let signatures = context.sign().await.unwrap().all_signatures();
+        let outcome = context.sign().await.unwrap();
+        assert!(outcome.successful());
+        let signatures = outcome.all_signatures();
         assert_eq!(signatures.len(), 5);
     }
 
@@ -423,7 +437,9 @@ mod tests {
         let context = SignaturesBuildingCoordinator::test_lazy_sign_minimum([
             TransactionIntent::new([Entity::a0()]),
         ]);
-        let signatures = context.sign().await.unwrap().all_signatures();
+        let outcome = context.sign().await.unwrap();
+        assert!(outcome.successful());
+        let signatures = outcome.all_signatures();
         assert_eq!(signatures.len(), 1);
     }
 
@@ -432,7 +448,9 @@ mod tests {
         let context = SignaturesBuildingCoordinator::test_lazy_sign_minimum([
             TransactionIntent::new([Entity::a1()]),
         ]);
-        let signatures = context.sign().await.unwrap().all_signatures();
+        let outcome = context.sign().await.unwrap();
+        assert!(outcome.successful());
+        let signatures = outcome.all_signatures();
         assert_eq!(signatures.len(), 1);
     }
 
@@ -441,7 +459,9 @@ mod tests {
         let context = SignaturesBuildingCoordinator::test_lazy_sign_minimum([
             TransactionIntent::new([Entity::a2()]),
         ]);
-        let signatures = context.sign().await.unwrap().all_signatures();
+        let outcome = context.sign().await.unwrap();
+        assert!(outcome.successful());
+        let signatures = outcome.all_signatures();
         assert_eq!(signatures.len(), 1);
     }
 
@@ -450,7 +470,9 @@ mod tests {
         let context = SignaturesBuildingCoordinator::test_lazy_sign_minimum([
             TransactionIntent::new([Entity::a3()]),
         ]);
-        let signatures = context.sign().await.unwrap().all_signatures();
+        let outcome = context.sign().await.unwrap();
+        assert!(outcome.successful());
+        let signatures = outcome.all_signatures();
         assert_eq!(signatures.len(), 1);
     }
 
@@ -459,8 +481,9 @@ mod tests {
         let context = SignaturesBuildingCoordinator::test_lazy_sign_minimum([
             TransactionIntent::new([Entity::a4()]),
         ]);
-        let outcome = context.sign().await;
-        let signatures = outcome.unwrap().all_signatures();
+        let outcome = context.sign().await.unwrap();
+        assert!(outcome.successful());
+        let signatures = outcome.all_signatures();
         assert_eq!(signatures.len(), 2);
     }
 
@@ -469,7 +492,9 @@ mod tests {
         let context = SignaturesBuildingCoordinator::test_lazy_sign_minimum([
             TransactionIntent::new([Entity::a5()]),
         ]);
-        let signatures = context.sign().await.unwrap().all_signatures();
+        let outcome = context.sign().await.unwrap();
+        assert!(outcome.successful());
+        let signatures = outcome.all_signatures();
         assert_eq!(signatures.len(), 1);
     }
 
@@ -478,7 +503,9 @@ mod tests {
         let context = SignaturesBuildingCoordinator::test_lazy_sign_minimum([
             TransactionIntent::new([Entity::a6()]),
         ]);
-        let signatures = context.sign().await.unwrap().all_signatures();
+        let outcome = context.sign().await.unwrap();
+        assert!(outcome.successful());
+        let signatures = outcome.all_signatures();
 
         assert_eq!(signatures.len(), 2);
     }
@@ -489,7 +516,9 @@ mod tests {
         let context = SignaturesBuildingCoordinator::test_lazy_sign_minimum([
             TransactionIntent::new([entity.clone()]),
         ]);
-        let signatures = context.sign().await.unwrap().all_signatures();
+        let outcome = context.sign().await.unwrap();
+        assert!(outcome.successful());
+        let signatures = outcome.all_signatures();
         assert_eq!(signatures.len(), 1);
 
         let signature = &signatures[0];
@@ -514,7 +543,9 @@ mod tests {
                 )
             })]),
         ]);
-        let signatures = context.sign().await.unwrap().all_signatures();
+        let outcome = context.sign().await.unwrap();
+        assert!(outcome.successful());
+        let signatures = outcome.all_signatures();
         assert_eq!(signatures.len(), 1);
         let signature = &signatures[0];
         assert_eq!(
