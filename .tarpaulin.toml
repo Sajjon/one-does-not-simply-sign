@@ -1,7 +1,6 @@
 [all]
 exclude-files = ["src/existing_types_in_sargon.rs"]
 verbose = false
-timeout = "2m"
 force-clean = true
 locked = true
 all-features = true
