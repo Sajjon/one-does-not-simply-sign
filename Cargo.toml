@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 actix-rt = "2.10.0"
 async-trait = "0.1.80"
-derivative = "2.2.0"
+derive-getters = "0.4.0"
 derive_more = { git = "https://github.com/JelteF/derive_more", rev = "1196b2dd7a366c06db621093884adbc379fc0f0a", features = [
     "debug",
     "display",

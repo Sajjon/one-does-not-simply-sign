@@ -63,9 +63,7 @@ impl SignaturesBuildingCoordinator {
             assert!(!used_factor_sources.is_empty());
         };
 
-        for (index, transaction) in transactions.into_iter().enumerate() {
-            let transaction_index = TransactionIndex::new(index, transaction.intent_hash.clone());
-
+        for transaction in transactions.into_iter() {
             let mut petitions_for_entities =
                 HashMap::<AccountAddressOrIdentityAddress, PetitionOfTransactionByEntity>::new();
 
@@ -85,7 +83,7 @@ impl SignaturesBuildingCoordinator {
                         add(primary_role_matrix.override_factors.clone());
                         add(primary_role_matrix.threshold_factors.clone());
                         let petition = PetitionOfTransactionByEntity::new_securified(
-                            transaction_index.clone(),
+                            transaction.intent_hash.clone(),
                             address.clone(),
                             primary_role_matrix,
                         );
@@ -96,7 +94,7 @@ impl SignaturesBuildingCoordinator {
                         let factor_source_id = factor_instance.factor_source_id;
                         use_factor_in_tx(&factor_source_id, &transaction.intent_hash);
                         let petition = PetitionOfTransactionByEntity::new_unsecurified(
-                            transaction_index.clone(),
+                            transaction.intent_hash.clone(),
                             address.clone(),
                             factor_instance,
                         );

@@ -78,11 +78,11 @@ impl ParallelBatchSigningDriver for TestParallelBatchSigningDriver {
                             .per_transaction
                             .iter()
                             .flat_map(|x| {
-                                x.owned_factor_instances
+                                x.owned_factor_instances()
                                     .iter()
                                     .map(|y| {
                                         HDSignature::new(
-                                            x.intent_hash.clone(),
+                                            x.intent_hash().clone(),
                                             Signature,
                                             y.clone(),
                                         )
@@ -101,7 +101,6 @@ impl ParallelBatchSigningDriver for TestParallelBatchSigningDriver {
                 request
                     .per_factor_source
                     .keys()
-                    .into_iter()
                     .cloned()
                     .collect::<IndexSet<_>>(),
             ),

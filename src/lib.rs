@@ -10,7 +10,6 @@ pub mod prelude {
     pub use crate::types::*;
 
     pub use async_trait::async_trait;
-    pub use derivative::Derivative;
     pub use indexmap::{IndexMap, IndexSet};
     pub use itertools::Itertools;
     pub use std::cell::RefCell;

@@ -2,40 +2,22 @@
 
 use crate::prelude::*;
 
-#[derive(Derivative)]
-#[derivative(PartialOrd, Ord, PartialEq, Eq, Hash, Clone, Debug)]
-pub struct TransactionIndex {
-    index: usize,
-
-    #[derivative(Ord = "ignore", PartialOrd = "ignore")]
-    intent_hash: IntentHash,
-}
-impl TransactionIndex {
-    pub fn new(index: usize, intent_hash: IntentHash) -> Self {
-        Self { index, intent_hash }
-    }
-}
-
-#[derive(Derivative)]
-#[derivative(PartialOrd, Ord, PartialEq, Eq, Hash, Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PetitionOfTransactionByEntity {
     /// The owner of these factors
-    #[derivative(Ord = "ignore", PartialOrd = "ignore")]
     pub entity: AccountAddressOrIdentityAddress,
 
     /// Index and hash of transaction
-    pub transaction_index: TransactionIndex,
+    pub intent_hash: IntentHash,
 
-    #[derivative(Hash = "ignore", Ord = "ignore", PartialOrd = "ignore")]
     pub threshold_factors: Option<RefCell<PetitionWithFactors>>,
 
-    #[derivative(Hash = "ignore", Ord = "ignore", PartialOrd = "ignore")]
     pub override_factors: Option<RefCell<PetitionWithFactors>>,
 }
 
 impl PetitionOfTransactionByEntity {
     pub fn new(
-        transaction_index: TransactionIndex,
+        intent_hash: IntentHash,
         entity: AccountAddressOrIdentityAddress,
         threshold_factors: impl Into<Option<PetitionWithFactors>>,
         override_factors: impl Into<Option<PetitionWithFactors>>,
@@ -47,30 +29,30 @@ impl PetitionOfTransactionByEntity {
         }
         Self {
             entity,
-            transaction_index,
+            intent_hash,
             threshold_factors: threshold_factors.map(RefCell::new),
             override_factors: override_factors.map(RefCell::new),
         }
     }
     pub fn new_securified(
-        transaction_index: TransactionIndex,
+        intent_hash: IntentHash,
         entity: AccountAddressOrIdentityAddress,
         matrix: MatrixOfFactorInstances,
     ) -> Self {
         Self::new(
-            transaction_index,
+            intent_hash,
             entity,
             PetitionWithFactors::new_threshold(matrix.threshold_factors, matrix.threshold as i8),
             PetitionWithFactors::new_override(matrix.override_factors),
         )
     }
     pub fn new_unsecurified(
-        transaction_index: TransactionIndex,
+        intent_hash: IntentHash,
         entity: AccountAddressOrIdentityAddress,
         instance: FactorInstance,
     ) -> Self {
         Self::new(
-            transaction_index,
+            intent_hash,
             entity,
             PetitionWithFactors::new_unsecurified(instance),
             None,
@@ -193,8 +175,7 @@ impl PetitionOfTransactionByEntity {
         match skip_status {
             PetitionForFactorListStatus::Finished(finished_reason) => match finished_reason {
                 PetitionForFactorListStatusFinished::Fail => {
-                    let transaction_index = self.transaction_index.clone();
-                    let intent_hash = transaction_index.intent_hash;
+                    let intent_hash = self.intent_hash.clone();
                     let invalid_transaction =
                         InvalidTransactionIfSkipped::new(intent_hash, vec![self.entity.clone()]);
                     IndexSet::from_iter([invalid_transaction])

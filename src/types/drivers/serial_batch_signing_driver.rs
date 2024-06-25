@@ -88,13 +88,15 @@ impl SerialBatchSigningDriver for TestSerialBatchSigningDriver {
                     .per_transaction
                     .into_iter()
                     .map(|r| {
-                        let key = r.factor_source_id;
+                        let key = r.factor_source_id();
                         let value = r
-                            .owned_factor_instances
-                            .into_iter()
-                            .map(|f| HDSignature::new(r.intent_hash.clone(), Signature, f.clone()))
+                            .owned_factor_instances()
+                            .iter()
+                            .map(|f| {
+                                HDSignature::new(r.intent_hash().clone(), Signature, f.clone())
+                            })
                             .collect::<IndexSet<_>>();
-                        (key, value)
+                        (*key, value)
                     })
                     .collect::<IndexMap<FactorSourceID, IndexSet<HDSignature>>>();
                 let response = BatchSigningResponse::new(signatures);
