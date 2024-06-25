@@ -7,7 +7,7 @@ pub struct SerialSingleSigningRequest {
 
     pub intent_hash: IntentHash,
 
-    pub owned_factor_instance: OwnedHDFactorInstance,
+    pub owned_factor_instance: OwnedFactorInstance,
 }
 
 /// A driver for factor source kinds which cannot sign multiple transactions

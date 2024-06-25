@@ -5,12 +5,10 @@ use crate::prelude::*;
 pub struct ParallelBatchSigningRequest {
     /// Per factor source, a set of transactions to sign, with
     /// multiple derivations paths.
-    pub per_factor_source: IndexMap<FactorSourceID, IndexSet<BatchTXBatchKeySigningRequest>>,
+    pub per_factor_source: IndexMap<FactorSourceID, BatchTXBatchKeySigningRequest>,
 }
 impl ParallelBatchSigningRequest {
-    pub fn new(
-        per_factor_source: IndexMap<FactorSourceID, IndexSet<BatchTXBatchKeySigningRequest>>,
-    ) -> Self {
+    pub fn new(per_factor_source: IndexMap<FactorSourceID, BatchTXBatchKeySigningRequest>) -> Self {
         Self { per_factor_source }
     }
 }

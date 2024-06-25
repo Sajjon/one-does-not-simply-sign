@@ -1,18 +1,5 @@
 use crate::prelude::*;
 
-/// A factor instance which is has a known owner: AccountAddressOrIdentityAddress.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct OwnedHDFactorInstance {
-    /// The factor source which owns the key.
-    pub factor_source_id: FactorSourceID,
-
-    /// The address of the account or the persona this key is for.
-    pub owner: AccountAddressOrIdentityAddress,
-
-    /// The public key.
-    pub factor_instance: FactorInstance,
-}
-
 /// A signature of `intent_hash` by `entity` using `factor_source_id` and `derivation_path`, with `public_key` used for verification.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct HDSignature {
@@ -29,7 +16,7 @@ pub struct HDSignature {
     /// The account or identity address of the entity which signed the hash,
     /// with expected public key and with derivation path to derive PrivateKey
     /// with.
-    pub owned_factor_instance: OwnedHDFactorInstance,
+    pub owned_factor_instance: OwnedFactorInstance,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, std::hash::Hash)]

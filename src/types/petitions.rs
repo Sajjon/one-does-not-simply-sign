@@ -526,11 +526,11 @@ pub(crate) struct Petitions {
     ///
     /// Where A, B, C and D, all use the factor source, e.g. some arculus
     /// card which the user has setup as a factor (source) for all these accounts.
-    factor_to_txid: HashMap<FactorSourceID, IndexSet<IntentHash>>,
+    pub factor_to_txid: HashMap<FactorSourceID, IndexSet<IntentHash>>,
 
     /// Lookup from TXID to signatures builders, sorted according to the order of
     /// transactions passed to the SignaturesBuilder.
-    txid_to_petition: RefCell<IndexMap<IntentHash, PetitionOfTransaction>>,
+    pub txid_to_petition: RefCell<IndexMap<IntentHash, PetitionOfTransaction>>,
 }
 impl Petitions {
     pub(crate) fn new(
@@ -554,6 +554,24 @@ impl Petitions {
                     .iter()
                     .try_for_each(|petition| petition.continue_if_necessary())
             })
+    }
+
+    pub(crate) fn input_for_parallel_batch_driver(
+        &self,
+        factor_source: FactorSource,
+    ) -> BatchTXBatchKeySigningRequest {
+        let factor_source_id = factor_source.id.clone();
+        let txids = self.factor_to_txid.get(&factor_source_id).unwrap();
+        let per_transaction = txids
+            .into_iter()
+            .map(|txid| {
+                let binding = self.txid_to_petition.borrow();
+                let value = binding.get(txid).unwrap();
+                value.input_for_parallel_batch_driver(factor_source.clone())
+            })
+            .collect::<IndexSet<BatchKeySigningRequest>>();
+
+        BatchTXBatchKeySigningRequest::new(factor_source_id, per_transaction)
     }
 
     pub(super) fn process_outcome(
@@ -587,6 +605,17 @@ impl PetitionOfTransaction {
             .iter()
             .flat_map(|petition| petition.all_factor_instances())
             .collect()
+    }
+
+    pub(crate) fn input_for_parallel_batch_driver(
+        &self,
+        factor_source: FactorSource,
+    ) -> BatchKeySigningRequest {
+        BatchKeySigningRequest::new(
+            self.intent_hash.clone(),
+            factor_source.id,
+            self.all_factor_instances(),
+        )
     }
 
     pub fn invalid_transactions_if_skipped(

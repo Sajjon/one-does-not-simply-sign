@@ -189,8 +189,10 @@ impl SignaturesBuildingCoordinator {
     pub(crate) fn input_for_parallel_batch_driver(
         &self,
         factor_source: FactorSource,
-    ) -> IndexSet<BatchTXBatchKeySigningRequest> {
-        todo!()
+    ) -> BatchTXBatchKeySigningRequest {
+        self.petitions
+            .borrow()
+            .input_for_parallel_batch_driver(factor_source)
     }
     pub(crate) fn process_batch_response(
         &self,
