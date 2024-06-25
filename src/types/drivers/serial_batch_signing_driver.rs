@@ -10,6 +10,17 @@ pub struct SerialBatchSigningRequest {
     /// signing with this factor source.
     pub invalid_transactions_if_skipped: Vec<InvalidTransactionIfSkipped>,
 }
+impl SerialBatchSigningRequest {
+    pub fn new(
+        input: BatchTXBatchKeySigningRequest,
+        invalid_transactions_if_skipped: Vec<InvalidTransactionIfSkipped>,
+    ) -> Self {
+        Self {
+            input,
+            invalid_transactions_if_skipped,
+        }
+    }
+}
 
 /// A driver for a factor source kind which support performing
 /// *Batch* signing *serially*.
@@ -27,7 +38,10 @@ pub struct SerialBatchSigningRequest {
 /// might not even even allow multiple SecurityQuestionsFactorSources to be used).
 #[async_trait]
 pub trait SerialBatchSigningDriver {
-    async fn sign(&self, request: SerialBatchSigningRequest) -> BatchSigningResponse;
+    async fn sign(
+        &self,
+        request: SerialBatchSigningRequest,
+    ) -> SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse>;
 }
 
 pub struct SerialBatchSigningClient {
@@ -37,7 +51,10 @@ impl SerialBatchSigningClient {
     pub fn new(driver: Arc<dyn SerialBatchSigningDriver>) -> Self {
         Self { driver }
     }
-    pub async fn sign(&self, request: SerialBatchSigningRequest) -> BatchSigningResponse {
+    pub async fn sign(
+        &self,
+        request: SerialBatchSigningRequest,
+    ) -> SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse> {
         self.driver.sign(request).await
     }
 }
@@ -56,15 +73,36 @@ impl TestSerialBatchSigningDriver {
 #[cfg(test)]
 #[async_trait]
 impl SerialBatchSigningDriver for TestSerialBatchSigningDriver {
-    async fn sign(&self, request: SerialBatchSigningRequest) -> BatchSigningResponse {
-        match &self.simulated_user {
-            SimulatedUser::Lazy(laziness) => match laziness {
-                Laziness::AlwaysSkip => {
-                    todo!()
-                }
-                _ => todo!(),
-            },
-            _ => todo!(),
+    async fn sign(
+        &self,
+        request: SerialBatchSigningRequest,
+    ) -> SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse> {
+        let invalid_transactions_if_skipped = request.invalid_transactions_if_skipped;
+        match self
+            .simulated_user
+            .sign_or_skip(invalid_transactions_if_skipped)
+        {
+            SigningUserInput::Sign => {
+                let signatures = request
+                    .input
+                    .per_transaction
+                    .into_iter()
+                    .map(|r| {
+                        let key = r.factor_source_id;
+                        let value = r
+                            .owned_factor_instances
+                            .into_iter()
+                            .map(|f| HDSignature::new(r.intent_hash.clone(), Signature, f.clone()))
+                            .collect::<IndexSet<_>>();
+                        (key, value)
+                    })
+                    .collect::<IndexMap<FactorSourceID, IndexSet<HDSignature>>>();
+                let response = BatchSigningResponse::new(signatures);
+                SignWithFactorSourceOrSourcesOutcome::Signed(response)
+            }
+            SigningUserInput::Skip => {
+                SignWithFactorSourceOrSourcesOutcome::Skipped(request.input.factor_source_id)
+            }
         }
     }
 }

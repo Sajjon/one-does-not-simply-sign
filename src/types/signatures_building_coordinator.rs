@@ -187,6 +187,15 @@ impl SignaturesBuildingCoordinator {
 }
 
 impl SignaturesBuildingCoordinator {
+    pub(crate) fn inputs_for_serial_single_driver(
+        &self,
+        factor_source: FactorSource,
+    ) -> IndexMap<IntentHash, IndexSet<SerialSingleSigningRequest>> {
+        self.petitions
+            .borrow()
+            .inputs_for_serial_single_driver(factor_source)
+    }
+
     pub(crate) fn input_for_parallel_batch_driver(
         &self,
         factor_source: FactorSource,
@@ -195,13 +204,26 @@ impl SignaturesBuildingCoordinator {
             .borrow()
             .input_for_parallel_batch_driver(factor_source)
     }
+
+    pub fn invalid_transactions_if_skipped(
+        &self,
+        factor_source_id: &FactorSourceID,
+    ) -> IndexSet<InvalidTransactionIfSkipped> {
+        self.petitions
+            .borrow()
+            .invalid_transactions_if_skipped(factor_source_id)
+    }
+
+    pub(crate) fn process_single_response(&self, response: SignWithFactorSourceOrSourcesOutcome<HDSignature>) {
+        let petitions = self.petitions.borrow_mut();
+        petitions.process_single_response(response)
+    }
     pub(crate) fn process_batch_response(
         &self,
-        response: BatchSigningResponse,
-        factor_sources: IndexSet<FactorSource>,
+        response: SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse>,
     ) {
         let petitions = self.petitions.borrow_mut();
-        petitions.process_batch_response(response, factor_sources)
+        petitions.process_batch_response(response)
     }
 }
 

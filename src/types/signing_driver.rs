@@ -35,10 +35,36 @@ impl SigningDriver {
                     .collect::<IndexMap<FactorSourceID, BatchTXBatchKeySigningRequest>>();
                 let request = ParallelBatchSigningRequest::new(per_factor_source);
                 let response = driver.sign(request).await;
-                signatures_building_coordinator.process_batch_response(response, factor_sources);
+                signatures_building_coordinator
+                    .process_batch_response(SignWithFactorSourceOrSourcesOutcome::Signed(response));
             }
-            Self::SerialBatch(driver) => todo!(),
-            Self::SerialSingle(driver) => todo!(),
+            Self::SerialBatch(driver) => {
+                for factor_source in factor_sources {
+                    let batch_signing_request = signatures_building_coordinator
+                        .input_for_parallel_batch_driver(factor_source.clone());
+                    let request = SerialBatchSigningRequest::new(
+                        batch_signing_request,
+                        signatures_building_coordinator
+                            .invalid_transactions_if_skipped(&factor_source.id)
+                            .into_iter()
+                            .collect_vec(),
+                    );
+                    let response = driver.sign(request).await;
+                    signatures_building_coordinator.process_batch_response(response);
+                }
+            }
+            Self::SerialSingle(driver) => {
+                for factor_source in factor_sources {
+                    let requests_per_transaction = signatures_building_coordinator
+                        .inputs_for_serial_single_driver(factor_source);
+                    for (_, requests_for_transaction) in requests_per_transaction {
+                        for request in requests_for_transaction {
+                            let response = driver.sign(request).await;
+                            signatures_building_coordinator.process_single_response(response);
+                        }
+                    }
+                }
+            }
         }
     }
 }

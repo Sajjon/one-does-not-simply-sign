@@ -2,12 +2,24 @@ use crate::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct SerialSingleSigningRequest {
-    /// The ID of the factor source used to sign each per_transaction
     pub factor_source_id: FactorSourceID,
 
     pub intent_hash: IntentHash,
 
     pub owned_factor_instance: OwnedFactorInstance,
+}
+impl SerialSingleSigningRequest {
+    pub fn new(
+        factor_source_id: FactorSourceID,
+        intent_hash: IntentHash,
+        owned_factor_instance: OwnedFactorInstance,
+    ) -> Self {
+        Self {
+            factor_source_id,
+            intent_hash,
+            owned_factor_instance,
+        }
+    }
 }
 
 /// A driver for factor source kinds which cannot sign multiple transactions
@@ -17,7 +29,10 @@ pub struct SerialSingleSigningRequest {
 /// do not yet know.
 #[async_trait]
 pub trait SerialSingleSigningDriver {
-    async fn sign(&self, request: SerialSingleSigningRequest) -> HDSignature;
+    async fn sign(
+        &self,
+        request: SerialSingleSigningRequest,
+    ) -> SignWithFactorSourceOrSourcesOutcome<HDSignature>;
 }
 
 pub struct SerialSingleSigningClient {
@@ -27,7 +42,10 @@ impl SerialSingleSigningClient {
     pub fn new(driver: Arc<dyn SerialSingleSigningDriver>) -> Self {
         Self { driver }
     }
-    pub async fn sign(&self, request: SerialSingleSigningRequest) -> HDSignature {
+    pub async fn sign(
+        &self,
+        request: SerialSingleSigningRequest,
+    ) -> SignWithFactorSourceOrSourcesOutcome<HDSignature> {
         self.driver.sign(request).await
     }
 }
@@ -46,15 +64,21 @@ impl TestSerialSingleSigningDriver {
 #[cfg(test)]
 #[async_trait]
 impl SerialSingleSigningDriver for TestSerialSingleSigningDriver {
-    async fn sign(&self, request: SerialSingleSigningRequest) -> HDSignature {
-        match &self.simulated_user {
-            SimulatedUser::Lazy(laziness) => match laziness {
-                Laziness::AlwaysSkip => {
-                    todo!()
-                }
-                _ => todo!(),
-            },
-            _ => todo!(),
+    async fn sign(
+        &self,
+        request: SerialSingleSigningRequest,
+    ) -> SignWithFactorSourceOrSourcesOutcome<HDSignature> {
+        match self.simulated_user.sign_or_skip([]) {
+            SigningUserInput::Sign => {
+                SignWithFactorSourceOrSourcesOutcome::Signed(HDSignature::new(
+                    request.intent_hash,
+                    Signature,
+                    request.owned_factor_instance,
+                ))
+            }
+            SigningUserInput::Skip => {
+                SignWithFactorSourceOrSourcesOutcome::Skipped(request.factor_source_id)
+            }
         }
     }
 }
