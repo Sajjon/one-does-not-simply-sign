@@ -228,12 +228,16 @@ impl SignaturesBuildingCoordinator {
             .collect::<IndexSet<_>>()
     }
 
+    /// Returns `true` if we should continue, `false` if we should stop.
     pub(crate) fn process_single_response(
         &self,
         response: SignWithFactorSourceOrSourcesOutcome<HDSignature>,
-    ) {
-        let petitions = self.petitions.borrow_mut();
-        petitions.process_single_response(response)
+    ) -> bool {
+        {
+            let petitions = self.petitions.borrow_mut();
+            petitions.process_single_response(response);
+        }
+        self.continue_if_necessary().unwrap()
     }
     pub(crate) fn process_batch_response(
         &self,

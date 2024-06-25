@@ -159,13 +159,33 @@ impl PetitionOfTransactionByEntity {
     }
 
     pub fn add_signature(&self, signature: HDSignature) {
-        self.threshold_factors
-            .as_ref()
-            .map(|o| o.borrow_mut().add_signature_if_matching_factor(&signature));
+        let mut added_to_threshold = false;
+        let mut added_to_override = false;
+        self.threshold_factors.as_ref().map(|t| {
+            let has = t
+                .borrow()
+                .has_instance_with_id(&signature.owned_factor_instance);
+            if has {
+                t.borrow_mut().add_signature(&signature);
+                added_to_threshold = true;
+            }
+        });
 
-        self.override_factors
-            .as_ref()
-            .map(|o| o.borrow_mut().add_signature_if_matching_factor(&signature));
+        self.override_factors.as_ref().map(|o| {
+            let has = o
+                .borrow()
+                .has_instance_with_id(&signature.owned_factor_instance);
+            if has {
+                o.borrow_mut().add_signature(&signature);
+                added_to_override = false;
+            }
+        });
+
+        if added_to_override && added_to_threshold {
+            panic!("A factor source should only be present in one of the lists.");
+        } else if !added_to_override && !added_to_threshold {
+            panic!("Factor source not found in any of the lists.");
+        }
     }
 
     pub fn invalid_transactions_if_skipped(
@@ -356,9 +376,16 @@ impl PetitionWithFactors {
             .did_skip(factor_instance, should_assert);
     }
 
-    pub fn add_signature_if_matching_factor(&self, signature: &HDSignature) {
+    pub fn has_instance_with_id(&self, factor_instance: &OwnedFactorInstance) -> bool {
+        self.input
+            .factors
+            .iter()
+            .any(|f| f == &factor_instance.factor_instance)
+    }
+
+    pub fn add_signature(&self, signature: &HDSignature) {
         let state = self.state.borrow_mut();
-        state.add_signature_if_matching_factor(signature)
+        state.add_signature(signature)
     }
 
     pub fn references_factor_source_with_id(&self, factor_source_id: &FactorSourceID) -> bool {
@@ -466,18 +493,20 @@ impl PetitionWithFactorsState {
 
     fn assert_not_referencing_factor_source(&self, factor_source_id: FactorSourceID) {
         if self.references_factor_source_by_id(factor_source_id) {
-            panic!("Programmer error! Factor source already used, should only be referenced once.");
+            panic!("Programmer error! Factor source {:?} already used, should only be referenced once.", factor_source_id);
         }
     }
 
     pub(crate) fn did_skip(&self, factor_instance: &FactorInstance, should_assert: bool) {
+        println!("🐞 did_skip: {:?}", factor_instance);
         if should_assert {
             self.assert_not_referencing_factor_source(factor_instance.factor_source_id);
         }
         self.skipped.borrow_mut().insert(factor_instance);
     }
 
-    pub(crate) fn add_signature_if_matching_factor(&self, signature: &HDSignature) {
+    pub(crate) fn add_signature(&self, signature: &HDSignature) {
+        self.assert_not_referencing_factor_source(signature.factor_source_id());
         self.signed.borrow_mut().insert(signature)
     }
 
@@ -496,13 +525,25 @@ impl PetitionWithFactorsState {
     }
 
     fn references_factor_source_by_id(&self, factor_source_id: FactorSourceID) -> bool {
-        self.signed
+        if self
+            .signed
             .borrow()
             .references_factor_source_by_id(factor_source_id)
-            || self
-                .skipped
-                .borrow()
-                .references_factor_source_by_id(factor_source_id)
+        {
+            println!("🐍 Found factor_source_id in signed list");
+            return true;
+        }
+
+        if self
+            .skipped
+            .borrow()
+            .references_factor_source_by_id(factor_source_id)
+        {
+            println!("🐍 Found factor_source_id in skipped list");
+            return true;
+        }
+
+        return false;
     }
 }
 
