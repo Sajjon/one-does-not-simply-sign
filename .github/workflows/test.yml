@@ -78,7 +78,7 @@ jobs:
         uses: actions-rs/install@v0.1
         with:
           crate: cargo-tarpaulin
-          tag: 0.27.3
+          tag: 0.30.0
           locked: true
 
       - name: Code Coverage - Generate
