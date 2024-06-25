@@ -91,7 +91,7 @@ impl PetitionOfTransactionByEntity {
             .unwrap_or_default();
 
         o.union(&t)
-            .map(|f| OwnedFactorInstance::new(f.clone(), self.entity.clone()))
+            .map(|f| OwnedFactorInstance::owned_factor_instance(self.entity.clone(), f.clone()))
             .collect::<IndexSet<_>>()
     }
 
@@ -352,6 +352,7 @@ impl PetitionWithFactors {
     pub fn new_unsecurified(factor: FactorInstance) -> Self {
         Self::new_threshold(vec![factor], 1).unwrap() // define as 1/1 threshold factor, which is a good definition.
     }
+
     pub fn new_override(factors: Vec<FactorInstance>) -> Option<Self> {
         if factors.is_empty() {
             return None;
@@ -361,6 +362,7 @@ impl PetitionWithFactors {
             PetitionWithFactorsInput::new_override(IndexSet::from_iter(factors)),
         ))
     }
+
     pub fn new_not_used() -> Self {
         Self {
             petition_kind: Petition::Override, // does not matter..
@@ -377,11 +379,11 @@ impl PetitionWithFactors {
         self.state.borrow_mut().did_skip(factor_instance, simulated);
     }
 
-    pub fn has_instance_with_id(&self, factor_instance: &OwnedFactorInstance) -> bool {
+    pub fn has_instance_with_id(&self, owned_factor_instance: &OwnedFactorInstance) -> bool {
         self.input
             .factors
             .iter()
-            .any(|f| f == &factor_instance.factor_instance)
+            .any(|f| f == owned_factor_instance.factor_instance())
     }
 
     pub fn add_signature(&self, signature: &HDSignature) {
@@ -444,7 +446,9 @@ impl FactorSourceReferencing for FactorInstance {
 
 impl FactorSourceReferencing for HDSignature {
     fn factor_source_id(&self) -> FactorSourceID {
-        self.owned_factor_instance.factor_instance.factor_source_id
+        self.owned_factor_instance
+            .factor_instance()
+            .factor_source_id
     }
 }
 
@@ -915,7 +919,7 @@ impl PetitionOfTransaction {
     ) -> IndexSet<OwnedFactorInstance> {
         self._all_factor_instances()
             .into_iter()
-            .filter(|f| f.factor_instance.factor_source_id == *factor_source_id)
+            .filter(|f| f.factor_instance().factor_source_id == *factor_source_id)
             .collect()
     }
 
@@ -943,7 +947,7 @@ impl PetitionOfTransaction {
         let owned_factors = self
             .all_factor_instances_of_source(factor_source_id)
             .into_iter()
-            .filter(|fi| fi.factor_instance.factor_source_id() == *factor_source_id)
+            .filter(|fi| fi.by_factor_source(factor_source_id))
             .collect::<IndexSet<_>>();
 
         owned_factors

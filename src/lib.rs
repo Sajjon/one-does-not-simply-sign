@@ -361,7 +361,7 @@ mod tests {
         let signature = &context.sign().await.unwrap().all_signatures()[0];
 
         assert_eq!(
-            &signature.owned_factor_instance.factor_instance,
+            signature.owned_factor_instance.factor_instance(),
             account
                 .security_state
                 .all_factor_instances()
@@ -497,7 +497,7 @@ mod tests {
         assert_eq!(
             signature
                 .owned_factor_instance
-                .factor_instance
+                .factor_instance()
                 .factor_source_id,
             FactorSourceID::fs4()
         );
@@ -520,7 +520,7 @@ mod tests {
         assert_eq!(
             signature
                 .owned_factor_instance
-                .factor_instance
+                .factor_instance()
                 .factor_source_id
                 .kind,
             FactorSourceKind::Device

@@ -25,7 +25,7 @@ impl BatchKeySigningRequest {
     ) -> Self {
         assert!(owned_factor_instances
             .iter()
-            .all(|f| f.factor_instance.factor_source_id == factor_source_id));
+            .all(|f| f.by_factor_source(factor_source_id)));
         Self {
             intent_hash,
             factor_source_id,

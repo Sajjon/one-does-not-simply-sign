@@ -230,19 +230,6 @@ impl Entity {
     }
 }
 
-impl From<&Entity> for OwnedMatrixOfFactorInstances {
-    fn from(value: &Entity) -> Self {
-        let matrix = match value.security_state.clone() {
-            EntitySecurityState::Securified(matrix) => matrix.clone(),
-            EntitySecurityState::Unsecured(instance) => MatrixOfFactorInstances::from(instance),
-        };
-        OwnedMatrixOfFactorInstances {
-            address_of_owner: value.address.clone(),
-            matrix,
-        }
-    }
-}
-
 #[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
 pub struct MatrixOfFactorInstances {
     pub threshold_factors: Vec<FactorInstance>,

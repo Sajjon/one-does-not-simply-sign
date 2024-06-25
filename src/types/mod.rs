@@ -1,5 +1,10 @@
 mod drivers;
+mod hd_signature;
+mod invalid_transaction_if_skipped;
 mod new_types;
+mod owned;
+mod owned_factor_instance;
+mod owned_matrix_of_factor_instances;
 mod petitions;
 mod signatures_building_coordinator;
 mod signatures_outcome;
@@ -8,7 +13,12 @@ mod signing_drivers_context;
 mod simulated_user;
 
 pub use drivers::*;
+pub use hd_signature::*;
+pub use invalid_transaction_if_skipped::*;
 pub use new_types::*;
+pub use owned::*;
+pub use owned_factor_instance::*;
+pub use owned_matrix_of_factor_instances::*;
 pub use petitions::*;
 pub use signatures_building_coordinator::*;
 pub use signatures_outcome::*;
