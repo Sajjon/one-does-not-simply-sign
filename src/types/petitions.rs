@@ -741,16 +741,15 @@ impl Petitions {
 
     pub(crate) fn inputs_for_serial_single_driver(
         &self,
-        factor_source: FactorSource,
+        factor_source_id: &FactorSourceID,
     ) -> IndexMap<IntentHash, IndexSet<SerialSingleSigningRequest>> {
-        let factor_source_id = factor_source.id.clone();
         let txids = self.factor_to_txid.get(&factor_source_id).unwrap();
         txids
             .into_iter()
             .map(|txid| {
                 let binding = self.txid_to_petition.borrow();
                 let petition = binding.get(txid).unwrap();
-                let value = petition.inputs_for_serial_single_driver(factor_source.clone());
+                let value = petition.inputs_for_serial_single_driver(factor_source_id);
                 (txid.clone(), value)
             })
             .collect::<IndexMap<IntentHash, IndexSet<SerialSingleSigningRequest>>>()
@@ -758,20 +757,19 @@ impl Petitions {
 
     pub(crate) fn input_for_parallel_batch_driver(
         &self,
-        factor_source: FactorSource,
+        factor_source_id: &FactorSourceID,
     ) -> BatchTXBatchKeySigningRequest {
-        let factor_source_id = factor_source.id.clone();
         let txids = self.factor_to_txid.get(&factor_source_id).unwrap();
         let per_transaction = txids
             .into_iter()
             .map(|txid| {
                 let binding = self.txid_to_petition.borrow();
                 let petition = binding.get(txid).unwrap();
-                petition.input_for_parallel_batch_driver(factor_source.clone())
+                petition.input_for_parallel_batch_driver(factor_source_id)
             })
             .collect::<IndexSet<BatchKeySigningRequest>>();
 
-        BatchTXBatchKeySigningRequest::new(factor_source_id, per_transaction)
+        BatchTXBatchKeySigningRequest::new(factor_source_id.clone(), per_transaction)
     }
 
     fn add_signature(&self, signature: &HDSignature) {
@@ -883,11 +881,21 @@ impl PetitionOfTransaction {
         (successful, signatures)
     }
 
-    pub fn all_factor_instances(&self) -> IndexSet<OwnedFactorInstance> {
+    fn _all_factor_instances(&self) -> IndexSet<OwnedFactorInstance> {
         self.for_entities
             .borrow()
             .iter()
             .flat_map(|(_, petition)| petition.all_factor_instances())
+            .collect()
+    }
+
+    pub fn all_factor_instances_of_source(
+        &self,
+        factor_source_id: &FactorSourceID,
+    ) -> IndexSet<OwnedFactorInstance> {
+        self._all_factor_instances()
+            .into_iter()
+            .filter(|f| f.factor_instance.factor_source_id == *factor_source_id)
             .collect()
     }
 
@@ -910,27 +918,34 @@ impl PetitionOfTransaction {
 
     pub(crate) fn inputs_for_serial_single_driver(
         &self,
-        factor_source: FactorSource,
+        factor_source_id: &FactorSourceID,
     ) -> IndexSet<SerialSingleSigningRequest> {
         let owned_factors = self
-            .all_factor_instances()
+            .all_factor_instances_of_source(factor_source_id)
             .into_iter()
-            .filter(|fi| fi.factor_instance.factor_source_id() == factor_source.id)
+            .filter(|fi| fi.factor_instance.factor_source_id() == *factor_source_id)
             .collect::<IndexSet<_>>();
+
         owned_factors
             .into_iter()
-            .map(|f| SerialSingleSigningRequest::new(factor_source.id, self.intent_hash.clone(), f))
+            .map(|f| {
+                SerialSingleSigningRequest::new(
+                    factor_source_id.clone(),
+                    self.intent_hash.clone(),
+                    f,
+                )
+            })
             .collect::<IndexSet<_>>()
     }
 
     pub(crate) fn input_for_parallel_batch_driver(
         &self,
-        factor_source: FactorSource,
+        factor_source_id: &FactorSourceID,
     ) -> BatchKeySigningRequest {
         BatchKeySigningRequest::new(
             self.intent_hash.clone(),
-            factor_source.id,
-            self.all_factor_instances(),
+            factor_source_id.clone(),
+            self.all_factor_instances_of_source(factor_source_id),
         )
     }
 

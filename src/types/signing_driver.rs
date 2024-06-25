@@ -37,8 +37,8 @@ impl SigningDriver {
                     .into_iter()
                     .map(|f| {
                         let key = f.id.clone();
-                        let value = signatures_building_coordinator
-                            .input_for_parallel_batch_driver(f.clone());
+                        let value =
+                            signatures_building_coordinator.input_for_parallel_batch_driver(&f.id);
                         (key, value)
                     })
                     .collect::<IndexMap<FactorSourceID, BatchTXBatchKeySigningRequest>>();
@@ -61,7 +61,7 @@ impl SigningDriver {
                         factor_source.id
                     );
                     let batch_signing_request = signatures_building_coordinator
-                        .input_for_parallel_batch_driver(factor_source.clone());
+                        .input_for_parallel_batch_driver(&factor_source.id);
 
                     let request = SerialBatchSigningRequest::new(
                         batch_signing_request,
@@ -88,7 +88,7 @@ impl SigningDriver {
                         factor_source.id
                     );
                     let requests_per_transaction = signatures_building_coordinator
-                        .inputs_for_serial_single_driver(factor_source.clone());
+                        .inputs_for_serial_single_driver(&factor_source.id);
                     for (_, requests_for_transaction) in requests_per_transaction {
                         for request in requests_for_transaction {
                             println!(

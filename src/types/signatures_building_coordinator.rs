@@ -195,20 +195,20 @@ impl SignaturesBuildingCoordinator {
 impl SignaturesBuildingCoordinator {
     pub(crate) fn inputs_for_serial_single_driver(
         &self,
-        factor_source: FactorSource,
+        factor_source_id: &FactorSourceID,
     ) -> IndexMap<IntentHash, IndexSet<SerialSingleSigningRequest>> {
         self.petitions
             .borrow()
-            .inputs_for_serial_single_driver(factor_source)
+            .inputs_for_serial_single_driver(factor_source_id)
     }
 
     pub(crate) fn input_for_parallel_batch_driver(
         &self,
-        factor_source: FactorSource,
+        factor_source_id: &FactorSourceID,
     ) -> BatchTXBatchKeySigningRequest {
         self.petitions
             .borrow()
-            .input_for_parallel_batch_driver(factor_source)
+            .input_for_parallel_batch_driver(factor_source_id)
     }
 
     pub fn invalid_transactions_if_skipped(
