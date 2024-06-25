@@ -36,5 +36,5 @@ impl HDSignature {
 #[derive(Debug, Clone, PartialEq, Eq, std::hash::Hash)]
 pub enum SignWithFactorSourceOrSourcesOutcome<T> {
     Signed(T),
-    Skipped(FactorSourceID),
+    Skipped(Vec<FactorSourceID>),
 }

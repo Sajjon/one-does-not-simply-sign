@@ -153,7 +153,9 @@ impl SignaturesBuildingCoordinator {
 impl SignaturesBuildingCoordinator {
     /// If all transactions already would fail, or if all transactions already are done, then
     /// no point in continuing.
-    fn continue_if_necessary(&self) -> Result<()> {
+    ///
+    /// `Ok(true)` means "continue", `Ok(false)` means "stop, we are done". `Err(_)` means "stop, we have failed".
+    fn continue_if_necessary(&self) -> Result<bool> {
         self.petitions.borrow().continue_if_necessary()
     }
 
@@ -180,7 +182,10 @@ impl SignaturesBuildingCoordinator {
         let factors_of_kind = self.factors_of_kind.clone();
         for (kind, factor_sources) in factors_of_kind.into_iter() {
             self.sign_with_factor_sources(factor_sources, kind).await?;
-            self.continue_if_necessary()?;
+            let should_continue = self.continue_if_necessary()?;
+            if !should_continue {
+                return Ok(()); // finished early, we have fulfilled signing requirements of all transactions
+            }
         }
         Ok(())
     }
@@ -214,7 +219,20 @@ impl SignaturesBuildingCoordinator {
             .invalid_transactions_if_skipped(factor_source_id)
     }
 
-    pub(crate) fn process_single_response(&self, response: SignWithFactorSourceOrSourcesOutcome<HDSignature>) {
+    pub fn invalid_transactions_if_skipped_factor_sources(
+        &self,
+        factor_source_ids: IndexSet<FactorSourceID>,
+    ) -> IndexSet<InvalidTransactionIfSkipped> {
+        factor_source_ids
+            .into_iter()
+            .flat_map(|f| self.invalid_transactions_if_skipped(&f))
+            .collect::<IndexSet<_>>()
+    }
+
+    pub(crate) fn process_single_response(
+        &self,
+        response: SignWithFactorSourceOrSourcesOutcome<HDSignature>,
+    ) {
         let petitions = self.petitions.borrow_mut();
         petitions.process_single_response(response)
     }

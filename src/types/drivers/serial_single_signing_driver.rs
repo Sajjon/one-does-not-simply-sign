@@ -3,9 +3,7 @@ use crate::prelude::*;
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct SerialSingleSigningRequest {
     pub factor_source_id: FactorSourceID,
-
     pub intent_hash: IntentHash,
-
     pub owned_factor_instance: OwnedFactorInstance,
 }
 impl SerialSingleSigningRequest {
@@ -77,7 +75,7 @@ impl SerialSingleSigningDriver for TestSerialSingleSigningDriver {
                 ))
             }
             SigningUserInput::Skip => {
-                SignWithFactorSourceOrSourcesOutcome::Skipped(request.factor_source_id)
+                SignWithFactorSourceOrSourcesOutcome::Skipped(vec![request.factor_source_id])
             }
         }
     }

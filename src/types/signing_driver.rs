@@ -1,5 +1,7 @@
 use crate::prelude::*;
 
+use super::signatures_building_coordinator;
+
 pub enum SigningDriver {
     ParallelBatch(ParallelBatchSigningClient),
     SerialBatch(SerialBatchSigningClient),
@@ -33,10 +35,16 @@ impl SigningDriver {
                         (key, value)
                     })
                     .collect::<IndexMap<FactorSourceID, BatchTXBatchKeySigningRequest>>();
-                let request = ParallelBatchSigningRequest::new(per_factor_source);
+                let invalid_transactions_if_skipped = signatures_building_coordinator
+                    .invalid_transactions_if_skipped_factor_sources(
+                        factor_sources.iter().map(|f| f.id).collect::<IndexSet<_>>(),
+                    );
+                let request = ParallelBatchSigningRequest::new(
+                    per_factor_source,
+                    invalid_transactions_if_skipped,
+                );
                 let response = driver.sign(request).await;
-                signatures_building_coordinator
-                    .process_batch_response(SignWithFactorSourceOrSourcesOutcome::Signed(response));
+                signatures_building_coordinator.process_batch_response(response);
             }
             Self::SerialBatch(driver) => {
                 for factor_source in factor_sources {

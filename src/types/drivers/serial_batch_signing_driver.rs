@@ -101,7 +101,7 @@ impl SerialBatchSigningDriver for TestSerialBatchSigningDriver {
                 SignWithFactorSourceOrSourcesOutcome::Signed(response)
             }
             SigningUserInput::Skip => {
-                SignWithFactorSourceOrSourcesOutcome::Skipped(request.input.factor_source_id)
+                SignWithFactorSourceOrSourcesOutcome::Skipped(vec![request.input.factor_source_id])
             }
         }
     }

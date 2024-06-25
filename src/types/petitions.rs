@@ -156,14 +156,15 @@ impl PetitionOfTransactionByEntity {
         }
     }
 
-    pub(super) fn continue_if_necessary(&self) -> Result<()> {
+    /// `Ok(true)` means "continue", `Ok(false)` means "stop, we are done". `Err(_)` means "stop, we have failed".
+    pub(super) fn continue_if_necessary(&self) -> Result<bool> {
         match self.status() {
-            PetitionForFactorListStatus::InProgress => Ok(()),
+            PetitionForFactorListStatus::InProgress => Ok(true),
             PetitionForFactorListStatus::Finished(PetitionForFactorListStatusFinished::Fail) => {
                 Err(CommonError::Failure)
             }
             PetitionForFactorListStatus::Finished(PetitionForFactorListStatusFinished::Success) => {
-                Ok(())
+                Ok(false)
             }
         }
     }
@@ -588,17 +589,26 @@ impl Petitions {
         }
     }
 
-    pub fn continue_if_necessary(&self) -> Result<()> {
-        self.txid_to_petition
+    /// `Ok(true)` means "continue", `Ok(false)` means "stop, we are done". `Err(_)` means "stop, we have failed".
+    pub fn continue_if_necessary(&self) -> Result<bool> {
+        let should_continue_signals = self
+            .txid_to_petition
             .borrow()
             .iter()
-            .try_for_each(|(_, petition)| {
+            .flat_map(|(_, petition)| {
                 petition
                     .for_entities
                     .borrow()
                     .iter()
-                    .try_for_each(|(_, petition)| petition.continue_if_necessary())
+                    .map(|(_, petition)| petition.continue_if_necessary())
+                    .collect_vec()
             })
+            .collect::<Result<Vec<bool>>>()?;
+
+        let should_continue_signal = should_continue_signals
+            .into_iter()
+            .fold(true, |a, b| a || b);
+        Ok(should_continue_signal)
     }
 
     pub fn invalid_transactions_if_skipped(
@@ -657,7 +667,7 @@ impl Petitions {
         petition.add_signature(signature.clone())
     }
 
-    fn skip_factor_source_with_id(&self, skipped_factor_source_id: FactorSourceID) {
+    fn skip_factor_source_with_id(&self, skipped_factor_source_id: &FactorSourceID) {
         let binding = self.txid_to_petition.borrow();
         let txids = self.factor_to_txid.get(&skipped_factor_source_id).unwrap();
         txids.into_iter().for_each(|txid| {
@@ -674,7 +684,9 @@ impl Petitions {
             SignWithFactorSourceOrSourcesOutcome::Signed(signature) => {
                 self.add_signature(&signature)
             }
-            SignWithFactorSourceOrSourcesOutcome::Skipped(skipped_factor_source_id) => {
+            SignWithFactorSourceOrSourcesOutcome::Skipped(skipped_factor_source_ids) => {
+                assert_eq!(skipped_factor_source_ids.len(), 1);
+                let skipped_factor_source_id = skipped_factor_source_ids.last().unwrap();
                 self.skip_factor_source_with_id(skipped_factor_source_id)
             }
         }
@@ -693,8 +705,10 @@ impl Petitions {
                     .flat_map(|x| x)
                     .for_each(|s| self.add_signature(s));
             }
-            SignWithFactorSourceOrSourcesOutcome::Skipped(skipped_factor_source_id) => {
-                self.skip_factor_source_with_id(skipped_factor_source_id)
+            SignWithFactorSourceOrSourcesOutcome::Skipped(skipped_factor_source_ids) => {
+                for skipped_factor_source_id in skipped_factor_source_ids.iter() {
+                    self.skip_factor_source_with_id(skipped_factor_source_id)
+                }
             }
         }
     }

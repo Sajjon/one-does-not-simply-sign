@@ -6,10 +6,19 @@ pub struct ParallelBatchSigningRequest {
     /// Per factor source, a set of transactions to sign, with
     /// multiple derivations paths.
     pub per_factor_source: IndexMap<FactorSourceID, BatchTXBatchKeySigningRequest>,
+    /// A collection of transactions which would be invalid if the user skips
+    /// signing with this factor source.
+    pub invalid_transactions_if_skipped: IndexSet<InvalidTransactionIfSkipped>,
 }
 impl ParallelBatchSigningRequest {
-    pub fn new(per_factor_source: IndexMap<FactorSourceID, BatchTXBatchKeySigningRequest>) -> Self {
-        Self { per_factor_source }
+    pub fn new(
+        per_factor_source: IndexMap<FactorSourceID, BatchTXBatchKeySigningRequest>,
+        invalid_transactions_if_skipped: IndexSet<InvalidTransactionIfSkipped>,
+    ) -> Self {
+        Self {
+            per_factor_source,
+            invalid_transactions_if_skipped,
+        }
     }
 }
 
@@ -33,7 +42,10 @@ impl ParallelBatchSigningRequest {
 /// Example of a Parallel Batch Signing Driver is that for DeviceFactorSource.
 #[async_trait::async_trait]
 pub trait ParallelBatchSigningDriver {
-    async fn sign(&self, request: ParallelBatchSigningRequest) -> BatchSigningResponse;
+    async fn sign(
+        &self,
+        request: ParallelBatchSigningRequest,
+    ) -> SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse>;
 }
 
 #[cfg(test)]
@@ -49,31 +61,51 @@ impl TestParallelBatchSigningDriver {
 #[cfg(test)]
 #[async_trait]
 impl ParallelBatchSigningDriver for TestParallelBatchSigningDriver {
-    async fn sign(&self, request: ParallelBatchSigningRequest) -> BatchSigningResponse {
-        let signatures = request
-            .per_factor_source
-            .values()
-            .clone()
-            .into_iter()
-            .map(|x| {
-                let signatures = x
-                    .per_transaction
+    async fn sign(
+        &self,
+        request: ParallelBatchSigningRequest,
+    ) -> SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse> {
+        match self
+            .simulated_user
+            .sign_or_skip(request.invalid_transactions_if_skipped)
+        {
+            SigningUserInput::Sign => {
+                let signatures = request
+                    .per_factor_source
+                    .values()
                     .clone()
                     .into_iter()
-                    .flat_map(|b| {
-                        let intent_hash = &b.intent_hash;
-                        b.owned_factor_instances
+                    .map(|x| {
+                        let signatures = x
+                            .per_transaction
                             .clone()
                             .into_iter()
-                            .map(|c| HDSignature::new(intent_hash.clone(), Signature, c.clone()))
-                            .collect::<IndexSet<HDSignature>>()
+                            .flat_map(|b| {
+                                let intent_hash = &b.intent_hash;
+                                b.owned_factor_instances
+                                    .clone()
+                                    .into_iter()
+                                    .map(|c| {
+                                        HDSignature::new(intent_hash.clone(), Signature, c.clone())
+                                    })
+                                    .collect::<IndexSet<HDSignature>>()
+                            })
+                            .collect::<IndexSet<HDSignature>>();
+                        (x.factor_source_id, signatures)
                     })
-                    .collect::<IndexSet<HDSignature>>();
-                (x.factor_source_id, signatures)
-            })
-            .collect::<IndexMap<FactorSourceID, IndexSet<HDSignature>>>();
+                    .collect::<IndexMap<FactorSourceID, IndexSet<HDSignature>>>();
 
-        BatchSigningResponse::new(signatures)
+                SignWithFactorSourceOrSourcesOutcome::Signed(BatchSigningResponse::new(signatures))
+            }
+            SigningUserInput::Skip => SignWithFactorSourceOrSourcesOutcome::Skipped(
+                request
+                    .per_factor_source
+                    .keys()
+                    .into_iter()
+                    .map(|x| x.clone())
+                    .collect_vec(),
+            ),
+        }
     }
 }
 
@@ -85,7 +117,10 @@ impl ParallelBatchSigningClient {
     pub fn new(driver: Arc<dyn ParallelBatchSigningDriver>) -> Self {
         Self { driver }
     }
-    pub async fn sign(&self, request: ParallelBatchSigningRequest) -> BatchSigningResponse {
+    pub async fn sign(
+        &self,
+        request: ParallelBatchSigningRequest,
+    ) -> SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse> {
         self.driver.sign(request).await
     }
 }
