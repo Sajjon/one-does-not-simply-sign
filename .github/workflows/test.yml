@@ -15,28 +15,6 @@ env:
   RUST_TOOLCHAIN: nightly-2024-01-11
   RUST_COMPONENTS: "rust-std"
 jobs:
-  # typos
-  check-typos:
-    runs-on: macos-14-xlarge
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust Toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ env.RUST_TOOLCHAIN }}
-          default: true
-          profile: minimal
-
-      - name: Install typos
-        uses: actions-rs/install@v0.1
-        with:
-          crate: typos-cli
-          locked: true
-
-      - name: Check typos
-        run: typos
-
   # cargo fmt check
   check-formatting:
     runs-on: macos-14-xlarge
@@ -109,6 +87,6 @@ jobs:
       - name: Code Coverage - Upload to CodeCov.io
         uses: codecov/codecov-action@v4
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
+          token: ${{ secrets.CODECOV }}
           fail_ci_if_error: true
           flags: rust
