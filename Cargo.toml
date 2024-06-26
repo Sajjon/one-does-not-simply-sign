@@ -17,6 +17,7 @@ indexset = "0.4.0"
 itertools = "0.13.0"
 once_cell = "1.19.0"
 rand = "0.8.5"
+sha256 = "1.5.0"
 # strum = "0.26.1"
 strum = { git = "https://github.com/Peternator7/strum/", rev = "f746c3699acf150112e26c00e6c8ca666d8d068d", features = [
     "derive",

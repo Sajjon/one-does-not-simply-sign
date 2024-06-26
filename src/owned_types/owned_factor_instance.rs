@@ -26,3 +26,9 @@ impl OwnedFactorInstance {
         self.factor_instance().factor_source_id() == *factor_source_id
     }
 }
+
+impl From<OwnedFactorInstance> for FactorInstance {
+    fn from(value: OwnedFactorInstance) -> Self {
+        value.value
+    }
+}

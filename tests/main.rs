@@ -44,7 +44,7 @@ mod tests {
         let tx = TransactionIntent::new([Entity::a0()]);
         let context = SignaturesBuildingCoordinator::test_prudent([tx.clone()]);
         let signature = &context.sign().await.unwrap().all_signatures()[0];
-        assert_eq!(signature.intent_hash, tx.intent_hash);
+        assert_eq!(signature.intent_hash(), &tx.intent_hash);
     }
 
     #[actix_rt::test]
@@ -53,7 +53,7 @@ mod tests {
         let tx = TransactionIntent::new([account.clone()]);
         let context = SignaturesBuildingCoordinator::test_prudent([tx.clone()]);
         let signature = &context.sign().await.unwrap().all_signatures()[0];
-        assert_eq!(signature.owned_factor_instance.owner, account.address);
+        assert_eq!(signature.owned_factor_instance().owner, account.address);
     }
 
     #[actix_rt::test]
@@ -64,7 +64,7 @@ mod tests {
         let signature = &context.sign().await.unwrap().all_signatures()[0];
 
         assert_eq!(
-            signature.owned_factor_instance.factor_instance(),
+            signature.owned_factor_instance().factor_instance(),
             account
                 .security_state
                 .all_factor_instances()
@@ -226,7 +226,7 @@ mod tests {
 
         assert_eq!(
             signature
-                .owned_factor_instance
+                .owned_factor_instance()
                 .factor_instance()
                 .factor_source_id,
             FactorSourceID::fs4()
@@ -251,7 +251,7 @@ mod tests {
         let signature = &signatures[0];
         assert_eq!(
             signature
-                .owned_factor_instance
+                .owned_factor_instance()
                 .factor_instance()
                 .factor_source_id
                 .kind,

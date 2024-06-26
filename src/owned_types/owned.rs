@@ -15,3 +15,15 @@ impl<T> Owned<T> {
         Self { owner, value }
     }
 }
+
+impl<T: HasSampleValues> HasSampleValues for Owned<T> {
+    fn sample() -> Self {
+        Self::new(AccountAddressOrIdentityAddress::sample(), T::sample())
+    }
+    fn sample_other() -> Self {
+        Self::new(
+            AccountAddressOrIdentityAddress::sample_other(),
+            T::sample_other(),
+        )
+    }
+}

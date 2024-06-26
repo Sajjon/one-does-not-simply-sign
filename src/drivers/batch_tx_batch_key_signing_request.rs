@@ -1,23 +1,29 @@
-use derive_getters::Getters;
-
 use crate::prelude::*;
 
 /// A batch of keys (derivation paths) all being factor instances of a FactorSource
 /// with id `factor_source_id` to sign a single transaction with, which hash
 /// is `intent_hash`.
-#[derive(PartialEq, Eq, Clone, Debug, Hash, Getters)]
+#[derive(PartialEq, Eq, Clone, Debug, Hash)]
 pub struct BatchKeySigningRequest {
     /// Hash to sign
     intent_hash: IntentHash,
 
     /// ID of factor to use to sign
-    factor_source_id: FactorSourceID,
+    pub factor_source_id: FactorSourceID,
 
     /// The derivation paths to use to derive the private keys to sign with. The
     /// `factor_source_id` of each item must match `factor_source_id`.
     owned_factor_instances: Vec<OwnedFactorInstance>,
 }
 impl BatchKeySigningRequest {
+    pub fn signature_inputs(&self) -> IndexSet<HDSignatureInput> {
+        self.owned_factor_instances
+            .clone()
+            .into_iter()
+            .map(|fi| HDSignatureInput::new(self.intent_hash.clone(), fi))
+            .collect()
+    }
+
     pub fn new(
         intent_hash: IntentHash,
         factor_source_id: FactorSourceID,

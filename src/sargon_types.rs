@@ -8,11 +8,34 @@ pub struct FactorSourceID {
 }
 
 impl FactorSourceID {
+    fn with_details(kind: FactorSourceKind, id: Uuid) -> Self {
+        Self { kind, id }
+    }
     pub fn new(kind: FactorSourceKind) -> Self {
-        Self {
-            kind,
-            id: Uuid::new_v4(),
-        }
+        Self::with_details(kind, Uuid::new_v4())
+    }
+    pub fn to_bytes(&self) -> Vec<u8> {
+        self.id.as_bytes().to_vec()
+    }
+
+    pub fn sample_third() -> Self {
+        Self::with_details(FactorSourceKind::Arculus, Uuid::from_bytes([0xaa; 16]))
+    }
+
+    pub fn sample_fourth() -> Self {
+        Self::with_details(
+            FactorSourceKind::SecurityQuestions,
+            Uuid::from_bytes([0x5e; 16]),
+        )
+    }
+}
+
+impl HasSampleValues for FactorSourceID {
+    fn sample() -> Self {
+        Self::with_details(FactorSourceKind::Device, Uuid::from_bytes([0xde; 16]))
+    }
+    fn sample_other() -> Self {
+        Self::with_details(FactorSourceKind::Ledger, Uuid::from_bytes([0x1e; 16]))
     }
 }
 
@@ -83,6 +106,15 @@ pub enum FactorSourceKind {
     Device,
 }
 
+impl HasSampleValues for FactorSourceKind {
+    fn sample() -> Self {
+        FactorSourceKind::Device
+    }
+    fn sample_other() -> Self {
+        FactorSourceKind::Ledger
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
 pub struct FactorInstance {
     pub index: u32, // actually `DerivationPath`...
@@ -96,6 +128,22 @@ impl FactorInstance {
             factor_source_id,
         }
     }
+    pub fn to_bytes(&self) -> Vec<u8> {
+        [
+            self.index.to_be_bytes().to_vec(),
+            self.factor_source_id.to_bytes(),
+        ]
+        .concat()
+    }
+}
+
+impl HasSampleValues for FactorInstance {
+    fn sample() -> Self {
+        Self::new(0, FactorSourceID::sample())
+    }
+    fn sample_other() -> Self {
+        Self::new(1, FactorSourceID::sample_other())
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
@@ -103,11 +151,17 @@ pub struct Hash {
     id: Uuid,
 }
 impl Hash {
+    pub fn to_bytes(&self) -> Vec<u8> {
+        self.id.as_bytes().to_vec()
+    }
     fn new(id: Uuid) -> Self {
         Self { id }
     }
     pub fn generate() -> Self {
         Self::new(Uuid::new_v4())
+    }
+    pub fn sample_third() -> Self {
+        Self::new(Uuid::from_bytes([0x11; 16]))
     }
 }
 impl HasSampleValues for Hash {
@@ -163,7 +217,7 @@ impl AccountAddressOrIdentityAddress {
             id,
         }
     }
-    fn new(name: impl AsRef<str>) -> Self {
+    pub fn new(name: impl AsRef<str>) -> Self {
         Self::with_details(name, Uuid::new_v4())
     }
 }
@@ -278,6 +332,9 @@ impl IntentHash {
     pub fn generate() -> Self {
         Self::new(Hash::generate())
     }
+    pub fn sample_third() -> Self {
+        Self::new(Hash::sample_third())
+    }
 }
 
 impl HasSampleValues for IntentHash {
@@ -305,7 +362,31 @@ impl TransactionIntent {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
-pub struct Signature;
+pub struct Signature(String);
+impl Signature {
+    /// Emulates the signing of `intent_hash` with `factor_instance` - in a
+    /// deterministic manner.
+    pub fn produced_by(
+        intent_hash: IntentHash,
+        factor_instance: impl Into<FactorInstance>,
+    ) -> Self {
+        let factor_instance = factor_instance.into();
+
+        let intent_hash_bytes = intent_hash.hash().to_bytes();
+        let factor_instance_bytes = factor_instance.to_bytes();
+        let input_bytes = [intent_hash_bytes, factor_instance_bytes].concat();
+        let hash = sha256::digest(input_bytes);
+        Self(hash)
+    }
+
+    /// Emulates signing using `input`.
+    pub fn produced_by_input(input: &HDSignatureInput) -> Self {
+        Self::produced_by(
+            input.intent_hash.clone(),
+            input.owned_factor_instance.clone(),
+        )
+    }
+}
 
 pub type Result<T, E = CommonError> = std::result::Result<T, E>;
 

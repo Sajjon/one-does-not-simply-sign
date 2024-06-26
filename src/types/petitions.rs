@@ -143,7 +143,7 @@ impl PetitionOfTransactionByEntity {
         if let Some(t) = self.threshold_factors.as_ref() {
             let has = t
                 .borrow()
-                .has_instance_with_id(&signature.owned_factor_instance);
+                .has_instance_with_id(signature.owned_factor_instance());
             if has {
                 t.borrow_mut().add_signature(&signature);
                 added_to_threshold = true;
@@ -153,7 +153,7 @@ impl PetitionOfTransactionByEntity {
         if let Some(o) = self.override_factors.as_ref() {
             let has = o
                 .borrow()
-                .has_instance_with_id(&signature.owned_factor_instance);
+                .has_instance_with_id(signature.owned_factor_instance());
             if has {
                 o.borrow_mut().add_signature(&signature);
                 added_to_override = true;
@@ -411,7 +411,7 @@ impl FactorSourceReferencing for FactorInstance {
 
 impl FactorSourceReferencing for HDSignature {
     fn factor_source_id(&self) -> FactorSourceID {
-        self.owned_factor_instance
+        self.owned_factor_instance()
             .factor_instance()
             .factor_source_id
     }
@@ -734,7 +734,7 @@ impl Petitions {
 
     fn add_signature(&self, signature: &HDSignature) {
         let binding = self.txid_to_petition.borrow();
-        let petition = binding.get(&signature.intent_hash).unwrap();
+        let petition = binding.get(signature.intent_hash()).unwrap();
         petition.add_signature(signature.clone())
     }
 
@@ -849,7 +849,7 @@ impl PetitionOfTransaction {
     pub fn add_signature(&self, signature: HDSignature) {
         let for_entities = self.for_entities.borrow_mut();
         let for_entity = for_entities
-            .get(&signature.owned_factor_instance.owner)
+            .get(&signature.owned_factor_instance().owner)
             .unwrap();
         for_entity.add_signature(signature.clone());
     }

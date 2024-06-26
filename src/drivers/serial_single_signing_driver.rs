@@ -22,10 +22,13 @@ impl SerialSingleSigningRequestFull {
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct SerialSingleSigningRequestPartial {
     pub factor_source_id: FactorSourceID,
-    pub intent_hash: IntentHash,
-    pub owned_factor_instance: OwnedFactorInstance,
+    intent_hash: IntentHash,
+    owned_factor_instance: OwnedFactorInstance,
 }
 impl SerialSingleSigningRequestPartial {
+    pub fn signature_input(&self) -> HDSignatureInput {
+        HDSignatureInput::new(self.intent_hash.clone(), self.owned_factor_instance.clone())
+    }
     pub fn new(
         factor_source_id: FactorSourceID,
         intent_hash: IntentHash,

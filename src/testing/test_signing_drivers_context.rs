@@ -55,15 +55,9 @@ impl ParallelBatchSigningDriver for TestParallelBatchSigningDriver {
                             .per_transaction
                             .iter()
                             .flat_map(|x| {
-                                x.owned_factor_instances()
+                                x.signature_inputs()
                                     .iter()
-                                    .map(|y| {
-                                        HDSignature::new(
-                                            x.intent_hash().clone(),
-                                            Signature,
-                                            y.clone(),
-                                        )
-                                    })
+                                    .map(|y| HDSignature::produced_signing_with_input(y.clone()))
                                     .collect_vec()
                             })
                             .collect::<IndexSet<HDSignature>>();
@@ -105,13 +99,9 @@ impl SerialSingleSigningDriver for TestSerialSingleSigningDriver {
             .simulated_user
             .sign_or_skip(request.invalid_transactions_if_skipped)
         {
-            SigningUserInput::Sign => {
-                SignWithFactorSourceOrSourcesOutcome::signed(HDSignature::new(
-                    request.input.intent_hash,
-                    Signature,
-                    request.input.owned_factor_instance,
-                ))
-            }
+            SigningUserInput::Sign => SignWithFactorSourceOrSourcesOutcome::signed(
+                HDSignature::produced_signing_with_input(request.input.signature_input()),
+            ),
             SigningUserInput::Skip => SignWithFactorSourceOrSourcesOutcome::skipped_factor_source(
                 request.input.factor_source_id,
             ),
@@ -146,15 +136,14 @@ impl SerialBatchSigningDriver for TestSerialBatchSigningDriver {
                     .per_transaction
                     .into_iter()
                     .map(|r| {
-                        let key = r.factor_source_id();
+                        let key = r.factor_source_id;
+
                         let value = r
-                            .owned_factor_instances()
+                            .signature_inputs()
                             .iter()
-                            .map(|f| {
-                                HDSignature::new(r.intent_hash().clone(), Signature, f.clone())
-                            })
+                            .map(|x| HDSignature::produced_signing_with_input(x.clone()))
                             .collect::<IndexSet<_>>();
-                        (*key, value)
+                        (key, value)
                     })
                     .collect::<IndexMap<FactorSourceID, IndexSet<HDSignature>>>();
                 let response = BatchSigningResponse::new(signatures);
