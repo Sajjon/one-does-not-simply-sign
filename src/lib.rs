@@ -2,12 +2,12 @@
 //! SingleSigningDrivers other than the fact that BatchSigningDerivers can sign
 //! many transactions with many derivations paths at once?
 
-mod existing_types_in_sargon;
+mod sargon_types;
 mod testing;
 mod types;
 
 pub mod prelude {
-    pub use crate::existing_types_in_sargon::*;
+    pub use crate::sargon_types::*;
     pub use crate::testing::*;
     pub use crate::types::*;
 
