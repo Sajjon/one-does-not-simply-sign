@@ -1,8 +1,13 @@
 use crate::prelude::*;
 
 /// A coordinator which gathers signatures from several factor sources of different
-/// kinds for many transactions and for potentially multiple derivation paths
+/// kinds, in increasing friction order, for many transactions and for
+/// potentially multiple entities and for many factor instances (derivation paths)
 /// for each transaction.
+///
+/// By increasing friction order we mean, the quickest and easiest to use FactorSourceKind
+/// is last; namely `DeviceFactorSource`, and the most tedious FactorSourceKind is
+/// first; namely `LedgerFactorSource`, which user might also lack access to.
 pub struct SignaturesBuildingCoordinator {
     /// A context of drivers used to sign with factor sources.
     signing_drivers_context: Arc<dyn IsSigningDriversContext>,
@@ -58,9 +63,7 @@ impl SignaturesBuildingCoordinator {
             assert!(!used_factor_sources.is_empty());
         };
 
-        for (index, transaction) in transactions.into_iter().enumerate() {
-            let transaction_index = TransactionIndex::new(index, transaction.intent_hash.clone());
-
+        for transaction in transactions.into_iter() {
             let mut petitions_for_entities =
                 HashMap::<AccountAddressOrIdentityAddress, PetitionOfTransactionByEntity>::new();
 
@@ -80,7 +83,7 @@ impl SignaturesBuildingCoordinator {
                         add(primary_role_matrix.override_factors.clone());
                         add(primary_role_matrix.threshold_factors.clone());
                         let petition = PetitionOfTransactionByEntity::new_securified(
-                            transaction_index.clone(),
+                            transaction.intent_hash.clone(),
                             address.clone(),
                             primary_role_matrix,
                         );
@@ -91,7 +94,7 @@ impl SignaturesBuildingCoordinator {
                         let factor_source_id = factor_instance.factor_source_id;
                         use_factor_in_tx(&factor_source_id, &transaction.intent_hash);
                         let petition = PetitionOfTransactionByEntity::new_unsecurified(
-                            transaction_index.clone(),
+                            transaction.intent_hash.clone(),
                             address.clone(),
                             factor_instance,
                         );
@@ -145,23 +148,28 @@ impl SignaturesBuildingCoordinator {
         &self,
         factor_sources: IndexSet<FactorSource>,
         kind: FactorSourceKind,
-    ) -> Result<()> {
+    ) {
         assert!(factor_sources.iter().all(|f| f.kind() == kind));
         let signing_driver = self.get_driver(kind);
         signing_driver.sign(factor_sources, self).await;
-        Ok(())
     }
 
-    async fn do_sign(&self) -> Result<()> {
+    async fn do_sign(&self) {
         let factors_of_kind = self.factors_of_kind.clone();
         for (kind, factor_sources) in factors_of_kind.into_iter() {
-            self.sign_with_factor_sources(factor_sources, kind).await?;
-            let should_continue = self.continue_if_necessary()?;
-            if !should_continue {
-                return Ok(()); // finished early, we have fulfilled signing requirements of all transactions
+            self.sign_with_factor_sources(factor_sources, kind).await;
+            match self.continue_if_necessary() {
+                Ok(should_continue) => {
+                    if !should_continue {
+                        return; // finished early, we have fulfilled signing requirements of all transactions
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Error: {:?}", e);
+                    return;
+                }
             }
         }
-        Ok(())
     }
 }
 
@@ -212,7 +220,7 @@ impl SignaturesBuildingCoordinator {
             let petitions = self.petitions.borrow_mut();
             petitions.process_single_response(response);
         }
-        self.continue_if_necessary().unwrap()
+        self.continue_if_necessary().unwrap_or(false)
     }
     pub(crate) fn process_batch_response(
         &self,
@@ -224,9 +232,8 @@ impl SignaturesBuildingCoordinator {
 }
 
 impl SignaturesBuildingCoordinator {
-    pub async fn sign(self) -> Result<SignaturesOutcome> {
-        self.do_sign().await?;
-        let outcome = self.petitions.into_inner().outcome();
-        Ok(outcome)
+    pub async fn sign(self) -> SignaturesOutcome {
+        self.do_sign().await;
+        self.petitions.into_inner().outcome()
     }
 }

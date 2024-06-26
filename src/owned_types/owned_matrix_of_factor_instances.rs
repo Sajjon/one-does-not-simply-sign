@@ -1,8 +1,10 @@
 use crate::prelude::*;
 
+/// A `MatrixOfFactorInstances` with a known owner - an account or persona.
 pub type OwnedMatrixOfFactorInstances = Owned<MatrixOfFactorInstances>;
 
 impl OwnedMatrixOfFactorInstances {
+    /// Constructs a new `OwnedFactorInstance`.
     pub fn owned_matrix(
         owner: AccountAddressOrIdentityAddress,
         matrix: MatrixOfFactorInstances,

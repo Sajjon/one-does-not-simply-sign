@@ -2,40 +2,22 @@
 
 use crate::prelude::*;
 
-#[derive(Derivative)]
-#[derivative(PartialOrd, Ord, PartialEq, Eq, Hash, Clone, Debug)]
-pub struct TransactionIndex {
-    index: usize,
-
-    #[derivative(Ord = "ignore", PartialOrd = "ignore")]
-    intent_hash: IntentHash,
-}
-impl TransactionIndex {
-    pub fn new(index: usize, intent_hash: IntentHash) -> Self {
-        Self { index, intent_hash }
-    }
-}
-
-#[derive(Derivative)]
-#[derivative(PartialOrd, Ord, PartialEq, Eq, Hash, Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PetitionOfTransactionByEntity {
     /// The owner of these factors
-    #[derivative(Ord = "ignore", PartialOrd = "ignore")]
     pub entity: AccountAddressOrIdentityAddress,
 
     /// Index and hash of transaction
-    pub transaction_index: TransactionIndex,
+    pub intent_hash: IntentHash,
 
-    #[derivative(Hash = "ignore", Ord = "ignore", PartialOrd = "ignore")]
     pub threshold_factors: Option<RefCell<PetitionWithFactors>>,
 
-    #[derivative(Hash = "ignore", Ord = "ignore", PartialOrd = "ignore")]
     pub override_factors: Option<RefCell<PetitionWithFactors>>,
 }
 
 impl PetitionOfTransactionByEntity {
     pub fn new(
-        transaction_index: TransactionIndex,
+        intent_hash: IntentHash,
         entity: AccountAddressOrIdentityAddress,
         threshold_factors: impl Into<Option<PetitionWithFactors>>,
         override_factors: impl Into<Option<PetitionWithFactors>>,
@@ -47,30 +29,30 @@ impl PetitionOfTransactionByEntity {
         }
         Self {
             entity,
-            transaction_index,
+            intent_hash,
             threshold_factors: threshold_factors.map(RefCell::new),
             override_factors: override_factors.map(RefCell::new),
         }
     }
     pub fn new_securified(
-        transaction_index: TransactionIndex,
+        intent_hash: IntentHash,
         entity: AccountAddressOrIdentityAddress,
         matrix: MatrixOfFactorInstances,
     ) -> Self {
         Self::new(
-            transaction_index,
+            intent_hash,
             entity,
             PetitionWithFactors::new_threshold(matrix.threshold_factors, matrix.threshold as i8),
             PetitionWithFactors::new_override(matrix.override_factors),
         )
     }
     pub fn new_unsecurified(
-        transaction_index: TransactionIndex,
+        intent_hash: IntentHash,
         entity: AccountAddressOrIdentityAddress,
         instance: FactorInstance,
     ) -> Self {
         Self::new(
-            transaction_index,
+            intent_hash,
             entity,
             PetitionWithFactors::new_unsecurified(instance),
             None,
@@ -161,7 +143,7 @@ impl PetitionOfTransactionByEntity {
         if let Some(t) = self.threshold_factors.as_ref() {
             let has = t
                 .borrow()
-                .has_instance_with_id(&signature.owned_factor_instance);
+                .has_instance_with_id(signature.owned_factor_instance());
             if has {
                 t.borrow_mut().add_signature(&signature);
                 added_to_threshold = true;
@@ -171,7 +153,7 @@ impl PetitionOfTransactionByEntity {
         if let Some(o) = self.override_factors.as_ref() {
             let has = o
                 .borrow()
-                .has_instance_with_id(&signature.owned_factor_instance);
+                .has_instance_with_id(signature.owned_factor_instance());
             if has {
                 o.borrow_mut().add_signature(&signature);
                 added_to_override = true;
@@ -193,8 +175,7 @@ impl PetitionOfTransactionByEntity {
         match skip_status {
             PetitionForFactorListStatus::Finished(finished_reason) => match finished_reason {
                 PetitionForFactorListStatusFinished::Fail => {
-                    let transaction_index = self.transaction_index.clone();
-                    let intent_hash = transaction_index.intent_hash;
+                    let intent_hash = self.intent_hash.clone();
                     let invalid_transaction =
                         InvalidTransactionIfSkipped::new(intent_hash, vec![self.entity.clone()]);
                     IndexSet::from_iter([invalid_transaction])
@@ -430,7 +411,7 @@ impl FactorSourceReferencing for FactorInstance {
 
 impl FactorSourceReferencing for HDSignature {
     fn factor_source_id(&self) -> FactorSourceID {
-        self.owned_factor_instance
+        self.owned_factor_instance()
             .factor_instance()
             .factor_source_id
     }
@@ -753,7 +734,7 @@ impl Petitions {
 
     fn add_signature(&self, signature: &HDSignature) {
         let binding = self.txid_to_petition.borrow();
-        let petition = binding.get(&signature.intent_hash).unwrap();
+        let petition = binding.get(signature.intent_hash()).unwrap();
         petition.add_signature(signature.clone())
     }
 
@@ -771,12 +752,14 @@ impl Petitions {
         response: SignWithFactorSourceOrSourcesOutcome<HDSignature>,
     ) {
         match response {
-            SignWithFactorSourceOrSourcesOutcome::Signed(signature) => {
-                self.add_signature(&signature)
-            }
-            SignWithFactorSourceOrSourcesOutcome::Skipped(skipped_factor_source_ids) => {
-                assert_eq!(skipped_factor_source_ids.len(), 1);
-                let skipped_factor_source_id = skipped_factor_source_ids.last().unwrap();
+            SignWithFactorSourceOrSourcesOutcome::Signed {
+                produced_signatures: signature,
+            } => self.add_signature(&signature),
+            SignWithFactorSourceOrSourcesOutcome::Skipped {
+                ids_of_skipped_factors_sources,
+            } => {
+                assert_eq!(ids_of_skipped_factors_sources.len(), 1);
+                let skipped_factor_source_id = ids_of_skipped_factors_sources.last().unwrap();
                 self.skip_factor_source_with_id(skipped_factor_source_id)
             }
         }
@@ -787,15 +770,19 @@ impl Petitions {
         response: SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse>,
     ) {
         match response {
-            SignWithFactorSourceOrSourcesOutcome::Signed(signatures) => {
-                signatures
+            SignWithFactorSourceOrSourcesOutcome::Signed {
+                produced_signatures,
+            } => {
+                produced_signatures
                     .signatures
                     .values()
                     .flatten()
                     .for_each(|s| self.add_signature(s));
             }
-            SignWithFactorSourceOrSourcesOutcome::Skipped(skipped_factor_source_ids) => {
-                for skipped_factor_source_id in skipped_factor_source_ids.iter() {
+            SignWithFactorSourceOrSourcesOutcome::Skipped {
+                ids_of_skipped_factors_sources,
+            } => {
+                for skipped_factor_source_id in ids_of_skipped_factors_sources.iter() {
                     self.skip_factor_source_with_id(skipped_factor_source_id)
                 }
             }
@@ -862,7 +849,7 @@ impl PetitionOfTransaction {
     pub fn add_signature(&self, signature: HDSignature) {
         let for_entities = self.for_entities.borrow_mut();
         let for_entity = for_entities
-            .get(&signature.owned_factor_instance.owner)
+            .get(&signature.owned_factor_instance().owner)
             .unwrap();
         for_entity.add_signature(signature.clone());
     }
