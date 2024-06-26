@@ -103,8 +103,19 @@ pub struct Hash {
     id: Uuid,
 }
 impl Hash {
+    fn new(id: Uuid) -> Self {
+        Self { id }
+    }
     pub fn generate() -> Self {
-        Self { id: Uuid::new_v4() }
+        Self::new(Uuid::new_v4())
+    }
+}
+impl HasSampleValues for Hash {
+    fn sample() -> Self {
+        Self::new(Uuid::from_bytes([0xde; 16]))
+    }
+    fn sample_other() -> Self {
+        Self::new(Uuid::from_bytes([0xab; 16]))
     }
 }
 
@@ -146,11 +157,22 @@ pub struct AccountAddressOrIdentityAddress {
     id: Uuid,
 }
 impl AccountAddressOrIdentityAddress {
-    fn new(name: impl AsRef<str>) -> Self {
+    fn with_details(name: impl AsRef<str>, id: Uuid) -> Self {
         Self {
             name: name.as_ref().to_owned(),
-            id: Uuid::new_v4(),
+            id,
         }
+    }
+    fn new(name: impl AsRef<str>) -> Self {
+        Self::with_details(name, Uuid::new_v4())
+    }
+}
+impl HasSampleValues for AccountAddressOrIdentityAddress {
+    fn sample() -> Self {
+        Self::with_details("Alice", Uuid::from_bytes([0xac; 16]))
+    }
+    fn sample_other() -> Self {
+        Self::with_details("Bob", Uuid::from_bytes([0xc0; 16]))
     }
 }
 
@@ -239,30 +261,31 @@ impl From<FactorInstance> for MatrixOfFactorInstances {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
+pub trait HasSampleValues {
+    fn sample() -> Self;
+    fn sample_other() -> Self;
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash, Getters)]
 pub struct IntentHash {
     hash: Hash,
 }
 
-impl Default for IntentHash {
-    fn default() -> Self {
-        Self::new()
+impl IntentHash {
+    fn new(hash: Hash) -> Self {
+        Self { hash }
+    }
+    pub fn generate() -> Self {
+        Self::new(Hash::generate())
     }
 }
 
-impl IntentHash {
-    pub fn generate() -> Self {
-        Self {
-            hash: Hash::generate(),
-        }
+impl HasSampleValues for IntentHash {
+    fn sample() -> Self {
+        Self::new(Hash::sample())
     }
-
-    pub fn new() -> Self {
-        Self::generate()
-    }
-
-    pub fn hash(&self) -> Hash {
-        self.hash.clone()
+    fn sample_other() -> Self {
+        Self::new(Hash::sample_other())
     }
 }
 
