@@ -66,39 +66,3 @@ impl SerialSingleSigningClient {
         self.driver.sign(request).await
     }
 }
-
-#[cfg(test)]
-pub struct TestSerialSingleSigningDriver {
-    pub simulated_user: SimulatedUser,
-}
-#[cfg(test)]
-impl TestSerialSingleSigningDriver {
-    pub fn new(simulated_user: SimulatedUser) -> Self {
-        Self { simulated_user }
-    }
-}
-
-#[cfg(test)]
-#[async_trait]
-impl SerialSingleSigningDriver for TestSerialSingleSigningDriver {
-    async fn sign(
-        &self,
-        request: SerialSingleSigningRequestFull,
-    ) -> SignWithFactorSourceOrSourcesOutcome<HDSignature> {
-        match self
-            .simulated_user
-            .sign_or_skip(request.invalid_transactions_if_skipped)
-        {
-            SigningUserInput::Sign => {
-                SignWithFactorSourceOrSourcesOutcome::signed(HDSignature::new(
-                    request.input.intent_hash,
-                    Signature,
-                    request.input.owned_factor_instance,
-                ))
-            }
-            SigningUserInput::Skip => SignWithFactorSourceOrSourcesOutcome::skipped_factor_source(
-                request.input.factor_source_id,
-            ),
-        }
-    }
-}

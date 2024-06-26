@@ -4,7 +4,6 @@ pub enum SigningUserInput {
     Skip,
 }
 
-#[cfg(test)]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum SimulatedUser {
     /// Emulation of a "prudent" user, that signs with all factors sources, i.e.
@@ -19,7 +18,7 @@ pub enum SimulatedUser {
     ///  at random.
     Random,
 }
-#[cfg(test)]
+
 impl SimulatedUser {
     pub fn lazy_always_skip() -> Self {
         Self::Lazy(Laziness::AlwaysSkip)
@@ -30,7 +29,6 @@ impl SimulatedUser {
     }
 }
 
-#[cfg(test)]
 unsafe impl Sync for SimulatedUser {}
 
 /// A very lazy user that defers all boring work such as signing stuff for as long
@@ -45,7 +43,6 @@ pub enum Laziness {
     AlwaysSkip,
 }
 
-#[cfg(test)]
 impl SimulatedUser {
     pub fn sign_or_skip(
         &self,
