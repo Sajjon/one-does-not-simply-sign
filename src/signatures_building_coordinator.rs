@@ -148,23 +148,28 @@ impl SignaturesBuildingCoordinator {
         &self,
         factor_sources: IndexSet<FactorSource>,
         kind: FactorSourceKind,
-    ) -> Result<()> {
+    ) {
         assert!(factor_sources.iter().all(|f| f.kind() == kind));
         let signing_driver = self.get_driver(kind);
         signing_driver.sign(factor_sources, self).await;
-        Ok(())
     }
 
-    async fn do_sign(&self) -> Result<()> {
+    async fn do_sign(&self) {
         let factors_of_kind = self.factors_of_kind.clone();
         for (kind, factor_sources) in factors_of_kind.into_iter() {
-            self.sign_with_factor_sources(factor_sources, kind).await?;
-            let should_continue = self.continue_if_necessary()?;
-            if !should_continue {
-                return Ok(()); // finished early, we have fulfilled signing requirements of all transactions
+            self.sign_with_factor_sources(factor_sources, kind).await;
+            match self.continue_if_necessary() {
+                Ok(should_continue) => {
+                    if !should_continue {
+                        return; // finished early, we have fulfilled signing requirements of all transactions
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Error: {:?}", e);
+                    return;
+                }
             }
         }
-        Ok(())
     }
 }
 
@@ -215,7 +220,7 @@ impl SignaturesBuildingCoordinator {
             let petitions = self.petitions.borrow_mut();
             petitions.process_single_response(response);
         }
-        self.continue_if_necessary().unwrap()
+        self.continue_if_necessary().unwrap_or(false)
     }
     pub(crate) fn process_batch_response(
         &self,
@@ -227,9 +232,8 @@ impl SignaturesBuildingCoordinator {
 }
 
 impl SignaturesBuildingCoordinator {
-    pub async fn sign(self) -> Result<SignaturesOutcome> {
-        self.do_sign().await?;
-        let outcome = self.petitions.into_inner().outcome();
-        Ok(outcome)
+    pub async fn sign(self) -> SignaturesOutcome {
+        self.do_sign().await;
+        self.petitions.into_inner().outcome()
     }
 }

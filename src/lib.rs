@@ -4,7 +4,7 @@
 
 mod drivers;
 mod owned_types;
-mod sargon_types;
+mod signatures_building_coordinator;
 mod signatures_outcome_types;
 mod testing;
 mod types;
@@ -12,7 +12,7 @@ mod types;
 pub mod prelude {
     pub use crate::drivers::*;
     pub use crate::owned_types::*;
-    pub use crate::sargon_types::*;
+    pub use crate::signatures_building_coordinator::*;
     pub use crate::signatures_outcome_types::*;
     pub use crate::testing::*;
     pub use crate::types::*;

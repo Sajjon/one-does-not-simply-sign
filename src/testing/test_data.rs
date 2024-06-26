@@ -101,26 +101,32 @@ impl FactorSourceID {
     pub fn fs3() -> Self {
         fs_id_at(3)
     }
+
     /// Arculus
     pub fn fs4() -> Self {
         fs_id_at(4)
     }
+
     /// Yubikey
     pub fn fs5() -> Self {
         fs_id_at(5)
     }
+
     /// Yubikey
     pub fn fs6() -> Self {
         fs_id_at(6)
     }
+
     /// Off Device
     pub fn fs7() -> Self {
         fs_id_at(7)
     }
+
     /// Off Device
     pub fn fs8() -> Self {
         fs_id_at(8)
     }
+
     /// Security Questions
     pub fn fs9() -> Self {
         fs_id_at(9)
@@ -196,15 +202,15 @@ impl Entity {
         })
     }
 
-    pub fn all() -> IndexSet<Self> {
-        IndexSet::from_iter([
-            Entity::a0(),
-            Entity::a1(),
-            Entity::a2(),
-            Entity::a3(),
-            Entity::a4(),
-            Entity::a5(),
-            Entity::a6(),
-        ])
+    /// Ida | 7 | Securified { Threshold only # 5/5 }
+    pub fn a7() -> Self {
+        type F = FactorSourceID;
+        Self::securified(7, "Ida", |idx| {
+            let fi = FactorInstance::f(idx);
+            MatrixOfFactorInstances::threshold_only(
+                [F::fs2(), F::fs6(), F::fs7(), F::fs8(), F::fs9()].map(&fi),
+                5,
+            )
+        })
     }
 }
