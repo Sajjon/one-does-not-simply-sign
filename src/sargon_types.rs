@@ -363,6 +363,14 @@ impl TransactionIntent {
 
 #[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
 pub struct Signature(String);
+impl HasSampleValues for Signature {
+    fn sample() -> Self {
+        Self("deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef".to_owned())
+    }
+    fn sample_other() -> Self {
+        Self("fadecafefadecafefadecafefadecafefadecafefadecafefadecafefadecafefadecafefadecafefadecafefadecafefadecafefadecafefadecafefadecafe".to_owned())
+    }
+}
 impl Signature {
     /// Emulates the signing of `intent_hash` with `factor_instance` - in a
     /// deterministic manner.

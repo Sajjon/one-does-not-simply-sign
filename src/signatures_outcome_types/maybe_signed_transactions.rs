@@ -6,6 +6,88 @@ pub struct MaybeSignedTransactions {
     pub(super) transactions: IndexMap<IntentHash, IndexSet<HDSignature>>,
 }
 
+impl MaybeSignedTransactions {
+    fn new(transactions: IndexMap<IntentHash, IndexSet<HDSignature>>) -> Self {
+        Self { transactions }
+    }
+
+    /// Constructs a new empty `MaybeSignedTransactions` which can be used
+    /// as a "builder".
+    pub fn empty() -> Self {
+        Self::new(IndexMap::new())
+    }
+
+    /// Returns whether or not this `MaybeSignedTransactions` contains
+    /// any transactions.
+    pub fn is_empty(&self) -> bool {
+        self.transactions.is_empty()
+    }
+
+    /// Validates that all values, all signatures, have the same `intent_hash`
+    /// as its key.
+    ///
+    /// Also validates that the input of every signature is unique - to identify
+    /// if the same signer has been used twice, would be a programmer error.
+    ///
+    /// # Panics
+    /// Panics if any signature has a different `intent_hash` than its key.
+    fn validate(&self) {
+        for (intent_hash, signatures) in self.transactions.iter() {
+            assert!(
+                signatures.iter().all(|s| s.intent_hash() == intent_hash),
+                "Discrepancy between intent hash and signature intent hash."
+            );
+        }
+        let all_signatures = self.all_signatures();
+        let all_signatures_count = all_signatures.len();
+        let inputs = self
+            .all_signatures()
+            .iter()
+            .map(|s| s.input.clone())
+            .collect::<IndexSet<_>>();
+        assert_eq!(
+            all_signatures_count,
+            inputs.len(),
+            "Discrepancy, the same signer has been used twice."
+        );
+    }
+
+    /// Inserts a set of signatures for transaction with `intent_hash`, if
+    /// the transaction was already present, the signatures are added to the
+    /// existing set, if the transaction was not already present a new set is
+    /// created.
+    ///
+    /// # Panics
+    /// Panics if any signature has a different `intent_hash` than its key.
+    ///
+    /// Panics if any signatures in `signature` is not new, that is, already present
+    /// in `transactions`.
+    pub fn add_signatures(&mut self, intent_hash: IntentHash, signatures: IndexSet<HDSignature>) {
+        if let Some(ref mut sigs) = self.transactions.get_mut(&intent_hash) {
+            let old_count = sigs.len();
+            let delta_count = signatures.len();
+            sigs.extend(signatures);
+            assert_eq!(
+                sigs.len(),
+                old_count + delta_count,
+                "Discrepancy, some signature in signatures to add found in existing set."
+            );
+        } else {
+            self.transactions.insert(intent_hash, signatures);
+        }
+        self.validate();
+    }
+
+    /// Returns all the signatures for all the transactions.
+    pub fn all_signatures(&self) -> IndexSet<HDSignature> {
+        self.transactions
+            .values()
+            .flat_map(|v| v.iter())
+            .cloned()
+            .collect()
+    }
+}
+
 impl HasSampleValues for MaybeSignedTransactions {
     fn sample() -> Self {
         let tx_a = IntentHash::sample();
@@ -93,88 +175,6 @@ impl HasSampleValues for MaybeSignedTransactions {
     }
 }
 
-impl MaybeSignedTransactions {
-    fn new(transactions: IndexMap<IntentHash, IndexSet<HDSignature>>) -> Self {
-        Self { transactions }
-    }
-
-    /// Constructs a new empty `MaybeSignedTransactions` which can be used
-    /// as a "builder".
-    pub fn empty() -> Self {
-        Self::new(IndexMap::new())
-    }
-
-    /// Returns whether or not this `MaybeSignedTransactions` contains
-    /// any transactions.
-    pub fn is_empty(&self) -> bool {
-        self.transactions.is_empty()
-    }
-
-    /// Validates that all values, all signatures, have the same `intent_hash`
-    /// as its key.
-    ///
-    /// Also validates that the input of every signature is unique - to identify
-    /// if the same signer has been used twice, would be a programmer error.
-    ///
-    /// # Panics
-    /// Panics if any signature has a different `intent_hash` than its key.
-    fn validate(&self) {
-        for (intent_hash, signatures) in self.transactions.iter() {
-            assert!(
-                signatures.iter().all(|s| s.intent_hash() == intent_hash),
-                "Discrepancy between intent hash and signature intent hash."
-            );
-        }
-        let all_signatures = self.all_signatures();
-        let all_signatures_count = all_signatures.len();
-        let inputs = self
-            .all_signatures()
-            .iter()
-            .map(|s| s.input.clone())
-            .collect::<IndexSet<_>>();
-        assert_eq!(
-            all_signatures_count,
-            inputs.len(),
-            "Discrepancy, the same signer has been used twice."
-        );
-    }
-
-    /// Inserts a set of signatures for transaction with `intent_hash`, if
-    /// the transaction was already present, the signatures are added to the
-    /// existing set, if the transaction was not already present a new set is
-    /// created.
-    ///
-    /// # Panics
-    /// Panics if any signature has a different `intent_hash` than its key.
-    ///
-    /// Panics if any signatures in `signature` is not new, that is, already present
-    /// in `transactions`.
-    pub fn add_signatures(&mut self, intent_hash: IntentHash, signatures: IndexSet<HDSignature>) {
-        if let Some(ref mut sigs) = self.transactions.get_mut(&intent_hash) {
-            let old_count = sigs.len();
-            let delta_count = signatures.len();
-            sigs.extend(signatures);
-            assert_eq!(
-                sigs.len(),
-                old_count + delta_count,
-                "Discrepancy, the same signature existed "
-            );
-        } else {
-            self.transactions.insert(intent_hash, signatures);
-        }
-        self.validate();
-    }
-
-    /// Returns all the signatures for all the transactions.
-    pub fn all_signatures(&self) -> IndexSet<HDSignature> {
-        self.transactions
-            .values()
-            .flat_map(|v| v.iter())
-            .cloned()
-            .collect()
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -190,5 +190,59 @@ mod tests {
     #[test]
     fn inequality_of_samples() {
         assert_ne!(Sut::sample(), Sut::sample_other());
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "Discrepancy, some signature in signatures to add found in existing set."
+    )]
+    fn panics_when_adding_same_signature() {
+        let mut sut = Sut::sample();
+        let tx = IntentHash::sample();
+        let input = HDSignatureInput::new(
+            tx.clone(),
+            OwnedFactorInstance::new(
+                AccountAddressOrIdentityAddress::sample(),
+                FactorInstance::new(0, FactorSourceID::sample()),
+            ),
+        );
+        let signature = HDSignature::produced_signing_with_input(input);
+
+        sut.add_signatures(tx, IndexSet::from_iter([signature]));
+    }
+
+    #[test]
+    #[should_panic(expected = "Discrepancy between intent hash and signature intent hash.")]
+    fn panics_when_intent_hash_key_does_not_match_signature() {
+        let mut sut = Sut::sample();
+        let tx = IntentHash::sample();
+        let input = HDSignatureInput::new(
+            tx,
+            OwnedFactorInstance::new(
+                AccountAddressOrIdentityAddress::sample(),
+                FactorInstance::new(0, FactorSourceID::sample()),
+            ),
+        );
+        let signature = HDSignature::produced_signing_with_input(input);
+
+        sut.add_signatures(IntentHash::sample_other(), IndexSet::from_iter([signature]));
+    }
+
+    #[test]
+    #[should_panic(expected = "Discrepancy, the same signer has been used twice.")]
+    fn panics_when_same_signer_used_twice() {
+        let mut sut = Sut::empty();
+        let factor_instance = OwnedFactorInstance::sample();
+        let tx = IntentHash::sample();
+        let input = HDSignatureInput::new(tx.clone(), factor_instance.clone());
+        let sig_a = HDSignature {
+            input: input.clone(),
+            signature: Signature::sample(),
+        };
+        let sig_b = HDSignature {
+            input: input.clone(),
+            signature: Signature::sample_other(),
+        };
+        sut.add_signatures(tx, IndexSet::from_iter([sig_a, sig_b]));
     }
 }

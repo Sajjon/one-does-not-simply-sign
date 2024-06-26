@@ -36,9 +36,6 @@ impl SignaturesOutcome {
         let failure_hashes: IndexSet<IntentHash> =
             failed_transactions.transactions.keys().cloned().collect();
 
-        let successful_signature_count = successful_transactions.all_signatures().len();
-        let failure_signature_count = failed_transactions.all_signatures().len();
-
         assert!(
             successful_hashes
                 .intersection(&failure_hashes)
@@ -47,18 +44,10 @@ impl SignaturesOutcome {
             "Discrepancy, found intent hash in both successful and failed transactions, this is a programmer error."
         );
 
-        let self_ = Self {
+        Self {
             successful_transactions,
             failed_transactions,
-        };
-
-        assert_eq!(
-            self_.all_signatures().len(),
-            successful_signature_count + failure_signature_count,
-            "Discrepancy, the same signature is present in both the collections 'successful_transactions' and 'failed_transactions', this is a programmer error."
-        );
-
-        self_
+        }
     }
 
     pub fn successful(&self) -> bool {
