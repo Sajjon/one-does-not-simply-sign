@@ -23,7 +23,7 @@ impl OwnedFactorInstance {
     /// with id `factor_source_id`.
     pub fn by_factor_source(&self, factor_source_id: impl Borrow<FactorSourceID>) -> bool {
         let factor_source_id = factor_source_id.borrow();
-        self.factor_instance().factor_source_id() == *factor_source_id
+        self.factor_instance().factor_source_id == *factor_source_id
     }
 }
 

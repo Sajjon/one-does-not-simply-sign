@@ -10,7 +10,7 @@ impl TestSigningDriversContext {
     }
 }
 
-impl IsSigningDriversContext for TestSigningDriversContext {
+impl IsUseFactorSourceDriversContext for TestSigningDriversContext {
     fn driver_for_factor_source_kind(&self, kind: FactorSourceKind) -> SigningDriver {
         match kind {
             FactorSourceKind::Device => SigningDriver::parallel_batch(Arc::new(
