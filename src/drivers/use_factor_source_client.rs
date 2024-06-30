@@ -1,32 +1,37 @@
 use crate::prelude::*;
 
-pub enum UseFactorSourceClient {
-    ParallelBatch(ParallelBatchUseFactorSourcesClient),
-    SerialBatch(SerialBatchUseFactorSourceClient),
-    SerialSingle(SerialSingleUseFactorSourceClient),
+pub enum UseFactorSourceDriver {
+    ParallelBatch(Arc<dyn ParallelBatchUseFactorSourcesDriver>),
+    SerialBatch(Arc<dyn SerialBatchUseFactorSourceDriver>),
+    SerialSingle(Arc<dyn SerialSingleUseFactorSourceDriver>),
 }
 
-impl UseFactorSourceClient {
+impl UseFactorSourceDriver {
     pub fn parallel_batch(driver: Arc<dyn ParallelBatchUseFactorSourcesDriver>) -> Self {
-        Self::ParallelBatch(ParallelBatchUseFactorSourcesClient::new(driver))
+        Self::ParallelBatch(driver)
     }
 
     pub fn serial_batch(driver: Arc<dyn SerialBatchUseFactorSourceDriver>) -> Self {
-        Self::SerialBatch(SerialBatchUseFactorSourceClient::new(driver))
+        Self::SerialBatch(driver)
     }
 
     pub fn serial_single(driver: Arc<dyn SerialSingleUseFactorSourceDriver>) -> Self {
-        Self::SerialSingle(SerialSingleUseFactorSourceClient::new(driver))
+        Self::SerialSingle(driver)
     }
+}
 
+pub struct UseFactorSourceClient;
+
+impl UseFactorSourceClient {
     pub async fn use_factor_sources(
         &self,
+        driver: UseFactorSourceDriver,
         factor_sources: IndexSet<FactorSource>,
         coordinator: &FactorResultsBuildingCoordinator,
     ) {
-        match self {
+        match driver {
             // Parallel Driver: Many Factor Sources at once
-            Self::ParallelBatch(driver) => {
+            UseFactorSourceDriver::ParallelBatch(driver) => {
                 // Prepare the request for the driver
                 let request = coordinator.request_for_parallel_batch_driver(
                     factor_sources.into_iter().map(|f| f.id).collect(),
@@ -39,7 +44,7 @@ impl UseFactorSourceClient {
                 coordinator.process_batch_response(response);
             }
             // Serial Driver: One Factor Sources at a time
-            Self::SerialBatch(driver) => {
+            UseFactorSourceDriver::SerialBatch(driver) => {
                 for factor_source in factor_sources {
                     // Prepare the request for the driver
                     let request = coordinator.request_for_serial_batch_driver(&factor_source.id);
@@ -51,7 +56,7 @@ impl UseFactorSourceClient {
                     coordinator.process_batch_response(response);
                 }
             }
-            Self::SerialSingle(driver) => {
+            UseFactorSourceDriver::SerialSingle(driver) => {
                 for factor_source in factor_sources {
                     let invalid_transactions_if_skipped =
                         coordinator.invalid_transactions_if_skipped(&factor_source.id);

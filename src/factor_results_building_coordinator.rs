@@ -141,7 +141,7 @@ impl FactorResultsBuildingCoordinator {
         self.builders.borrow().continue_if_necessary()
     }
 
-    fn get_driver(&self, kind: FactorSourceKind) -> UseFactorSourceClient {
+    fn get_driver(&self, kind: FactorSourceKind) -> UseFactorSourceDriver {
         self.drivers.driver_for_factor_source_kind(kind)
     }
 
@@ -152,7 +152,10 @@ impl FactorResultsBuildingCoordinator {
     ) {
         assert!(factor_sources.iter().all(|f| f.kind() == kind));
         let driver = self.get_driver(kind);
-        driver.use_factor_sources(factor_sources, self).await;
+        let client = UseFactorSourceClient;
+        client
+            .use_factor_sources(driver, factor_sources, self)
+            .await;
     }
 
     async fn use_factor_sources_in_decreasing_friction_order(&self) {
