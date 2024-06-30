@@ -7,15 +7,15 @@ pub enum UseFactorSourceClient {
 }
 
 impl UseFactorSourceClient {
-    pub fn parallel_batch(driver: Arc<dyn ParallelBatchSigningDriver>) -> Self {
+    pub fn parallel_batch(driver: Arc<dyn ParallelBatchUseFactorSourcesDriver>) -> Self {
         Self::ParallelBatch(ParallelBatchUseFactorSourcesClient::new(driver))
     }
 
-    pub fn serial_batch(driver: Arc<dyn SerialBatchSigningDriver>) -> Self {
+    pub fn serial_batch(driver: Arc<dyn SerialBatchUseFactorSourceDriver>) -> Self {
         Self::SerialBatch(SerialBatchUseFactorSourceClient::new(driver))
     }
 
-    pub fn serial_single(driver: Arc<dyn SerialSingleSigningDriver>) -> Self {
+    pub fn serial_single(driver: Arc<dyn SerialSingleUseFactorSourceDriver>) -> Self {
         Self::SerialSingle(SerialSingleUseFactorSourceClient::new(driver))
     }
 

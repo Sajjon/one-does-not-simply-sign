@@ -37,7 +37,7 @@ impl TestParallelBatchSigningDriver {
 }
 
 #[async_trait]
-impl ParallelBatchSigningDriver for TestParallelBatchSigningDriver {
+impl ParallelBatchUseFactorSourcesDriver for TestParallelBatchSigningDriver {
     async fn sign(
         &self,
         request: ParallelBatchSigningRequest,
@@ -90,7 +90,7 @@ impl TestSerialSingleSigningDriver {
 }
 
 #[async_trait]
-impl SerialSingleSigningDriver for TestSerialSingleSigningDriver {
+impl SerialSingleUseFactorSourceDriver for TestSerialSingleSigningDriver {
     async fn sign(
         &self,
         request: SerialSingleSigningRequestFull,
@@ -120,7 +120,7 @@ impl TestSerialBatchSigningDriver {
 }
 
 #[async_trait]
-impl SerialBatchSigningDriver for TestSerialBatchSigningDriver {
+impl SerialBatchUseFactorSourceDriver for TestSerialBatchSigningDriver {
     async fn sign(
         &self,
         request: SerialBatchSigningRequest,

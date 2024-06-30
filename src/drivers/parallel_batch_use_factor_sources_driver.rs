@@ -22,18 +22,18 @@ impl ParallelBatchSigningRequest {
     }
 }
 
-/// A driver for a factor source kind which supports performing:
-/// *Batch* signing *in parallel*.
+/// A driver for a factor source kind which supports *Batch* usage of
+/// multiple factor sources in parallel.
 ///
-/// Most FactorSourceKinds does in fact NOT support parallel signing,
-/// i.e. signing using multiple factors sources at once, but some do,
+/// Most FactorSourceKinds does in fact NOT support parallel usage,
+/// e.g. signing using multiple factors sources at once, but some do,
 /// typically the DeviceFactorSource does, i.e. we can load multiple
 /// mnemonics from secure storage in one go and sign with all of them
 /// "in parallel".
 ///
-/// This is a bit of a misnomer, as we don't actually sign in parallel,
-/// but rather we iterate through all mnemonics and sign the payload
-/// with each of them in sequence
+/// This is a bit of a misnomer, as we don't actually use them in parallel,
+/// but rather we iterate through all mnemonics and derive public keys/
+/// or sign a payload with each of them in sequence
 ///
 /// The user does not have the ability to SKIP a certain factor source,
 /// instead either ALL factor sources are used to sign the transactions
@@ -41,7 +41,7 @@ impl ParallelBatchSigningRequest {
 ///
 /// Example of a Parallel Batch Signing Driver is that for DeviceFactorSource.
 #[async_trait::async_trait]
-pub trait ParallelBatchSigningDriver {
+pub trait ParallelBatchUseFactorSourcesDriver {
     async fn sign(
         &self,
         request: ParallelBatchSigningRequest,
@@ -49,11 +49,11 @@ pub trait ParallelBatchSigningDriver {
 }
 
 pub struct ParallelBatchUseFactorSourcesClient {
-    driver: Arc<dyn ParallelBatchSigningDriver>,
+    driver: Arc<dyn ParallelBatchUseFactorSourcesDriver>,
 }
 
 impl ParallelBatchUseFactorSourcesClient {
-    pub fn new(driver: Arc<dyn ParallelBatchSigningDriver>) -> Self {
+    pub fn new(driver: Arc<dyn ParallelBatchUseFactorSourcesDriver>) -> Self {
         Self { driver }
     }
     pub async fn sign(
