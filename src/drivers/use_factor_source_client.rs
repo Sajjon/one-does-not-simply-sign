@@ -58,18 +58,10 @@ impl UseFactorSourceClient {
             }
             UseFactorSourceDriver::SerialSingle(driver) => {
                 for factor_source in factor_sources {
-                    let invalid_transactions_if_skipped =
-                        coordinator.invalid_transactions_if_skipped(&factor_source.id);
-
                     let requests_per_transaction =
-                        coordinator.inputs_for_serial_single_driver(&factor_source.id);
+                        coordinator.requests_for_serial_single_driver(&factor_source.id);
                     for (_, requests_for_transaction) in requests_per_transaction {
-                        for partial_request in requests_for_transaction {
-                            let request = SerialSingleSigningRequestFull::new(
-                                partial_request,
-                                invalid_transactions_if_skipped.clone(),
-                            );
-
+                        for request in requests_for_transaction {
                             let response = driver.sign(request).await;
                             let should_continue_with_factor_source =
                                 coordinator.process_single_response(response);

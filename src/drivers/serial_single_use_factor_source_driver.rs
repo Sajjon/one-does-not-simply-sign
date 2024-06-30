@@ -62,6 +62,7 @@ impl SerialSingleUseFactorSourceClient {
     pub fn new(driver: Arc<dyn SerialSingleUseFactorSourceDriver>) -> Self {
         Self { driver }
     }
+
     pub async fn sign(
         &self,
         request: SerialSingleSigningRequestFull,

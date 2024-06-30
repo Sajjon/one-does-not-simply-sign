@@ -178,13 +178,30 @@ impl FactorResultsBuildingCoordinator {
 }
 
 impl FactorResultsBuildingCoordinator {
-    pub(crate) fn inputs_for_serial_single_driver(
+    pub(crate) fn requests_for_serial_single_driver(
         &self,
         factor_source_id: &FactorSourceID,
-    ) -> IndexMap<IntentHash, IndexSet<SerialSingleSigningRequestPartial>> {
+    ) -> IndexMap<IntentHash, IndexSet<SerialSingleSigningRequestFull>> {
+        let invalid_transactions_if_skipped =
+            self.invalid_transactions_if_skipped(factor_source_id);
+
         self.builders
             .borrow()
             .inputs_for_serial_single_driver(factor_source_id)
+            .into_iter()
+            .map(|(intent_hash, requests)| {
+                let values = requests
+                    .into_iter()
+                    .map(|p| {
+                        SerialSingleSigningRequestFull::new(
+                            p,
+                            invalid_transactions_if_skipped.clone(),
+                        )
+                    })
+                    .collect::<IndexSet<_>>();
+                (intent_hash, values)
+            })
+            .collect()
     }
 
     fn input_for_parallel_batch_driver(
