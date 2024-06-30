@@ -22,55 +22,42 @@ impl SigningDriver {
     pub async fn sign(
         &self,
         factor_sources: IndexSet<FactorSource>,
-        signatures_building_coordinator: &SignaturesBuildingCoordinator,
+        coordinator: &SignaturesBuildingCoordinator,
     ) {
         match self {
+            // Parallel Driver: Many Factor Sources at once
             Self::ParallelBatch(driver) => {
-                let per_factor_source = factor_sources
-                    .clone()
-                    .into_iter()
-                    .map(|f| {
-                        let key = f.id;
-                        let value =
-                            signatures_building_coordinator.input_for_parallel_batch_driver(&f.id);
-                        (key, value)
-                    })
-                    .collect::<IndexMap<FactorSourceID, BatchTXBatchKeySigningRequest>>();
-                let invalid_transactions_if_skipped = signatures_building_coordinator
-                    .invalid_transactions_if_skipped_factor_sources(
-                        factor_sources.iter().map(|f| f.id).collect::<IndexSet<_>>(),
-                    );
-                let request = ParallelBatchSigningRequest::new(
-                    per_factor_source,
-                    invalid_transactions_if_skipped,
+                // Prepare the request for the driver
+                let request = coordinator.request_for_parallel_batch_driver(
+                    factor_sources.into_iter().map(|f| f.id).collect(),
                 );
+
+                // Produce the results from the driver
                 let response = driver.sign(request).await;
-                signatures_building_coordinator.process_batch_response(response);
+
+                // Report the results back to the coordinator
+                coordinator.process_batch_response(response);
             }
+            // Serial Driver: One Factor Sources at a time
             Self::SerialBatch(driver) => {
                 for factor_source in factor_sources {
-                    let batch_signing_request = signatures_building_coordinator
-                        .input_for_parallel_batch_driver(&factor_source.id);
+                    // Prepare the request for the driver
+                    let request = coordinator.request_for_serial_batch_driver(&factor_source.id);
 
-                    let request = SerialBatchSigningRequest::new(
-                        batch_signing_request,
-                        signatures_building_coordinator
-                            .invalid_transactions_if_skipped(&factor_source.id)
-                            .into_iter()
-                            .collect_vec(),
-                    );
-
+                    // Produce the results from the driver
                     let response = driver.sign(request).await;
-                    signatures_building_coordinator.process_batch_response(response);
+
+                    // Report the results back to the coordinator
+                    coordinator.process_batch_response(response);
                 }
             }
             Self::SerialSingle(driver) => {
                 for factor_source in factor_sources {
-                    let invalid_transactions_if_skipped = signatures_building_coordinator
-                        .invalid_transactions_if_skipped(&factor_source.id);
+                    let invalid_transactions_if_skipped =
+                        coordinator.invalid_transactions_if_skipped(&factor_source.id);
 
-                    let requests_per_transaction = signatures_building_coordinator
-                        .inputs_for_serial_single_driver(&factor_source.id);
+                    let requests_per_transaction =
+                        coordinator.inputs_for_serial_single_driver(&factor_source.id);
                     for (_, requests_for_transaction) in requests_per_transaction {
                         for partial_request in requests_for_transaction {
                             let request = SerialSingleSigningRequestFull::new(
@@ -80,7 +67,7 @@ impl SigningDriver {
 
                             let response = driver.sign(request).await;
                             let should_continue_with_factor_source =
-                                signatures_building_coordinator.process_single_response(response);
+                                coordinator.process_single_response(response);
                             if !should_continue_with_factor_source {
                                 break;
                             }

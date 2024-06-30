@@ -221,13 +221,44 @@ impl SignaturesBuildingCoordinator {
             .inputs_for_serial_single_driver(factor_source_id)
     }
 
-    pub(crate) fn input_for_parallel_batch_driver(
+    fn input_for_parallel_batch_driver(
         &self,
         factor_source_id: &FactorSourceID,
     ) -> BatchTXBatchKeySigningRequest {
         self.builders
             .borrow()
             .input_for_parallel_batch_driver(factor_source_id)
+    }
+
+    pub(crate) fn request_for_serial_batch_driver(
+        &self,
+        factor_source_id: &FactorSourceID,
+    ) -> SerialBatchSigningRequest {
+        let batch_signing_request = self.input_for_parallel_batch_driver(factor_source_id);
+
+        SerialBatchSigningRequest::new(
+            batch_signing_request,
+            self.invalid_transactions_if_skipped(factor_source_id)
+                .into_iter()
+                .collect_vec(),
+        )
+    }
+
+    pub(crate) fn request_for_parallel_batch_driver(
+        &self,
+        factor_source_ids: IndexSet<FactorSourceID>,
+    ) -> ParallelBatchSigningRequest {
+        let per_factor_source = factor_source_ids
+            .clone()
+            .iter()
+            .map(|fid| (*fid, self.input_for_parallel_batch_driver(fid)))
+            .collect::<IndexMap<FactorSourceID, BatchTXBatchKeySigningRequest>>();
+
+        let invalid_transactions_if_skipped =
+            self.invalid_transactions_if_skipped_factor_sources(factor_source_ids);
+
+        // Prepare the request for the driver
+        ParallelBatchSigningRequest::new(per_factor_source, invalid_transactions_if_skipped)
     }
 
     pub fn invalid_transactions_if_skipped(
