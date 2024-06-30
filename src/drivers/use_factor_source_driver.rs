@@ -1,28 +1,28 @@
 use crate::prelude::*;
 
-pub enum SigningDriver {
-    ParallelBatch(ParallelBatchSigningClient),
-    SerialBatch(SerialBatchSigningClient),
-    SerialSingle(SerialSingleSigningClient),
+pub enum UseFactorSourceClient {
+    ParallelBatch(ParallelBatchUseFactorSourcesClient),
+    SerialBatch(SerialBatchUseFactorSourceClient),
+    SerialSingle(SerialSingleUseFactorSourceClient),
 }
 
-impl SigningDriver {
+impl UseFactorSourceClient {
     pub fn parallel_batch(driver: Arc<dyn ParallelBatchSigningDriver>) -> Self {
-        Self::ParallelBatch(ParallelBatchSigningClient::new(driver))
+        Self::ParallelBatch(ParallelBatchUseFactorSourcesClient::new(driver))
     }
 
     pub fn serial_batch(driver: Arc<dyn SerialBatchSigningDriver>) -> Self {
-        Self::SerialBatch(SerialBatchSigningClient::new(driver))
+        Self::SerialBatch(SerialBatchUseFactorSourceClient::new(driver))
     }
 
     pub fn serial_single(driver: Arc<dyn SerialSingleSigningDriver>) -> Self {
-        Self::SerialSingle(SerialSingleSigningClient::new(driver))
+        Self::SerialSingle(SerialSingleUseFactorSourceClient::new(driver))
     }
 
-    pub async fn sign(
+    pub async fn use_factor_sources(
         &self,
         factor_sources: IndexSet<FactorSource>,
-        coordinator: &SignaturesBuildingCoordinator,
+        coordinator: &FactorResultsBuildingCoordinator,
     ) {
         match self {
             // Parallel Driver: Many Factor Sources at once

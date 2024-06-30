@@ -55,10 +55,10 @@ pub trait SerialSingleSigningDriver {
     ) -> SignWithFactorSourceOrSourcesOutcome<HDSignature>;
 }
 
-pub struct SerialSingleSigningClient {
+pub struct SerialSingleUseFactorSourceClient {
     driver: Arc<dyn SerialSingleSigningDriver>,
 }
-impl SerialSingleSigningClient {
+impl SerialSingleUseFactorSourceClient {
     pub fn new(driver: Arc<dyn SerialSingleSigningDriver>) -> Self {
         Self { driver }
     }

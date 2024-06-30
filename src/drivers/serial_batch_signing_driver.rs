@@ -44,10 +44,10 @@ pub trait SerialBatchSigningDriver {
     ) -> SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse>;
 }
 
-pub struct SerialBatchSigningClient {
+pub struct SerialBatchUseFactorSourceClient {
     driver: Arc<dyn SerialBatchSigningDriver>,
 }
-impl SerialBatchSigningClient {
+impl SerialBatchUseFactorSourceClient {
     pub fn new(driver: Arc<dyn SerialBatchSigningDriver>) -> Self {
         Self { driver }
     }

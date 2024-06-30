@@ -48,11 +48,11 @@ pub trait ParallelBatchSigningDriver {
     ) -> SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse>;
 }
 
-pub struct ParallelBatchSigningClient {
+pub struct ParallelBatchUseFactorSourcesClient {
     driver: Arc<dyn ParallelBatchSigningDriver>,
 }
 
-impl ParallelBatchSigningClient {
+impl ParallelBatchUseFactorSourcesClient {
     pub fn new(driver: Arc<dyn ParallelBatchSigningDriver>) -> Self {
         Self { driver }
     }

@@ -11,15 +11,15 @@ impl TestSigningDriversContext {
 }
 
 impl IsUseFactorSourceDriversContext for TestSigningDriversContext {
-    fn driver_for_factor_source_kind(&self, kind: FactorSourceKind) -> SigningDriver {
+    fn driver_for_factor_source_kind(&self, kind: FactorSourceKind) -> UseFactorSourceClient {
         match kind {
-            FactorSourceKind::Device => SigningDriver::parallel_batch(Arc::new(
+            FactorSourceKind::Device => UseFactorSourceClient::parallel_batch(Arc::new(
                 TestParallelBatchSigningDriver::new(self.simulated_user.clone()),
             )),
-            FactorSourceKind::Arculus => SigningDriver::serial_single(Arc::new(
+            FactorSourceKind::Arculus => UseFactorSourceClient::serial_single(Arc::new(
                 TestSerialSingleSigningDriver::new(self.simulated_user.clone()),
             )),
-            _ => SigningDriver::serial_batch(Arc::new(TestSerialBatchSigningDriver::new(
+            _ => UseFactorSourceClient::serial_batch(Arc::new(TestSerialBatchSigningDriver::new(
                 self.simulated_user.clone(),
             ))),
         }

@@ -1,41 +1,4 @@
-use std::marker::PhantomData;
-
 use crate::prelude::*;
-
-#[async_trait]
-pub trait DerivableFactorOutput {
-    type Input: std::hash::Hash;
-    async fn derive_from_source(
-        source: &FactorSource,
-        input: Self::Input,
-        factor_instance: OwnedFactorInstance,
-    ) -> Self;
-}
-
-pub trait IsOutputGroup {
-    type Output: DerivableFactorOutput;
-    fn input(&self) -> <Self::Output as DerivableFactorOutput>::Input;
-    fn supports_skipping_of_factors() -> bool;
-}
-
-/// A coordinator which gathers output from factor sources for each factor instance,
-/// associated with OutputGroups. An OutputGroup is either a `TransactionManifest`
-/// to sign or a `SecurityStructureOfFactorSources` to derive public keys with in
-/// order to create a `SecurityStructureOfFactorInstances`.
-///
-/// The coordinator supports building output from many factor sources for a batch
-/// of OutputGroups.
-///
-/// The user is prompted to use the factor sources in increasing friction order,
-/// for
-pub struct FactorSourcesOutputBuildingCoordinator<G: IsOutputGroup> {
-    phantom: PhantomData<G>,
-}
-impl<G: IsOutputGroup> FactorSourcesOutputBuildingCoordinator<G> {
-    pub fn new(_inputs: IndexSet<<G::Output as DerivableFactorOutput>::Input>) -> Self {
-        todo!()
-    }
-}
 
 /// A coordinator which gathers signatures from several factor sources of different
 /// kinds, in increasing friction order, for many transactions and for
@@ -45,7 +8,7 @@ impl<G: IsOutputGroup> FactorSourcesOutputBuildingCoordinator<G> {
 /// By increasing friction order we mean, the quickest and easiest to use FactorSourceKind
 /// is last; namely `DeviceFactorSource`, and the most tedious FactorSourceKind is
 /// first; namely `LedgerFactorSource`, which user might also lack access to.
-pub struct SignaturesBuildingCoordinator {
+pub struct FactorResultsBuildingCoordinator {
     /// A context of drivers for "using" factor sources - either to (batch) sign
     /// transaction(s) with, or to derive public keys from.
     drivers: Arc<dyn IsUseFactorSourceDriversContext>,
@@ -67,7 +30,7 @@ pub struct SignaturesBuildingCoordinator {
     builders: RefCell<Builders>,
 }
 
-impl SignaturesBuildingCoordinator {
+impl FactorResultsBuildingCoordinator {
     pub fn new(
         all_factor_sources_in_profile: IndexSet<FactorSource>,
         transactions: IndexSet<TransactionIntent>,
@@ -169,7 +132,7 @@ impl SignaturesBuildingCoordinator {
     }
 }
 
-impl SignaturesBuildingCoordinator {
+impl FactorResultsBuildingCoordinator {
     /// If all transactions already would fail, or if all transactions already are done, then
     /// no point in continuing.
     ///
@@ -178,24 +141,24 @@ impl SignaturesBuildingCoordinator {
         self.builders.borrow().continue_if_necessary()
     }
 
-    fn get_driver(&self, kind: FactorSourceKind) -> SigningDriver {
+    fn get_driver(&self, kind: FactorSourceKind) -> UseFactorSourceClient {
         self.drivers.driver_for_factor_source_kind(kind)
     }
 
-    async fn sign_with_factor_sources(
+    async fn use_certain_factor_sources(
         &self,
         factor_sources: IndexSet<FactorSource>,
         kind: FactorSourceKind,
     ) {
         assert!(factor_sources.iter().all(|f| f.kind() == kind));
-        let signing_driver = self.get_driver(kind);
-        signing_driver.sign(factor_sources, self).await;
+        let driver = self.get_driver(kind);
+        driver.use_factor_sources(factor_sources, self).await;
     }
 
-    async fn do_sign(&self) {
+    async fn use_factor_sources_in_decreasing_friction_order(&self) {
         let factors_of_kind = self.factors_of_kind.clone();
         for (kind, factor_sources) in factors_of_kind.into_iter() {
-            self.sign_with_factor_sources(factor_sources, kind).await;
+            self.use_certain_factor_sources(factor_sources, kind).await;
             match self.continue_if_necessary() {
                 Ok(should_continue) => {
                     if !should_continue {
@@ -211,7 +174,7 @@ impl SignaturesBuildingCoordinator {
     }
 }
 
-impl SignaturesBuildingCoordinator {
+impl FactorResultsBuildingCoordinator {
     pub(crate) fn inputs_for_serial_single_driver(
         &self,
         factor_source_id: &FactorSourceID,
@@ -270,7 +233,7 @@ impl SignaturesBuildingCoordinator {
             .invalid_transactions_if_skipped(factor_source_id)
     }
 
-    pub fn invalid_transactions_if_skipped_factor_sources(
+    fn invalid_transactions_if_skipped_factor_sources(
         &self,
         factor_source_ids: IndexSet<FactorSourceID>,
     ) -> IndexSet<InvalidTransactionIfSkipped> {
@@ -300,9 +263,9 @@ impl SignaturesBuildingCoordinator {
     }
 }
 
-impl SignaturesBuildingCoordinator {
-    pub async fn sign(self) -> SignaturesOutcome {
-        self.do_sign().await;
+impl FactorResultsBuildingCoordinator {
+    pub async fn use_factor_sources(self) -> SignaturesOutcome {
+        self.use_factor_sources_in_decreasing_friction_order().await;
         self.builders.into_inner().outcome()
     }
 }
