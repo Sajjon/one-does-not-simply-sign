@@ -37,25 +37,9 @@ impl SerialBatchSigningRequest {
 /// questions from different security questions factor sources (in fact we
 /// might not even even allow multiple SecurityQuestionsFactorSources to be used).
 #[async_trait]
-pub trait SerialBatchUseFactorSourceDriver {
+pub trait SerialBatchUseFactorSourceDriver: IsUseFactorSourcesDriver {
     async fn sign(
         &self,
         request: SerialBatchSigningRequest,
     ) -> SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse>;
-}
-
-pub struct SerialBatchUseFactorSourceClient {
-    driver: Arc<dyn SerialBatchUseFactorSourceDriver>,
-}
-
-impl SerialBatchUseFactorSourceClient {
-    pub fn new(driver: Arc<dyn SerialBatchUseFactorSourceDriver>) -> Self {
-        Self { driver }
-    }
-    pub async fn sign(
-        &self,
-        request: SerialBatchSigningRequest,
-    ) -> SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse> {
-        self.driver.sign(request).await
-    }
 }

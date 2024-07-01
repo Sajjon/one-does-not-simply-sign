@@ -149,31 +149,23 @@ impl FactorResultsBuildingCoordinator {
         &self,
         factor_sources: IndexSet<FactorSource>,
         kind: FactorSourceKind,
-    ) {
+    ) -> Result<()> {
         assert!(factor_sources.iter().all(|f| f.kind() == kind));
         let driver = self.get_driver(kind);
-        let client = UseFactorSourceClient;
-        client
-            .use_factor_sources(driver, factor_sources, self)
-            .await;
+        let client = UseFactorSourceClient::new(driver);
+        client.use_factor_sources(factor_sources, self).await
     }
 
-    async fn use_factor_sources_in_decreasing_friction_order(&self) {
+    async fn use_factor_sources_in_decreasing_friction_order(&self) -> Result<()> {
         let factors_of_kind = self.factors_of_kind.clone();
         for (kind, factor_sources) in factors_of_kind.into_iter() {
-            self.use_certain_factor_sources(factor_sources, kind).await;
-            match self.continue_if_necessary() {
-                Ok(should_continue) => {
-                    if !should_continue {
-                        return; // finished early, we have fulfilled signing requirements of all transactions
-                    }
-                }
-                Err(e) => {
-                    eprintln!("Error: {:?}", e);
-                    return;
-                }
+            self.use_certain_factor_sources(factor_sources, kind)
+                .await?;
+            if !self.continue_if_necessary()? {
+                return Ok(()); // finished early, we have fulfilled signing requirements of all transactions
             }
         }
+        Ok(())
     }
 }
 
@@ -263,17 +255,6 @@ impl FactorResultsBuildingCoordinator {
             .collect::<IndexSet<_>>()
     }
 
-    /// Returns `true` if we should continue, `false` if we should stop.
-    pub(crate) fn process_single_response(
-        &self,
-        response: SignWithFactorSourceOrSourcesOutcome<HDSignature>,
-    ) -> bool {
-        {
-            let petitions = self.builders.borrow_mut();
-            petitions.process_single_response(response);
-        }
-        self.continue_if_necessary().unwrap_or(false)
-    }
     pub(crate) fn process_batch_response(
         &self,
         response: SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse>,
@@ -285,7 +266,10 @@ impl FactorResultsBuildingCoordinator {
 
 impl FactorResultsBuildingCoordinator {
     pub async fn use_factor_sources(self) -> SignaturesOutcome {
-        self.use_factor_sources_in_decreasing_friction_order().await;
+        _ = self
+            .use_factor_sources_in_decreasing_friction_order()
+            .await
+            .inspect_err(|e| eprintln!("Failed to use factor sources: {:?}", e));
         self.builders.into_inner().outcome()
     }
 }

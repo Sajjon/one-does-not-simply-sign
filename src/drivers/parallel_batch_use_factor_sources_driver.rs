@@ -20,6 +20,34 @@ impl ParallelBatchSigningRequest {
             invalid_transactions_if_skipped,
         }
     }
+    pub fn factor_source_ids(&self) -> IndexSet<FactorSourceID> {
+        self.per_factor_source.keys().into_iter().cloned().collect()
+    }
+}
+
+#[async_trait::async_trait]
+pub trait IsUseFactorSourcesDriver {
+    async fn did_fail_ask_if_retry(&self, factor_source_ids: IndexSet<FactorSourceID>) -> bool;
+}
+
+#[async_trait::async_trait]
+pub trait IsTestUseFactorSourcesDriver: IsUseFactorSourcesDriver + Sync {
+    fn simulated_user(&self) -> SimulatedUser;
+
+    async fn should_simulate_failure(&self, factor_source_ids: IndexSet<FactorSourceID>) -> bool {
+        self.simulated_user()
+            .simulate_failure_if_needed(factor_source_ids)
+    }
+}
+
+#[async_trait::async_trait]
+impl<T> IsUseFactorSourcesDriver for T
+where
+    T: IsTestUseFactorSourcesDriver,
+{
+    async fn did_fail_ask_if_retry(&self, factor_source_ids: IndexSet<FactorSourceID>) -> bool {
+        self.simulated_user().retry_if_needed(factor_source_ids)
+    }
 }
 
 /// A driver for a factor source kind which supports *Batch* usage of
@@ -41,25 +69,9 @@ impl ParallelBatchSigningRequest {
 ///
 /// Example of a Parallel Batch Signing Driver is that for DeviceFactorSource.
 #[async_trait::async_trait]
-pub trait ParallelBatchUseFactorSourcesDriver {
+pub trait ParallelBatchUseFactorSourcesDriver: IsUseFactorSourcesDriver {
     async fn sign(
         &self,
         request: ParallelBatchSigningRequest,
-    ) -> SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse>;
-}
-
-pub struct ParallelBatchUseFactorSourcesClient {
-    driver: Arc<dyn ParallelBatchUseFactorSourcesDriver>,
-}
-
-impl ParallelBatchUseFactorSourcesClient {
-    pub fn new(driver: Arc<dyn ParallelBatchUseFactorSourcesDriver>) -> Self {
-        Self { driver }
-    }
-    pub async fn sign(
-        &self,
-        request: ParallelBatchSigningRequest,
-    ) -> SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse> {
-        self.driver.sign(request).await
-    }
+    ) -> Result<SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse>>;
 }

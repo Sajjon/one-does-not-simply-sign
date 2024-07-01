@@ -154,7 +154,7 @@ mod tests {
 
     #[actix_rt::test]
     async fn lazy_sign_minimum_user_single_tx_a0() {
-        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum([
+        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum_no_retry([
             TransactionIntent::new([Entity::a0()]),
         ]);
         let outcome = coordinator.use_factor_sources().await;
@@ -165,7 +165,7 @@ mod tests {
 
     #[actix_rt::test]
     async fn lazy_sign_minimum_user_single_tx_a1() {
-        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum([
+        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum_no_retry([
             TransactionIntent::new([Entity::a1()]),
         ]);
         let outcome = coordinator.use_factor_sources().await;
@@ -176,7 +176,7 @@ mod tests {
 
     #[actix_rt::test]
     async fn lazy_sign_minimum_user_single_tx_a2() {
-        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum([
+        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum_no_retry([
             TransactionIntent::new([Entity::a2()]),
         ]);
         let outcome = coordinator.use_factor_sources().await;
@@ -187,7 +187,7 @@ mod tests {
 
     #[actix_rt::test]
     async fn lazy_sign_minimum_user_a3() {
-        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum([
+        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum_no_retry([
             TransactionIntent::new([Entity::a3()]),
         ]);
         let outcome = coordinator.use_factor_sources().await;
@@ -198,7 +198,7 @@ mod tests {
 
     #[actix_rt::test]
     async fn lazy_sign_minimum_user_a4() {
-        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum([
+        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum_no_retry([
             TransactionIntent::new([Entity::a4()]),
         ]);
         let outcome = coordinator.use_factor_sources().await;
@@ -209,7 +209,7 @@ mod tests {
 
     #[actix_rt::test]
     async fn lazy_sign_minimum_user_a5() {
-        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum([
+        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum_no_retry([
             TransactionIntent::new([Entity::a5()]),
         ]);
         let outcome = coordinator.use_factor_sources().await;
@@ -220,7 +220,7 @@ mod tests {
 
     #[actix_rt::test]
     async fn lazy_sign_minimum_user_a6() {
-        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum([
+        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum_no_retry([
             TransactionIntent::new([Entity::a6()]),
         ]);
         let outcome = coordinator.use_factor_sources().await;
@@ -232,7 +232,7 @@ mod tests {
 
     #[actix_rt::test]
     async fn lazy_sign_minimum_user_a7() {
-        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum([
+        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum_no_retry([
             TransactionIntent::new([Entity::a7()]),
         ]);
         let outcome = coordinator.use_factor_sources().await;
@@ -245,7 +245,7 @@ mod tests {
     #[actix_rt::test]
     async fn lazy_sign_minimum_user_a5_last_factor_used() {
         let entity = Entity::a5();
-        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum([
+        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum_no_retry([
             TransactionIntent::new([entity.clone()]),
         ]);
         let outcome = coordinator.use_factor_sources().await;
@@ -266,7 +266,7 @@ mod tests {
 
     #[actix_rt::test]
     async fn lazy_sign_minimum_all_known_factors_used_as_override_factors_signed_with_device() {
-        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum([
+        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum_no_retry([
             TransactionIntent::new([Entity::securified(0, "all override", |idx| {
                 MatrixOfFactorInstances::override_only(
                     FactorSource::all()

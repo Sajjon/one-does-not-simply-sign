@@ -48,25 +48,9 @@ impl SerialSingleSigningRequestPartial {
 /// Example of a Serial Single Signing Driver *might* be `Arculus` - we
 /// do not yet know.
 #[async_trait]
-pub trait SerialSingleUseFactorSourceDriver {
+pub trait SerialSingleUseFactorSourceDriver: IsUseFactorSourcesDriver {
     async fn sign(
         &self,
         request: SerialSingleSigningRequestFull,
-    ) -> SignWithFactorSourceOrSourcesOutcome<HDSignature>;
-}
-
-pub struct SerialSingleUseFactorSourceClient {
-    driver: Arc<dyn SerialSingleUseFactorSourceDriver>,
-}
-impl SerialSingleUseFactorSourceClient {
-    pub fn new(driver: Arc<dyn SerialSingleUseFactorSourceDriver>) -> Self {
-        Self { driver }
-    }
-
-    pub async fn sign(
-        &self,
-        request: SerialSingleSigningRequestFull,
-    ) -> SignWithFactorSourceOrSourcesOutcome<HDSignature> {
-        self.driver.sign(request).await
-    }
+    ) -> Result<SignWithFactorSourceOrSourcesOutcome<HDSignature>>;
 }
