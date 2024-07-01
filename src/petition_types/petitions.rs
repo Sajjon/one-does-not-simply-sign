@@ -133,24 +133,6 @@ impl Builders {
         });
     }
 
-    pub(crate) fn process_single_response(
-        &self,
-        response: SignWithFactorSourceOrSourcesOutcome<HDSignature>,
-    ) {
-        match response {
-            SignWithFactorSourceOrSourcesOutcome::Signed {
-                produced_signatures: signature,
-            } => self.add_signature(&signature),
-            SignWithFactorSourceOrSourcesOutcome::Skipped {
-                ids_of_skipped_factors_sources,
-            } => {
-                assert_eq!(ids_of_skipped_factors_sources.len(), 1);
-                let skipped_factor_source_id = ids_of_skipped_factors_sources.last().unwrap();
-                self.skip_factor_source_with_id(skipped_factor_source_id)
-            }
-        }
-    }
-
     pub(crate) fn process_batch_response(
         &self,
         response: SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse>,

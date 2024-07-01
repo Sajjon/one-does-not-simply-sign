@@ -11,15 +11,15 @@ impl TestSigningDriversContext {
 }
 
 impl IsUseFactorSourceDriversContext for TestSigningDriversContext {
-    fn driver_for_factor_source_kind(&self, kind: FactorSourceKind) -> SigningDriver {
+    fn driver_for_factor_source_kind(&self, kind: FactorSourceKind) -> UseFactorSourceDriver {
         match kind {
-            FactorSourceKind::Device => SigningDriver::parallel_batch(Arc::new(
+            FactorSourceKind::Device => UseFactorSourceDriver::parallel_batch(Arc::new(
                 TestParallelBatchSigningDriver::new(self.simulated_user.clone()),
             )),
-            FactorSourceKind::Arculus => SigningDriver::serial_single(Arc::new(
+            FactorSourceKind::Arculus => UseFactorSourceDriver::serial_single(Arc::new(
                 TestSerialSingleSigningDriver::new(self.simulated_user.clone()),
             )),
-            _ => SigningDriver::serial_batch(Arc::new(TestSerialBatchSigningDriver::new(
+            _ => UseFactorSourceDriver::serial_batch(Arc::new(TestSerialBatchSigningDriver::new(
                 self.simulated_user.clone(),
             ))),
         }
@@ -27,7 +27,7 @@ impl IsUseFactorSourceDriversContext for TestSigningDriversContext {
 }
 
 pub struct TestParallelBatchSigningDriver {
-    pub simulated_user: SimulatedUser,
+    simulated_user: SimulatedUser,
 }
 
 impl TestParallelBatchSigningDriver {
@@ -37,11 +37,18 @@ impl TestParallelBatchSigningDriver {
 }
 
 #[async_trait]
-impl ParallelBatchSigningDriver for TestParallelBatchSigningDriver {
+impl IsTestUseFactorSourcesDriver for TestParallelBatchSigningDriver {
+    fn simulated_user(&self) -> SimulatedUser {
+        self.simulated_user.clone()
+    }
+}
+
+#[async_trait]
+impl ParallelBatchUseFactorSourcesDriver for TestParallelBatchSigningDriver {
     async fn sign(
         &self,
         request: ParallelBatchSigningRequest,
-    ) -> SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse> {
+    ) -> Result<SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse>> {
         match self
             .simulated_user
             .sign_or_skip(request.invalid_transactions_if_skipped)
@@ -65,22 +72,25 @@ impl ParallelBatchSigningDriver for TestParallelBatchSigningDriver {
                     })
                     .collect::<IndexMap<FactorSourceID, IndexSet<HDSignature>>>();
 
-                SignWithFactorSourceOrSourcesOutcome::signed(BatchSigningResponse::new(signatures))
+                let response = SignWithFactorSourceOrSourcesOutcome::signed(
+                    BatchSigningResponse::new(signatures),
+                );
+                Ok(response)
             }
 
-            SigningUserInput::Skip => SignWithFactorSourceOrSourcesOutcome::skipped(
+            SigningUserInput::Skip => Ok(SignWithFactorSourceOrSourcesOutcome::skipped(
                 request
                     .per_factor_source
                     .keys()
                     .cloned()
                     .collect::<IndexSet<_>>(),
-            ),
+            )),
         }
     }
 }
 
 pub struct TestSerialSingleSigningDriver {
-    pub simulated_user: SimulatedUser,
+    simulated_user: SimulatedUser,
 }
 
 impl TestSerialSingleSigningDriver {
@@ -90,12 +100,19 @@ impl TestSerialSingleSigningDriver {
 }
 
 #[async_trait]
-impl SerialSingleSigningDriver for TestSerialSingleSigningDriver {
+impl IsTestUseFactorSourcesDriver for TestSerialSingleSigningDriver {
+    fn simulated_user(&self) -> SimulatedUser {
+        self.simulated_user.clone()
+    }
+}
+
+#[async_trait]
+impl SerialSingleUseFactorSourceDriver for TestSerialSingleSigningDriver {
     async fn sign(
         &self,
         request: SerialSingleSigningRequestFull,
-    ) -> SignWithFactorSourceOrSourcesOutcome<HDSignature> {
-        match self
+    ) -> Result<SignWithFactorSourceOrSourcesOutcome<HDSignature>> {
+        let response = match self
             .simulated_user
             .sign_or_skip(request.invalid_transactions_if_skipped)
         {
@@ -105,12 +122,13 @@ impl SerialSingleSigningDriver for TestSerialSingleSigningDriver {
             SigningUserInput::Skip => SignWithFactorSourceOrSourcesOutcome::skipped_factor_source(
                 request.input.factor_source_id,
             ),
-        }
+        };
+        Ok(response)
     }
 }
 
 pub struct TestSerialBatchSigningDriver {
-    pub simulated_user: SimulatedUser,
+    simulated_user: SimulatedUser,
 }
 
 impl TestSerialBatchSigningDriver {
@@ -120,7 +138,14 @@ impl TestSerialBatchSigningDriver {
 }
 
 #[async_trait]
-impl SerialBatchSigningDriver for TestSerialBatchSigningDriver {
+impl IsTestUseFactorSourcesDriver for TestSerialBatchSigningDriver {
+    fn simulated_user(&self) -> SimulatedUser {
+        self.simulated_user.clone()
+    }
+}
+
+#[async_trait]
+impl SerialBatchUseFactorSourceDriver for TestSerialBatchSigningDriver {
     async fn sign(
         &self,
         request: SerialBatchSigningRequest,
