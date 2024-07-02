@@ -115,7 +115,7 @@ mod tests {
         let outcome = coordinator.use_factor_sources().await;
         assert!(outcome.successful());
         let signatures = outcome.all_signatures();
-        assert_eq!(signatures.len(), 3);
+        assert_eq!(signatures.len(), 2);
     }
 
     #[actix_rt::test]
@@ -126,7 +126,7 @@ mod tests {
         let outcome = coordinator.use_factor_sources().await;
         assert!(outcome.successful());
         let signatures = outcome.all_signatures();
-        assert_eq!(signatures.len(), 2);
+        assert_eq!(signatures.len(), 1);
     }
 
     #[actix_rt::test]
@@ -137,7 +137,7 @@ mod tests {
         let outcome = coordinator.use_factor_sources().await;
         assert!(outcome.successful());
         let signatures = outcome.all_signatures();
-        assert_eq!(signatures.len(), 5);
+        assert_eq!(signatures.len(), 1);
     }
 
     #[actix_rt::test]

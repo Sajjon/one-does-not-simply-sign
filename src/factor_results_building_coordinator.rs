@@ -137,7 +137,7 @@ impl FactorResultsBuildingCoordinator {
     /// no point in continuing.
     ///
     /// `Ok(true)` means "continue", `Ok(false)` means "stop, we are done". `Err(_)` means "stop, we have failed".
-    fn continue_if_necessary(&self) -> Result<bool> {
+    pub(crate) fn continue_if_necessary(&self) -> Result<bool> {
         self.builders.borrow().continue_if_necessary()
     }
 
@@ -162,6 +162,7 @@ impl FactorResultsBuildingCoordinator {
         for (kind, factor_sources) in factors_of_kind.into_iter() {
             self.use_certain_factor_sources(factor_sources, kind)
                 .await?;
+
             if !self.continue_if_necessary()? {
                 return Ok(()); // finished early, we have fulfilled signing requirements of all transactions
             }

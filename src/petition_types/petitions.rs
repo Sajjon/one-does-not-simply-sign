@@ -64,9 +64,7 @@ impl Builders {
             })
             .collect::<Result<Vec<bool>>>()?;
 
-        let should_continue_signal = should_continue_signals
-            .into_iter()
-            .fold(true, |a, b| a || b);
+        let should_continue_signal = should_continue_signals.into_iter().all(|b| b);
         Ok(should_continue_signal)
     }
 

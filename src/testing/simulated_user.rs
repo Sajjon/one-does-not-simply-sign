@@ -25,7 +25,7 @@ impl SimulatedUser {
     pub fn new(mode: SimulatedUserMode, retry: impl Into<Option<SimulatedUserRetries>>) -> Self {
         Self {
             mode,
-            retry: retry.into().map(|r| RefCell::new(r)),
+            retry: retry.into().map(RefCell::new),
         }
     }
 }
@@ -57,11 +57,7 @@ impl SimulatedUserRetries {
         max_retries: usize,
         failures: impl IntoIterator<Item = (FactorSourceID, usize)>,
     ) -> Self {
-        Self::with_details(
-            max_retries,
-            HashMap::new(),
-            HashMap::from_iter(failures.into_iter()),
-        )
+        Self::with_details(max_retries, HashMap::new(), HashMap::from_iter(failures))
     }
 
     pub fn new() -> Self {
@@ -78,7 +74,7 @@ impl SimulatedUserRetries {
             return false;
         }
         retry.retry();
-        return true;
+        true
     }
 
     /// returns `true` if we should fail, which updates increases failure count
@@ -94,7 +90,7 @@ impl SimulatedUserRetries {
             return false;
         }
         retry.fail();
-        return true;
+        true
     }
 
     /// If needed, retries ALL factor sources or NONE.
@@ -205,7 +201,7 @@ impl SimulatedUser {
             .into_iter()
             .collect::<std::collections::HashSet<_>>();
 
-        if self.be_prudent(|| invalid_tx_if_skipped.is_empty()) {
+        if self.be_prudent(|| !invalid_tx_if_skipped.is_empty()) {
             SigningUserInput::Sign
         } else {
             SigningUserInput::Skip

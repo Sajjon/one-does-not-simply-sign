@@ -1,39 +1,5 @@
 use crate::prelude::*;
 
-pub enum UseFactorSourceDriver {
-    ParallelBatch(Arc<dyn ParallelBatchUseFactorSourcesDriver>),
-    SerialBatch(Arc<dyn SerialBatchUseFactorSourceDriver>),
-    SerialSingle(Arc<dyn SerialSingleUseFactorSourceDriver>),
-}
-
-impl UseFactorSourceDriver {
-    pub fn parallel_batch(driver: Arc<dyn ParallelBatchUseFactorSourcesDriver>) -> Self {
-        Self::ParallelBatch(driver)
-    }
-
-    pub fn serial_batch(driver: Arc<dyn SerialBatchUseFactorSourceDriver>) -> Self {
-        Self::SerialBatch(driver)
-    }
-
-    pub fn serial_single(driver: Arc<dyn SerialSingleUseFactorSourceDriver>) -> Self {
-        Self::SerialSingle(driver)
-    }
-
-    pub async fn did_fail_ask_if_retry(&self, factor_source_ids: IndexSet<FactorSourceID>) -> bool {
-        match self {
-            UseFactorSourceDriver::ParallelBatch(driver) => {
-                driver.did_fail_ask_if_retry(factor_source_ids).await
-            }
-            UseFactorSourceDriver::SerialBatch(driver) => {
-                driver.did_fail_ask_if_retry(factor_source_ids).await
-            }
-            UseFactorSourceDriver::SerialSingle(driver) => {
-                driver.did_fail_ask_if_retry(factor_source_ids).await
-            }
-        }
-    }
-}
-
 pub struct UseFactorSourceClient {
     driver: UseFactorSourceDriver,
 }
@@ -112,15 +78,24 @@ impl UseFactorSourceClient {
 
                     // Report the results back to the coordinator
                     coordinator.process_batch_response(response);
+
+                    if !coordinator.continue_if_necessary()? {
+                        break;
+                    }
                 }
                 Ok(())
             }
             UseFactorSourceDriver::SerialSingle(driver) => {
-                for factor_source in factor_sources {
+                let mut per_factor_source_outputs =
+                    IndexMap::<FactorSourceID, IndexSet<HDSignature>>::new();
+
+                'loop_0: for factor_source in factor_sources.clone() {
                     let requests_per_transaction =
                         coordinator.requests_for_serial_single_driver(&factor_source.id);
+
                     let mut outputs = IndexSet::<HDSignature>::new();
-                    for (_, requests_for_transaction) in requests_per_transaction {
+
+                    'loop_1: for (_, requests_for_transaction) in requests_per_transaction {
                         for request in requests_for_transaction {
                             let output = driver.sign(request).await?;
                             match output {
@@ -130,30 +105,49 @@ impl UseFactorSourceClient {
                                     outputs.insert(produced_signature);
                                 }
                                 SignWithFactorSourceOrSourcesOutcome::Skipped {
-                                    ids_of_skipped_factors_sources,
+                                    ids_of_skipped_factors_sources: _,
                                 } => {
-                                    coordinator.process_batch_response(
-                                        SignWithFactorSourceOrSourcesOutcome::Skipped {
-                                            ids_of_skipped_factors_sources,
-                                        },
-                                    );
-                                    return Ok(());
+                                    outputs = IndexSet::new(); // reset outputs
+                                    break 'loop_1;
                                 }
                             }
                         }
                     }
-                    let batch_response = BatchSigningResponse::new(IndexMap::from_iter([(
-                        factor_source.id,
-                        outputs,
-                    )]));
 
-                    // Report the results back to the coordinator, as a batch response
-                    coordinator.process_batch_response(
-                        SignWithFactorSourceOrSourcesOutcome::Signed {
-                            produced_signatures: batch_response,
-                        },
-                    );
+                    per_factor_source_outputs.insert(factor_source.id, outputs);
+
+                    if !coordinator.continue_if_necessary()? {
+                        break 'loop_0;
+                    }
                 }
+
+                let all_ids = factor_sources
+                    .clone()
+                    .into_iter()
+                    .map(|f| f.id)
+                    .collect::<IndexSet<_>>();
+                let done_ids = per_factor_source_outputs
+                    .iter()
+                    .filter_map(|(id, signatures)| {
+                        if !signatures.is_empty() {
+                            Some(id)
+                        } else {
+                            None
+                        }
+                    })
+                    .cloned()
+                    .collect::<IndexSet<_>>();
+                let ids_of_skipped_factors_sources =
+                    all_ids.difference(&done_ids).cloned().collect();
+
+                // Report the results back to the coordinator, as a batch response
+                coordinator.process_batch_response(SignWithFactorSourceOrSourcesOutcome::Signed {
+                    produced_signatures: BatchSigningResponse::new(per_factor_source_outputs),
+                });
+                coordinator.process_batch_response(SignWithFactorSourceOrSourcesOutcome::Skipped {
+                    ids_of_skipped_factors_sources,
+                });
+
                 Ok(())
             }
         }

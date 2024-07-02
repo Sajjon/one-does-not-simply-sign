@@ -21,7 +21,7 @@ impl ParallelBatchSigningRequest {
         }
     }
     pub fn factor_source_ids(&self) -> IndexSet<FactorSourceID> {
-        self.per_factor_source.keys().into_iter().cloned().collect()
+        self.per_factor_source.keys().cloned().collect()
     }
 }
 
