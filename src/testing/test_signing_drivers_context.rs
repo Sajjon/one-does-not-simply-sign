@@ -49,6 +49,9 @@ impl ParallelBatchUseFactorSourcesDriver for TestParallelBatchSigningDriver {
         &self,
         request: ParallelBatchSigningRequest,
     ) -> Result<SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse>> {
+        if self.should_simulate_failure(request.per_factor_source.keys().cloned().collect()) {
+            return Err(CommonError::Failure);
+        }
         match self
             .simulated_user
             .sign_or_skip(request.invalid_transactions_if_skipped)
@@ -112,6 +115,9 @@ impl SerialSingleUseFactorSourceDriver for TestSerialSingleSigningDriver {
         &self,
         request: SerialSingleSigningRequestFull,
     ) -> Result<SignWithFactorSourceOrSourcesOutcome<HDSignature>> {
+        if self.should_simulate_failure(IndexSet::from_iter([request.input.factor_source_id])) {
+            return Err(CommonError::Failure);
+        }
         let response = match self
             .simulated_user
             .sign_or_skip(request.invalid_transactions_if_skipped)
@@ -149,7 +155,10 @@ impl SerialBatchUseFactorSourceDriver for TestSerialBatchSigningDriver {
     async fn sign(
         &self,
         request: SerialBatchSigningRequest,
-    ) -> SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse> {
+    ) -> Result<SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse>> {
+        if self.should_simulate_failure(IndexSet::from_iter([request.input.factor_source_id])) {
+            return Err(CommonError::Failure);
+        }
         let invalid_transactions_if_skipped = request.invalid_transactions_if_skipped;
         match self
             .simulated_user
@@ -172,11 +181,13 @@ impl SerialBatchUseFactorSourceDriver for TestSerialBatchSigningDriver {
                     })
                     .collect::<IndexMap<FactorSourceID, IndexSet<HDSignature>>>();
                 let response = BatchSigningResponse::new(signatures);
-                SignWithFactorSourceOrSourcesOutcome::signed(response)
+                Ok(SignWithFactorSourceOrSourcesOutcome::signed(response))
             }
-            SigningUserInput::Skip => SignWithFactorSourceOrSourcesOutcome::skipped_factor_source(
-                request.input.factor_source_id,
-            ),
+            SigningUserInput::Skip => {
+                Ok(SignWithFactorSourceOrSourcesOutcome::skipped_factor_source(
+                    request.input.factor_source_id,
+                ))
+            }
         }
     }
 }

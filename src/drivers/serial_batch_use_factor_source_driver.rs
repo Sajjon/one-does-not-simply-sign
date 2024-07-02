@@ -41,5 +41,5 @@ pub trait SerialBatchUseFactorSourceDriver: IsUseFactorSourcesDriver {
     async fn sign(
         &self,
         request: SerialBatchSigningRequest,
-    ) -> SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse>;
+    ) -> Result<SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse>>;
 }

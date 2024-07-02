@@ -153,7 +153,8 @@ impl FactorResultsBuildingCoordinator {
         assert!(factor_sources.iter().all(|f| f.kind() == kind));
         let driver = self.get_driver(kind);
         let client = UseFactorSourceClient::new(driver);
-        client.use_factor_sources(factor_sources, self).await
+        let _ = client.use_factor_sources(factor_sources, self).await;
+        Ok(())
     }
 
     async fn use_factor_sources_in_decreasing_friction_order(&self) -> Result<()> {

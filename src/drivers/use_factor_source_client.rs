@@ -43,16 +43,17 @@ impl UseFactorSourceClient {
         Self { driver }
     }
 
+    /// `Ok(false)` means that we failed to sign and failed to retry.
     pub async fn use_factor_sources(
         &self,
         factor_sources: IndexSet<FactorSource>,
         coordinator: &FactorResultsBuildingCoordinator,
-    ) -> Result<()> {
+    ) -> Result<bool> {
         match self
             .do_use_factor_sources(factor_sources.clone(), coordinator)
             .await
         {
-            Ok(()) => Ok(()),
+            Ok(()) => Ok(true),
             Err(_) => {
                 // Ask user if she wants to retry.
                 if self
@@ -62,10 +63,18 @@ impl UseFactorSourceClient {
                     )
                     .await
                 {
-                    self.do_use_factor_sources(factor_sources.clone(), coordinator)
-                        .await
+                    // recursive call (Box::pin is needed since we are recursively calling ourselves and we are async)
+                    Box::pin(self.use_factor_sources(factor_sources.clone(), coordinator)).await
                 } else {
-                    Ok(())
+                    coordinator.process_batch_response(
+                        SignWithFactorSourceOrSourcesOutcome::Skipped {
+                            ids_of_skipped_factors_sources: factor_sources
+                                .into_iter()
+                                .map(|f| f.id)
+                                .collect(),
+                        },
+                    );
+                    Ok(false)
                 }
             }
         }
@@ -99,7 +108,7 @@ impl UseFactorSourceClient {
                     let request = coordinator.request_for_serial_batch_driver(&factor_source.id);
 
                     // Produce the results from the driver
-                    let response = driver.sign(request).await;
+                    let response = driver.sign(request).await?;
 
                     // Report the results back to the coordinator
                     coordinator.process_batch_response(response);
