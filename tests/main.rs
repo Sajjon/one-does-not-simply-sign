@@ -262,6 +262,11 @@ mod tests {
                 .factor_source_id,
             FactorSourceID::fs4()
         );
+
+        assert_eq!(
+            outcome.skipped_factor_sources(),
+            IndexSet::just(FactorSourceID::fs1())
+        )
     }
 
     #[actix_rt::test]
@@ -413,5 +418,36 @@ mod tests {
         failure_user_succeeds_after_nth_retry(2).await;
         failure_user_succeeds_after_nth_retry(3).await;
         failure_user_succeeds_after_nth_retry(10).await;
+    }
+
+    #[actix_rt::test]
+    async fn building_can_succeed_even_if_one_factor_source_fails_ids_of_successful_tx() {
+        let coordinator = FactorResultsBuildingCoordinator::test_prudent_with_retry(
+            [TransactionIntent::new([Entity::a4()])],
+            SimulatedUserRetries::with_simulated_failures(2, [(FactorSourceID::fs3(), 99)]),
+        );
+        let outcome = coordinator.use_factor_sources().await;
+        assert!(outcome.successful());
+        assert_eq!(
+            outcome
+                .signatures_of_successful_transactions()
+                .into_iter()
+                .map(|f| f.factor_source_id())
+                .collect::<IndexSet<_>>(),
+            IndexSet::<_>::from_iter([FactorSourceID::fs0(), FactorSourceID::fs5()])
+        );
+    }
+
+    #[actix_rt::test]
+    async fn building_can_succeed_even_if_one_factor_source_fails_ids_of_failed_tx() {
+        let coordinator = FactorResultsBuildingCoordinator::test_prudent_with_retry(
+            [TransactionIntent::new([Entity::a4()])],
+            SimulatedUserRetries::with_simulated_failures(2, [(FactorSourceID::fs3(), 99)]),
+        );
+        let outcome = coordinator.use_factor_sources().await;
+        assert_eq!(
+            outcome.skipped_factor_sources(),
+            IndexSet::<_>::from_iter([FactorSourceID::fs3()])
+        );
     }
 }

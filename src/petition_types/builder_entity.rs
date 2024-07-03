@@ -1,3 +1,5 @@
+use std::cell::Ref;
+
 use crate::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -81,20 +83,39 @@ impl BuilderEntity {
         self.status() == BuilderFactorsStatus::Finished(BuilderFactorsStatusFinished::Success)
     }
 
-    pub fn all_signatures(&self) -> IndexSet<HDSignature> {
-        let o: IndexSet<HDSignature> = self
+    fn union_of<F, T>(&self, map: F) -> IndexSet<T>
+    where
+        T: Eq + std::hash::Hash + Clone,
+        F: Fn(Ref<BuilderFactors>) -> IndexSet<T>,
+    {
+        let o = self
             .override_factors
             .as_ref()
-            .map(|f| f.borrow().all_signatures())
+            .map(|f| map(f.borrow()))
             .unwrap_or_default();
 
-        let t: IndexSet<HDSignature> = self
+        let t = self
             .threshold_factors
             .as_ref()
-            .map(|f| f.borrow().all_signatures())
+            .map(|f| map(f.borrow()))
             .unwrap_or_default();
 
-        o.union(&t).map(|x| x.to_owned()).collect::<IndexSet<_>>()
+        o.union(&t).cloned().collect::<IndexSet<T>>()
+    }
+
+    pub fn all_skipped_factor_instance(&self) -> IndexSet<FactorInstance> {
+        self.union_of(|f| f.all_skipped())
+    }
+
+    pub fn all_skipped_factor_sources(&self) -> IndexSet<FactorSourceID> {
+        self.all_skipped_factor_instance()
+            .into_iter()
+            .map(|f| f.factor_source_id)
+            .collect::<IndexSet<_>>()
+    }
+
+    pub fn all_signatures(&self) -> IndexSet<HDSignature> {
+        self.union_of(|f| f.all_signatures())
     }
 
     pub fn references_factor_source_with_id(&self, factor_source_id: &FactorSourceID) -> bool {

@@ -95,6 +95,15 @@ impl Ord for FactorSource {
     }
 }
 
+pub trait Just<Item> {
+    fn just(item: Item) -> Self;
+}
+impl<T: std::hash::Hash + Eq> Just<T> for IndexSet<T> {
+    fn just(item: T) -> Self {
+        Self::from_iter([item])
+    }
+}
+
 #[repr(u32)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, std::hash::Hash, PartialOrd, Ord, strum::Display)]
 pub enum FactorSourceKind {

@@ -26,16 +26,22 @@ impl Builders {
         let txid_to_petition = self.txid_to_petition.into_inner();
         let mut failed_transactions = MaybeSignedTransactions::empty();
         let mut successful_transactions = MaybeSignedTransactions::empty();
+        let mut skipped_factor_sources = IndexSet::<_>::new();
         for (txid, petition_of_transaction) in txid_to_petition.into_iter() {
-            let (successful, signatures) = petition_of_transaction.outcome();
+            let (successful, signatures, skipped) = petition_of_transaction.outcome();
             if successful {
                 successful_transactions.add_signatures(txid, signatures);
             } else {
                 failed_transactions.add_signatures(txid, signatures);
             }
+            skipped_factor_sources.extend(skipped)
         }
 
-        SignaturesOutcome::new(successful_transactions, failed_transactions)
+        SignaturesOutcome::new(
+            successful_transactions,
+            failed_transactions,
+            skipped_factor_sources,
+        )
     }
 
     pub(crate) fn new(
@@ -170,10 +176,13 @@ impl PetitionOfTransaction {
     ///
     /// Returns `(false, _)` if not enough factor instances have signed.
     ///
-    /// The second value in the tuple `(_, IndexSet<HDSignature>)` contains all
+    /// The second value in the tuple `(_, IndexSet<HDSignature>, _)` contains all
     /// the signatures, even if it the transaction was failed, all signatures
     /// will be returned (which might be empty).
-    pub fn outcome(self) -> (bool, IndexSet<HDSignature>) {
+    ///
+    /// The third value in the tuple `(_, _, IndexSet<FactorSourceID>)` contains the
+    /// id of all the factor sources which was skipped.
+    pub fn outcome(self) -> (bool, IndexSet<HDSignature>, IndexSet<FactorSourceID>) {
         let for_entities = self
             .for_entities
             .into_inner()
@@ -186,11 +195,16 @@ impl PetitionOfTransaction {
             .all(|b| b.has_signatures_requirement_been_fulfilled());
 
         let signatures = for_entities
-            .into_iter()
+            .iter()
             .flat_map(|x| x.all_signatures())
             .collect::<IndexSet<_>>();
 
-        (successful, signatures)
+        let skipped = for_entities
+            .iter()
+            .flat_map(|x| x.all_skipped_factor_sources())
+            .collect::<IndexSet<_>>();
+
+        (successful, signatures, skipped)
     }
 
     fn _all_factor_instances(&self) -> IndexSet<OwnedFactorInstance> {

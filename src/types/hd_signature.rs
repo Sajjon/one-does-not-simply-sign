@@ -42,6 +42,12 @@ impl HDSignature {
         &self.input.owned_factor_instance
     }
 
+    pub fn factor_source_id(&self) -> FactorSourceID {
+        self.owned_factor_instance()
+            .factor_instance()
+            .factor_source_id
+    }
+
     pub fn used_same_input_as(&self, other: &Self) -> bool {
         self.input == other.input
     }
