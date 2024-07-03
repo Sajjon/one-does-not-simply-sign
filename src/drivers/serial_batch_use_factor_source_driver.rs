@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-/// A batch signing request used with a SerialBatchSigningDriver, containing
+/// A batch signing request used with a SerialBatchUseFactorSourceDriver, containing
 /// a collection of transactions to sign with multiple keys (derivation paths),
 /// and a collection of transactions which would be invalid if the user skips
 /// signing with this factor source.
@@ -37,24 +37,9 @@ impl SerialBatchSigningRequest {
 /// questions from different security questions factor sources (in fact we
 /// might not even even allow multiple SecurityQuestionsFactorSources to be used).
 #[async_trait]
-pub trait SerialBatchSigningDriver {
+pub trait SerialBatchUseFactorSourceDriver: IsUseFactorSourcesDriver {
     async fn sign(
         &self,
         request: SerialBatchSigningRequest,
-    ) -> SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse>;
-}
-
-pub struct SerialBatchSigningClient {
-    driver: Arc<dyn SerialBatchSigningDriver>,
-}
-impl SerialBatchSigningClient {
-    pub fn new(driver: Arc<dyn SerialBatchSigningDriver>) -> Self {
-        Self { driver }
-    }
-    pub async fn sign(
-        &self,
-        request: SerialBatchSigningRequest,
-    ) -> SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse> {
-        self.driver.sign(request).await
-    }
+    ) -> Result<SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse>>;
 }

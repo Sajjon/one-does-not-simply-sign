@@ -20,7 +20,11 @@ impl BuilderFactorsState {
     }
 
     pub fn all_signatures(&self) -> IndexSet<HDSignature> {
-        self.signed.borrow().snapshot()
+        self.signed().snapshot()
+    }
+
+    pub fn all_skipped(&self) -> IndexSet<FactorInstance> {
+        self.skipped().snapshot()
     }
 
     fn assert_not_referencing_factor_source(&self, factor_source_id: FactorSourceID) {

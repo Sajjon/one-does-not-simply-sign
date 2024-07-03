@@ -23,6 +23,10 @@ impl BuilderFactors {
         self.input.factors.clone()
     }
 
+    pub fn all_skipped(&self) -> IndexSet<FactorInstance> {
+        self.state.borrow().all_skipped()
+    }
+
     pub fn all_signatures(&self) -> IndexSet<HDSignature> {
         self.state.borrow().all_signatures()
     }

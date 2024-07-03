@@ -1,41 +1,4 @@
-use std::marker::PhantomData;
-
 use crate::prelude::*;
-
-#[async_trait]
-pub trait DerivableFactorOutput {
-    type Input: std::hash::Hash;
-    async fn derive_from_source(
-        source: &FactorSource,
-        input: Self::Input,
-        factor_instance: OwnedFactorInstance,
-    ) -> Self;
-}
-
-pub trait IsOutputGroup {
-    type Output: DerivableFactorOutput;
-    fn input(&self) -> <Self::Output as DerivableFactorOutput>::Input;
-    fn supports_skipping_of_factors() -> bool;
-}
-
-/// A coordinator which gathers output from factor sources for each factor instance,
-/// associated with OutputGroups. An OutputGroup is either a `TransactionManifest`
-/// to sign or a `SecurityStructureOfFactorSources` to derive public keys with in
-/// order to create a `SecurityStructureOfFactorInstances`.
-///
-/// The coordinator supports building output from many factor sources for a batch
-/// of OutputGroups.
-///
-/// The user is prompted to use the factor sources in increasing friction order,
-/// for
-pub struct FactorSourcesOutputBuildingCoordinator<G: IsOutputGroup> {
-    phantom: PhantomData<G>,
-}
-impl<G: IsOutputGroup> FactorSourcesOutputBuildingCoordinator<G> {
-    pub fn new(_inputs: IndexSet<<G::Output as DerivableFactorOutput>::Input>) -> Self {
-        todo!()
-    }
-}
 
 /// A coordinator which gathers signatures from several factor sources of different
 /// kinds, in increasing friction order, for many transactions and for
@@ -45,7 +8,7 @@ impl<G: IsOutputGroup> FactorSourcesOutputBuildingCoordinator<G> {
 /// By increasing friction order we mean, the quickest and easiest to use FactorSourceKind
 /// is last; namely `DeviceFactorSource`, and the most tedious FactorSourceKind is
 /// first; namely `LedgerFactorSource`, which user might also lack access to.
-pub struct SignaturesBuildingCoordinator {
+pub struct FactorResultsBuildingCoordinator {
     /// A context of drivers for "using" factor sources - either to (batch) sign
     /// transaction(s) with, or to derive public keys from.
     drivers: Arc<dyn IsUseFactorSourceDriversContext>,
@@ -67,7 +30,7 @@ pub struct SignaturesBuildingCoordinator {
     builders: RefCell<Builders>,
 }
 
-impl SignaturesBuildingCoordinator {
+impl FactorResultsBuildingCoordinator {
     pub fn new(
         all_factor_sources_in_profile: IndexSet<FactorSource>,
         transactions: IndexSet<TransactionIntent>,
@@ -169,65 +132,110 @@ impl SignaturesBuildingCoordinator {
     }
 }
 
-impl SignaturesBuildingCoordinator {
+impl FactorResultsBuildingCoordinator {
     /// If all transactions already would fail, or if all transactions already are done, then
     /// no point in continuing.
     ///
     /// `Ok(true)` means "continue", `Ok(false)` means "stop, we are done". `Err(_)` means "stop, we have failed".
-    fn continue_if_necessary(&self) -> Result<bool> {
+    pub(crate) fn continue_if_necessary(&self) -> Result<bool> {
         self.builders.borrow().continue_if_necessary()
     }
 
-    fn get_driver(&self, kind: FactorSourceKind) -> SigningDriver {
+    fn get_driver(&self, kind: FactorSourceKind) -> UseFactorSourceDriver {
         self.drivers.driver_for_factor_source_kind(kind)
     }
 
-    async fn sign_with_factor_sources(
+    async fn use_certain_factor_sources(
         &self,
         factor_sources: IndexSet<FactorSource>,
         kind: FactorSourceKind,
-    ) {
+    ) -> Result<()> {
         assert!(factor_sources.iter().all(|f| f.kind() == kind));
-        let signing_driver = self.get_driver(kind);
-        signing_driver.sign(factor_sources, self).await;
+        let driver = self.get_driver(kind);
+        let client = UseFactorSourceClient::new(driver);
+        let _ = client.use_factor_sources(factor_sources, self).await;
+        Ok(())
     }
 
-    async fn do_sign(&self) {
+    async fn use_factor_sources_in_decreasing_friction_order(&self) -> Result<()> {
         let factors_of_kind = self.factors_of_kind.clone();
         for (kind, factor_sources) in factors_of_kind.into_iter() {
-            self.sign_with_factor_sources(factor_sources, kind).await;
-            match self.continue_if_necessary() {
-                Ok(should_continue) => {
-                    if !should_continue {
-                        return; // finished early, we have fulfilled signing requirements of all transactions
-                    }
-                }
-                Err(e) => {
-                    eprintln!("Error: {:?}", e);
-                    return;
-                }
+            self.use_certain_factor_sources(factor_sources, kind)
+                .await?;
+
+            if !self.continue_if_necessary()? {
+                return Ok(()); // finished early, we have fulfilled signing requirements of all transactions
             }
         }
+        Ok(())
     }
 }
 
-impl SignaturesBuildingCoordinator {
-    pub(crate) fn inputs_for_serial_single_driver(
+impl FactorResultsBuildingCoordinator {
+    pub(crate) fn requests_for_serial_single_driver(
         &self,
         factor_source_id: &FactorSourceID,
-    ) -> IndexMap<IntentHash, IndexSet<SerialSingleSigningRequestPartial>> {
+    ) -> IndexMap<IntentHash, IndexSet<SerialSingleSigningRequestFull>> {
+        let invalid_transactions_if_skipped =
+            self.invalid_transactions_if_skipped(factor_source_id);
+
         self.builders
             .borrow()
             .inputs_for_serial_single_driver(factor_source_id)
+            .into_iter()
+            .map(|(intent_hash, requests)| {
+                let values = requests
+                    .into_iter()
+                    .map(|p| {
+                        SerialSingleSigningRequestFull::new(
+                            p,
+                            invalid_transactions_if_skipped.clone(),
+                        )
+                    })
+                    .collect::<IndexSet<_>>();
+                (intent_hash, values)
+            })
+            .collect()
     }
 
-    pub(crate) fn input_for_parallel_batch_driver(
+    fn input_for_parallel_batch_driver(
         &self,
         factor_source_id: &FactorSourceID,
     ) -> BatchTXBatchKeySigningRequest {
         self.builders
             .borrow()
             .input_for_parallel_batch_driver(factor_source_id)
+    }
+
+    pub(crate) fn request_for_serial_batch_driver(
+        &self,
+        factor_source_id: &FactorSourceID,
+    ) -> SerialBatchSigningRequest {
+        let batch_signing_request = self.input_for_parallel_batch_driver(factor_source_id);
+
+        SerialBatchSigningRequest::new(
+            batch_signing_request,
+            self.invalid_transactions_if_skipped(factor_source_id)
+                .into_iter()
+                .collect_vec(),
+        )
+    }
+
+    pub(crate) fn request_for_parallel_batch_driver(
+        &self,
+        factor_source_ids: IndexSet<FactorSourceID>,
+    ) -> ParallelBatchSigningRequest {
+        let per_factor_source = factor_source_ids
+            .clone()
+            .iter()
+            .map(|fid| (*fid, self.input_for_parallel_batch_driver(fid)))
+            .collect::<IndexMap<FactorSourceID, BatchTXBatchKeySigningRequest>>();
+
+        let invalid_transactions_if_skipped =
+            self.invalid_transactions_if_skipped_factor_sources(factor_source_ids);
+
+        // Prepare the request for the driver
+        ParallelBatchSigningRequest::new(per_factor_source, invalid_transactions_if_skipped)
     }
 
     pub fn invalid_transactions_if_skipped(
@@ -239,7 +247,7 @@ impl SignaturesBuildingCoordinator {
             .invalid_transactions_if_skipped(factor_source_id)
     }
 
-    pub fn invalid_transactions_if_skipped_factor_sources(
+    fn invalid_transactions_if_skipped_factor_sources(
         &self,
         factor_source_ids: IndexSet<FactorSourceID>,
     ) -> IndexSet<InvalidTransactionIfSkipped> {
@@ -249,17 +257,6 @@ impl SignaturesBuildingCoordinator {
             .collect::<IndexSet<_>>()
     }
 
-    /// Returns `true` if we should continue, `false` if we should stop.
-    pub(crate) fn process_single_response(
-        &self,
-        response: SignWithFactorSourceOrSourcesOutcome<HDSignature>,
-    ) -> bool {
-        {
-            let petitions = self.builders.borrow_mut();
-            petitions.process_single_response(response);
-        }
-        self.continue_if_necessary().unwrap_or(false)
-    }
     pub(crate) fn process_batch_response(
         &self,
         response: SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse>,
@@ -269,9 +266,12 @@ impl SignaturesBuildingCoordinator {
     }
 }
 
-impl SignaturesBuildingCoordinator {
-    pub async fn sign(self) -> SignaturesOutcome {
-        self.do_sign().await;
+impl FactorResultsBuildingCoordinator {
+    pub async fn use_factor_sources(self) -> SignaturesOutcome {
+        _ = self
+            .use_factor_sources_in_decreasing_friction_order()
+            .await
+            .inspect_err(|e| eprintln!("Failed to use factor sources: {:?}", e));
         self.builders.into_inner().outcome()
     }
 }

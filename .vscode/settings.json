@@ -8,6 +8,7 @@
     "substate",
     "txid",
     "txids",
+    "unsecurified",
     "Yubikey"
   ]
 }

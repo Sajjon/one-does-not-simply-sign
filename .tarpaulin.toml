@@ -6,4 +6,4 @@ timeout = "2m"
 locked = true
 all-features = true
 jobs = 1
-out = ["html"]
+out = ["Html"]

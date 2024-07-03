@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-impl SignaturesBuildingCoordinator {
+impl FactorResultsBuildingCoordinator {
     pub fn new_test(
         all_factor_sources_in_profile: impl IntoIterator<Item = FactorSource>,
         transactions: impl IntoIterator<Item = TransactionIntent>,
@@ -19,7 +19,7 @@ impl SignaturesBuildingCoordinator {
         Self::new_test(
             all_factor_sources_in_profile,
             transactions,
-            SimulatedUser::Prudent,
+            SimulatedUser::prudent_no_fail(),
         )
     }
 
@@ -27,21 +27,32 @@ impl SignaturesBuildingCoordinator {
         Self::test_prudent_with_factors(FactorSource::all(), transactions)
     }
 
-    pub fn test_lazy_sign_minimum_with_factors(
+    pub fn test_prudent_with_retry(
+        transactions: impl IntoIterator<Item = TransactionIntent>,
+        retry: SimulatedUserRetries,
+    ) -> Self {
+        Self::new_test(
+            FactorSource::all(),
+            transactions,
+            SimulatedUser::prudent_with_retry(retry),
+        )
+    }
+
+    pub fn test_lazy_sign_minimum_no_retry_with_factors(
         all_factor_sources_in_profile: impl IntoIterator<Item = FactorSource>,
         transactions: impl IntoIterator<Item = TransactionIntent>,
     ) -> Self {
         Self::new_test(
             all_factor_sources_in_profile,
             transactions,
-            SimulatedUser::Lazy(Laziness::SignMinimum),
+            SimulatedUser::lazy_sign_minimum([]),
         )
     }
 
-    pub fn test_lazy_sign_minimum(
+    pub fn test_lazy_sign_minimum_no_retry(
         transactions: impl IntoIterator<Item = TransactionIntent>,
     ) -> Self {
-        Self::test_lazy_sign_minimum_with_factors(FactorSource::all(), transactions)
+        Self::test_lazy_sign_minimum_no_retry_with_factors(FactorSource::all(), transactions)
     }
 
     pub fn test_lazy_always_skip_with_factors(
@@ -51,7 +62,7 @@ impl SignaturesBuildingCoordinator {
         Self::new_test(
             all_factor_sources_in_profile,
             transactions,
-            SimulatedUser::Lazy(Laziness::AlwaysSkip),
+            SimulatedUser::lazy_always_skip_no_fail(),
         )
     }
 

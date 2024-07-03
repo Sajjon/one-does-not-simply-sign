@@ -18,6 +18,8 @@ pub struct SignaturesOutcome {
     ///
     /// Potentially empty
     failed_transactions: MaybeSignedTransactions,
+
+    skipped_factor_sources: IndexSet<FactorSourceID>,
 }
 
 impl SignaturesOutcome {
@@ -27,7 +29,9 @@ impl SignaturesOutcome {
     pub fn new(
         successful_transactions: MaybeSignedTransactions,
         failed_transactions: MaybeSignedTransactions,
+        skipped_factor_sources: impl IntoIterator<Item = FactorSourceID>,
     ) -> Self {
+        let skipped_factor_sources = skipped_factor_sources.into_iter().collect::<IndexSet<_>>();
         let successful_hashes: IndexSet<IntentHash> = successful_transactions
             .transactions
             .keys()
@@ -47,6 +51,7 @@ impl SignaturesOutcome {
         Self {
             successful_transactions,
             failed_transactions,
+            skipped_factor_sources,
         }
     }
 
@@ -56,6 +61,10 @@ impl SignaturesOutcome {
 
     pub fn signatures_of_successful_transactions(&self) -> IndexSet<HDSignature> {
         self.successful_transactions.all_signatures()
+    }
+
+    pub fn skipped_factor_sources(&self) -> IndexSet<FactorSourceID> {
+        self.skipped_factor_sources.clone()
     }
 
     pub fn signatures_of_failed_transactions(&self) -> IndexSet<HDSignature> {
@@ -85,6 +94,7 @@ mod tests {
         Sut::new(
             MaybeSignedTransactions::sample(),
             MaybeSignedTransactions::sample(),
+            [],
         );
     }
 }
