@@ -377,4 +377,41 @@ mod tests {
         let signatures = outcome.all_signatures();
         assert!(signatures.is_empty());
     }
+
+    #[actix_rt::test]
+    async fn failure_user_does_not_retry() {
+        let coordinator = FactorResultsBuildingCoordinator::test_prudent_with_retry(
+            [TransactionIntent::new([Entity::a0()])],
+            SimulatedUserRetries::with_simulated_failures(0, [(FactorSourceID::fs0(), usize::MAX)]),
+        );
+        let outcome = coordinator.use_factor_sources().await;
+        assert!(!outcome.successful());
+    }
+
+    #[actix_rt::test]
+    async fn failure_user_does_not_retry_enough() {
+        let coordinator = FactorResultsBuildingCoordinator::test_prudent_with_retry(
+            [TransactionIntent::new([Entity::a0()])],
+            SimulatedUserRetries::with_simulated_failures(1, [(FactorSourceID::fs0(), usize::MAX)]),
+        );
+        let outcome = coordinator.use_factor_sources().await;
+        assert!(!outcome.successful());
+    }
+
+    async fn failure_user_succeeds_after_nth_retry(n: usize) {
+        let coordinator = FactorResultsBuildingCoordinator::test_prudent_with_retry(
+            [TransactionIntent::new([Entity::a0()])],
+            SimulatedUserRetries::with_simulated_failures(n, [(FactorSourceID::fs0(), n)]),
+        );
+        let outcome = coordinator.use_factor_sources().await;
+        assert!(outcome.successful());
+    }
+
+    #[actix_rt::test]
+    async fn test_failure_user_succeeds_after_nth_retry() {
+        failure_user_succeeds_after_nth_retry(1).await;
+        failure_user_succeeds_after_nth_retry(2).await;
+        failure_user_succeeds_after_nth_retry(3).await;
+        failure_user_succeeds_after_nth_retry(10).await;
+    }
 }

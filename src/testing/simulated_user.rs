@@ -2,6 +2,7 @@ use std::{
     borrow::BorrowMut,
     cell::{Cell, RefCell},
     collections::HashMap,
+    sync::{Arc, Mutex, RwLock},
 };
 
 use indexmap::IndexSet;
@@ -14,7 +15,7 @@ pub enum SigningUserInput {
     Skip,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct SimulatedUser {
     mode: SimulatedUserMode,
     /// `None` means never fail / retry
@@ -30,14 +31,24 @@ impl SimulatedUser {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct SimulatedUserRetries {
     max_retries: usize,
-    retries: RefCell<HashMap<FactorSourceID, SimulatedUserRetry>>,
+
+    /// Counters of failures and retries for each factor source.
+    /// Has to be Arc<Mutex> since our implementations of `use_factor_sources`
+    /// are async and recursively call itself, so we need a thread-safe of
+    /// reading and writing the counters.
+    retries: Arc<Mutex<HashMap<FactorSourceID, SimulatedUserRetry>>>,
 
     /// `0` means "never fail", `1` means fail first time only, succeed second time.
     /// `2` means fail first two times, succeed third time, and so on.
     simulated_failures: HashMap<FactorSourceID, usize>,
+}
+impl Default for SimulatedUserRetry {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 impl SimulatedUserRetries {
     pub const DEFAULT_RETRY_COUNT: usize = 2;
@@ -48,7 +59,7 @@ impl SimulatedUserRetries {
     ) -> Self {
         Self {
             max_retries,
-            retries: retries.into(),
+            retries: Arc::new(Mutex::new(retries)),
             simulated_failures,
         }
     }
@@ -66,30 +77,38 @@ impl SimulatedUserRetries {
 
     /// returns `true` if we should retry, which updates increases retry count
     fn single_retry_if_needed(&self, factor_source_id: &FactorSourceID) -> bool {
-        let retries = self.retries.borrow_mut();
-        let Some(retry) = retries.get(factor_source_id) else {
-            return false;
-        };
-        if retry.retry_count() >= self.max_retries {
-            return false;
+        let mut retries = self.retries.try_lock().unwrap();
+        if let Some(retry) = retries.get(factor_source_id) {
+            if retry.retry_count() > self.max_retries {
+                return false;
+            }
+            retry.retry();
+        } else {
+            let retry = SimulatedUserRetry::default();
+            retry.retry();
+            retries.insert(*factor_source_id, retry);
         }
-        retry.retry();
         true
     }
 
     /// returns `true` if we should fail, which updates increases failure count
     fn single_simulate_failure_if_needed(&self, factor_source_id: &FactorSourceID) -> bool {
-        let retries = self.retries.borrow_mut();
-        let Some(retry) = retries.get(factor_source_id) else {
-            return false;
-        };
+        let mut retries = self.retries.try_lock().unwrap();
+
         let Some(failure) = self.simulated_failures.get(factor_source_id) else {
             return false;
         };
-        if *failure < retry.failures.get() {
-            return false;
+
+        if let Some(retry) = retries.get(factor_source_id) {
+            if *failure < retry.failures.get() {
+                return false;
+            }
+            retry.fail();
+        } else {
+            let retry = SimulatedUserRetry::default();
+            retry.fail();
+            retries.insert(*factor_source_id, retry);
         }
-        retry.fail();
         true
     }
 
@@ -116,6 +135,12 @@ pub struct SimulatedUserRetry {
     retries: Cell<usize>,
 }
 impl SimulatedUserRetry {
+    pub fn new() -> Self {
+        Self {
+            failures: Cell::new(0),
+            retries: Cell::new(0),
+        }
+    }
     pub fn fail(&self) {
         self.failures.set(self.failures.get() + 1);
     }
@@ -154,12 +179,14 @@ impl SimulatedUserMode {
 }
 
 impl SimulatedUser {
-    pub fn prudent() -> Self {
-        Self {
-            mode: SimulatedUserMode::Prudent,
-            retry: None,
-        }
+    pub fn prudent_no_fail() -> Self {
+        Self::new(SimulatedUserMode::Prudent, None)
     }
+
+    pub fn prudent_with_retry(retry: SimulatedUserRetries) -> Self {
+        Self::new(SimulatedUserMode::Prudent, retry)
+    }
+
     pub fn lazy_always_skip_no_fail() -> Self {
         Self::new(SimulatedUserMode::lazy_always_skip(), None)
     }
