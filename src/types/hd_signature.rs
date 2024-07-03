@@ -21,14 +21,6 @@ impl HDSignature {
         Self::with_details(input, signature)
     }
 
-    pub fn produced_signing_with(
-        intent_hash: IntentHash,
-        owned_factor_instance: OwnedFactorInstance,
-    ) -> Self {
-        let input = HDSignatureInput::new(intent_hash, owned_factor_instance);
-        Self::produced_signing_with_input(input)
-    }
-
     /// Constructs a HDSignature from an already produced `Signature`.
     fn with_details(input: HDSignatureInput, signature: Signature) -> Self {
         Self { input, signature }
@@ -47,10 +39,6 @@ impl HDSignature {
             .factor_instance()
             .factor_source_id
     }
-
-    pub fn used_same_input_as(&self, other: &Self) -> bool {
-        self.input == other.input
-    }
 }
 
 impl HasSampleValues for HDSignature {
@@ -58,6 +46,7 @@ impl HasSampleValues for HDSignature {
         let input = HDSignatureInput::sample();
         Self::produced_signing_with_input(input)
     }
+
     fn sample_other() -> Self {
         let input = HDSignatureInput::sample_other();
         Self::produced_signing_with_input(input)
