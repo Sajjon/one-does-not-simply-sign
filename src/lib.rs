@@ -1,29 +1,47 @@
+#![allow(unused)]
+
 use std::{collections::HashMap, hash::Hash, marker::PhantomData};
 
 /// === BASIC TYPES ===
+///
+
+#[derive(Debug, Clone)]
 pub struct DerivationPath;
+
+#[derive(Debug, Clone)]
 pub struct FactorSourceID;
+
+#[derive(Debug, Clone)]
 pub struct FactorSource;
 
-#[derive(Hash)]
+#[derive(Debug, Clone, Hash)]
 pub struct IntentHash;
 
+#[derive(Debug, Clone)]
 pub struct SecurityShieldID;
+#[derive(Debug, Clone)]
 pub struct PublicKey;
+#[derive(Debug, Clone)]
 pub struct Signature;
+
+#[derive(Debug, Clone)]
 pub struct HDPublicKey {
     derivation_path: DerivationPath,
     public_key: PublicKey,
 }
 
+#[derive(Debug, Clone)]
 pub struct HDSignature {
     public_key: HDPublicKey,
     signature: Signature,
 }
 
+#[derive(Debug, Clone)]
 pub struct TransactionIntent;
+#[derive(Debug, Clone)]
 pub enum AccountOrPersona {}
 
+#[derive(Debug, Clone)]
 pub enum Error {}
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
@@ -52,13 +70,13 @@ pub trait HasDerivationPath {
 }
 impl HasDerivationPath for DerivationPath {
     fn derivation_path(&self) -> DerivationPath {
-        self
+        self.clone()
     }
 }
 
 impl HasDerivationPath for HDPublicKey {
     fn derivation_path(&self) -> DerivationPath {
-        self.derivation_path
+        self.derivation_path.clone()
     }
 }
 
@@ -70,6 +88,16 @@ where
     inputs: HashMap<FactorSourceID, HashMap<ID, Vec<Path>>>,
 }
 
+impl<ID, Path> BatchUseFactorSourceRequest<ID, Path>
+where
+    ID: Hash,
+    Path: HasDerivationPath,
+{
+    pub fn new(inputs: HashMap<FactorSourceID, HashMap<ID, Vec<Path>>>) -> Self {
+        Self { inputs }
+    }
+}
+
 pub type BatchDerivePublicKeysRequest<ID> = BatchUseFactorSourceRequest<ID, DerivationPath>;
 pub type BatchSignTransactionsRequest = BatchUseFactorSourceRequest<IntentHash, HDPublicKey>;
 
@@ -79,12 +107,12 @@ pub trait HasHDPublicKey {
 }
 impl HasHDPublicKey for HDSignature {
     fn hd_public_key(&self) -> HDPublicKey {
-        self.public_key
+        self.public_key.clone()
     }
 }
 impl HasHDPublicKey for HDPublicKey {
     fn hd_public_key(&self) -> HDPublicKey {
-        self
+        self.clone()
     }
 }
 
@@ -98,6 +126,7 @@ where
 pub type BatchDerivePublicKeysResponse<ID> = BatchUseFactorSourceResponse<ID, HDPublicKey>;
 pub type BatchSignTransactionsResponse = BatchUseFactorSourceResponse<IntentHash, HDSignature>;
 
+#[async_trait::async_trait]
 pub trait UseFactorSourceDriver<ID, Path, Product>
 where
     ID: Hash,
@@ -110,6 +139,7 @@ where
     ) -> Result<BatchUseFactorSourceResponse<ID, Product>>;
 }
 
+#[async_trait::async_trait]
 pub trait SignWithFactorSourceDriver:
     UseFactorSourceDriver<IntentHash, HDPublicKey, HDSignature>
 {
@@ -119,13 +149,15 @@ pub trait SignWithFactorSourceDriver:
         request: BatchSignTransactionsRequest,
     ) -> Result<BatchSignTransactionsResponse>;
 }
-impl<T: SignWithFactorSourceDriver> UseFactorSourceDriver<IntentHash, HDPublicKey, HDSignature>
-    for T
+
+#[async_trait::async_trait]
+impl<T: SignWithFactorSourceDriver + std::marker::Sync>
+    UseFactorSourceDriver<IntentHash, HDPublicKey, HDSignature> for T
 {
     async fn use_factor(
         &self,
-        request: BatchUseFactorSourceRequest<ID, Path>,
-    ) -> Result<BatchUseFactorSourceResponse<ID, Product>> {
+        request: BatchUseFactorSourceRequest<IntentHash, HDPublicKey>,
+    ) -> Result<BatchUseFactorSourceResponse<IntentHash, HDSignature>> {
         self.batch_sign_transactions(request).await
     }
 }
@@ -170,25 +202,12 @@ where
     }
 }
 
-trait TyEq {}
-
-impl<T: ?Sized> TyEq for (*const T, *const T) {}
-
-impl<ID, Path, Product> FactorInstanceAccumulator<ID, Path, Product>
-where
-    ID: Hash,
-    Path: HasDerivationPath,
-    Product: HasHDPublicKey,
-    (*const ID, *const IntentHash): TyEq,    // ID == IntentHash
-    (*const Path, *const HDPublicKey): TyEq, // Path == HDPublicKey
-    (*const Product, *const HDSignature): TyEq, // Product == HDSignature
-                                             // https://github.com/rust-lang/rust/issues/20041
-{
+impl FIATransactionSigning {
     pub fn new_batch_sign_transactions(
         inputs: HashMap<FactorSourceID, HashMap<IntentHash, Vec<HDPublicKey>>>,
         factor_sources: Vec<FactorSource>,
     ) -> Result<Self> {
-        Self::new(BatchSignTransactionsRequest::new(inputs), factor_sources)
+        Self::new(BatchUseFactorSourceRequest::new(inputs), factor_sources)
     }
 
     pub fn new_batch_sign_transactions_grouping(
@@ -225,11 +244,14 @@ where
     }
 }
 
-impl FactorInstanceAccumulator
+impl<ID> FIADeriveKeys<ID>
 where
-    (*const ID, *const SecurityShieldID): TyEq, // ID == SecurityShieldID
-    (*const Path, *const DerivationPath): TyEq, // Path == DerivationPath
-    (*const Product, *const HDPublicKey): TyEq, // Product == HDPublicKey
-                                                // https://github.com/rust-lang/rust/issues/20041
+    ID: Hash,
 {
+    pub fn new_batch_derive_public_keys(
+        inputs: HashMap<FactorSourceID, HashMap<ID, Vec<DerivationPath>>>,
+        factor_sources: Vec<FactorSource>,
+    ) -> Result<Self> {
+        Self::new(BatchUseFactorSourceRequest::new(inputs), factor_sources)
+    }
 }
