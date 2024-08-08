@@ -14,6 +14,12 @@ where
     phantom_path: PhantomData<Path>,
     phantom_product: PhantomData<Product>,
 
+    /// If this FIA is used to derive public keys we cannot skip any
+    /// factor source, we need to derive ALL keys, so this variable will
+    /// be `false`. However, for transaction signing, this variable will
+    /// be `true`, since we **might** be able to skip *some* factor sources
+    /// and have valid signed transactions with e.g. just override factors.
+    supports_skipping_of_factor_sources: bool,
     factor_sources: Vec<FactorSource>,
     drivers: Vec<Box<dyn UseFactorSourceDriver<ID, Path, Product>>>,
 }
@@ -31,6 +37,7 @@ where
     type DriverResponse = BatchUseFactorSourceResponse<ID, Product>;
 
     pub fn new(
+        supports_skipping_of_factor_sources: bool,
         request: BatchUseFactorSourceRequest<ID, Path>,
         all_factor_sources_in_profile: impl IntoIterator<Item = FactorSource>,
         all_drivers: impl IntoIterator<Item = Box<dyn UseFactorSourceDriver<ID, Path, Product>>>,
@@ -40,6 +47,7 @@ where
         let drivers = Self::drivers_to_use(&factor_sources, all_drivers)?;
 
         Ok(Self {
+            supports_skipping_of_factor_sources,
             phantom_id: PhantomData,
             phantom_path: PhantomData,
             phantom_product: PhantomData,
@@ -52,7 +60,7 @@ where
         for factor_source in self.factor_sources.iter() {
             self.reduce(factor_source).await?;
 
-            if self.is_done() {
+            if self.is_done_early() {
                 break;
             }
         }
@@ -82,7 +90,11 @@ where
         todo!()
     }
 
-    fn is_done(&self) -> bool {
+    fn is_done_early(&self) -> bool {
+        if !self.supports_skipping_of_factor_sources {
+            // Cannot skip any factor sources, so cannot be done "early".
+            return false;
+        }
         todo!()
     }
 
