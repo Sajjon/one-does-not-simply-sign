@@ -69,107 +69,18 @@ impl HasDerivationPath for HDPublicKey {
     }
 }
 
-pub struct BatchUseFactorSourceRequest<ID, Path>
-where
-    ID: Hash,
-    Path: HasDerivationPath,
-{
-    inputs: HashMap<FactorSourceID, HashMap<ID, Vec<Path>>>,
-}
-
-impl<ID, Path> BatchUseFactorSourceRequest<ID, Path>
-where
-    ID: Hash,
-    Path: HasDerivationPath,
-{
-    pub fn new(inputs: HashMap<FactorSourceID, HashMap<ID, Vec<Path>>>) -> Self {
-        Self { inputs }
-    }
-}
-
-pub type BatchDerivePublicKeysRequest = BatchUseFactorSourceRequest<DeriveKeyID, DerivationPath>;
-pub type BatchSignTransactionsRequest = BatchUseFactorSourceRequest<IntentHash, HDPublicKey>;
-
-/// === RESPONSE TYPES ===
 pub trait HasHDPublicKey {
     fn hd_public_key(&self) -> HDPublicKey;
 }
+
 impl HasHDPublicKey for HDSignature {
     fn hd_public_key(&self) -> HDPublicKey {
         self.public_key.clone()
     }
 }
+
 impl HasHDPublicKey for HDPublicKey {
     fn hd_public_key(&self) -> HDPublicKey {
         self.clone()
-    }
-}
-
-pub struct BatchUseFactorSourceResponse<ID, Product>
-where
-    ID: Hash,
-    Product: HasHDPublicKey,
-{
-    outputs: HashMap<ID, Vec<Product>>,
-}
-pub type BatchDerivePublicKeysResponse = BatchUseFactorSourceResponse<DeriveKeyID, HDPublicKey>;
-pub type BatchSignTransactionsResponse = BatchUseFactorSourceResponse<IntentHash, HDSignature>;
-
-#[async_trait::async_trait]
-pub trait UseFactorSourceDriver<ID, Path, Product>
-where
-    ID: Hash,
-    Path: HasDerivationPath,
-    Product: HasHDPublicKey,
-{
-    async fn use_factor(
-        &self,
-        request: BatchUseFactorSourceRequest<ID, Path>,
-    ) -> Result<BatchUseFactorSourceResponse<ID, Product>>;
-}
-
-#[async_trait::async_trait]
-pub trait SignWithFactorSourceDriver:
-    UseFactorSourceDriver<IntentHash, HDPublicKey, HDSignature>
-{
-    /// Produces many signatures for many entities from many factor sources for many transactions.
-    async fn batch_sign_transactions(
-        &self,
-        request: BatchSignTransactionsRequest,
-    ) -> Result<BatchSignTransactionsResponse>;
-}
-
-#[async_trait::async_trait]
-impl<T: SignWithFactorSourceDriver + std::marker::Sync>
-    UseFactorSourceDriver<IntentHash, HDPublicKey, HDSignature> for T
-{
-    async fn use_factor(
-        &self,
-        request: BatchUseFactorSourceRequest<IntentHash, HDPublicKey>,
-    ) -> Result<BatchUseFactorSourceResponse<IntentHash, HDSignature>> {
-        self.batch_sign_transactions(request).await
-    }
-}
-
-#[async_trait::async_trait]
-pub trait DeriveKeysWithFactorSourceDriver:
-    UseFactorSourceDriver<(), DerivationPath, HDPublicKey>
-{
-    /// Derives many keys from many factor sources for many entities.
-    async fn batch_derive_public_keys(
-        &self,
-        request: BatchDerivePublicKeysRequest,
-    ) -> Result<BatchDerivePublicKeysResponse>;
-}
-
-#[async_trait::async_trait]
-impl<T: DeriveKeysWithFactorSourceDriver + std::marker::Sync>
-    UseFactorSourceDriver<DeriveKeyID, DerivationPath, HDPublicKey> for T
-{
-    async fn use_factor(
-        &self,
-        request: BatchDerivePublicKeysRequest,
-    ) -> Result<BatchDerivePublicKeysResponse> {
-        self.batch_derive_public_keys(request).await
     }
 }
