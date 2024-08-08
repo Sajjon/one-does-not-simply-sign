@@ -1,4 +1,7 @@
 #![allow(unused)]
+#![allow(incomplete_features)]
+#![feature(inherent_associated_types)]
+
 mod fia;
 mod support;
 mod use_factor_source;

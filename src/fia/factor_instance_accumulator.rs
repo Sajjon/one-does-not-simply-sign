@@ -1,3 +1,5 @@
+use std::borrow::Borrow;
+
 use crate::prelude::*;
 
 /// === FIA ===
@@ -23,6 +25,11 @@ where
     Path: HasDerivationPath,
     Product: HasHDPublicKey,
 {
+    type Driver = dyn UseFactorSourceDriver<ID, Path, Product>;
+    type BoxedDriver = Box<Self::Driver>;
+    type DriverRequest = BatchUseFactorSourceRequest<ID, Path>;
+    type DriverResponse = BatchUseFactorSourceResponse<ID, Product>;
+
     pub fn new(
         request: BatchUseFactorSourceRequest<ID, Path>,
         all_factor_sources_in_profile: impl IntoIterator<Item = FactorSource>,
@@ -44,6 +51,9 @@ where
     pub async fn accumulate(&self) -> Result<BatchUseFactorSourceResponse<ID, Product>> {
         for factor_source in self.factor_sources.iter() {
             let driver = self.driver_for_factor_source(factor_source);
+            let request = self.request_for(factor_source);
+            let response = driver.use_factor(request).await?;
+            self.handle_response(response)?
         }
         todo!()
     }
@@ -56,14 +66,23 @@ where
     Path: HasDerivationPath,
     Product: HasHDPublicKey,
 {
+    fn request_for(&self, factor_source: &FactorSource) -> Self::DriverRequest {
+        todo!()
+    }
+
+    fn handle_response(&self, response: Self::DriverResponse) -> Result<()> {
+        todo!()
+    }
+
     fn driver_for_factor_source(
         &self,
         factor_source: &FactorSource,
-    ) -> &Box<dyn UseFactorSourceDriver<ID, Path, Product>> {
+    ) -> &dyn UseFactorSourceDriver<ID, Path, Product> {
         self.drivers
             .iter()
-            .find(|driver| driver.can_be_used_for(factor_source))
+            .find(|d| d.can_be_used_for(factor_source))
             .unwrap()
+            .borrow()
     }
 
     fn factor_sources_to_use(
@@ -76,7 +95,7 @@ where
     fn drivers_to_use(
         factor_sources_to_use: &[FactorSource],
         all_drivers: impl IntoIterator<Item = Box<dyn UseFactorSourceDriver<ID, Path, Product>>>,
-    ) -> Result<Vec<Box<dyn UseFactorSourceDriver<ID, Path, Product>>>> {
+    ) -> Result<Vec<Self::BoxedDriver>> {
         todo!()
     }
 }

@@ -5,14 +5,16 @@ pub trait BaseUseFactorSourceDriver {
 }
 
 #[async_trait::async_trait]
-pub trait UseFactorSourceDriver<ID, Path, Product>: BaseUseFactorSourceDriver
-where
+pub trait UseFactorSourceDriver<
+    ID,
+    Path,
+    Product,
+    Request = BatchUseFactorSourceRequest<ID, Path>,
+    Response = BatchUseFactorSourceResponse<ID, Product>,
+>: BaseUseFactorSourceDriver where
     ID: Hash,
     Path: HasDerivationPath,
     Product: HasHDPublicKey,
 {
-    async fn use_factor(
-        &self,
-        request: BatchUseFactorSourceRequest<ID, Path>,
-    ) -> Result<BatchUseFactorSourceResponse<ID, Product>>;
+    async fn use_factor(&self, request: Request) -> Result<Response>;
 }
