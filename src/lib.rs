@@ -17,10 +17,12 @@ pub struct FactorSource;
 #[derive(Debug, Clone, Hash)]
 pub struct IntentHash;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash)]
 pub struct SecurityShieldID;
+
 #[derive(Debug, Clone)]
 pub struct PublicKey;
+
 #[derive(Debug, Clone)]
 pub struct Signature;
 
@@ -38,11 +40,19 @@ pub struct HDSignature {
 
 #[derive(Debug, Clone)]
 pub struct TransactionIntent;
+
+#[derive(Debug, Clone, Hash)]
+pub enum DeriveKeyID {
+    Single,
+    SecurityShield(SecurityShieldID),
+}
+
 #[derive(Debug, Clone)]
 pub enum AccountOrPersona {}
 
 #[derive(Debug, Clone)]
 pub enum Error {}
+
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 /// === FIA ===
@@ -61,8 +71,8 @@ where
 /// Produce many signatures per transaction intent per FactorSource
 pub type FIATransactionSigning = FactorInstanceAccumulator<IntentHash, HDPublicKey, HDSignature>;
 
-/// Derives many public keys per FactorSource, e.g. used to `SecurityStructureOfFactorSources -> SecurityStructureOfFactorInstances` (letting ID be `SecurityShieldID`.)
-pub type FIADeriveKeys<ID> = FactorInstanceAccumulator<ID, DerivationPath, HDPublicKey>;
+/// Derives many public keys per FactorSource, e.g. used to `SecurityStructureOfFactorSources -> SecurityStructureOfFactorInstances`
+pub type FIADeriveKeys = FactorInstanceAccumulator<DeriveKeyID, DerivationPath, HDPublicKey>;
 
 /// === REQUEST TYPES ===
 pub trait HasDerivationPath {
@@ -98,7 +108,7 @@ where
     }
 }
 
-pub type BatchDerivePublicKeysRequest<ID> = BatchUseFactorSourceRequest<ID, DerivationPath>;
+pub type BatchDerivePublicKeysRequest = BatchUseFactorSourceRequest<DeriveKeyID, DerivationPath>;
 pub type BatchSignTransactionsRequest = BatchUseFactorSourceRequest<IntentHash, HDPublicKey>;
 
 /// === RESPONSE TYPES ===
@@ -123,7 +133,7 @@ where
 {
     outputs: HashMap<ID, Vec<Product>>,
 }
-pub type BatchDerivePublicKeysResponse<ID> = BatchUseFactorSourceResponse<ID, HDPublicKey>;
+pub type BatchDerivePublicKeysResponse = BatchUseFactorSourceResponse<DeriveKeyID, HDPublicKey>;
 pub type BatchSignTransactionsResponse = BatchUseFactorSourceResponse<IntentHash, HDSignature>;
 
 #[async_trait::async_trait]
@@ -162,26 +172,28 @@ impl<T: SignWithFactorSourceDriver + std::marker::Sync>
     }
 }
 
-// pub trait DeriveKeysWithFactorSourceDriver:
-//     UseFactorSourceDriver<(), DerivationPath, HDPublicKey>
-// {
-//     /// Derives many keys from many factor sources for many entities.
-//     async fn batch_derive_public_keys(
-//         &self,
-//         request: BatchDerivePublicKeysRequest,
-//     ) -> Result<BatchDerivePublicKeysResponse>;
-// }
+#[async_trait::async_trait]
+pub trait DeriveKeysWithFactorSourceDriver:
+    UseFactorSourceDriver<(), DerivationPath, HDPublicKey>
+{
+    /// Derives many keys from many factor sources for many entities.
+    async fn batch_derive_public_keys(
+        &self,
+        request: BatchDerivePublicKeysRequest,
+    ) -> Result<BatchDerivePublicKeysResponse>;
+}
 
-// impl<T: DeriveKeysWithFactorSourceDriver> UseFactorSourceDriver<(), DerivationPath, HDPublicKey>
-//     for T
-// {
-//     async fn use_factor(
-//         &self,
-//         request: BatchDerivePublicKeysRequest,
-//     ) -> Result<BatchDerivePublicKeysResponse> {
-//         self.batch_derive_public_keys(request).await
-//     }
-// }
+#[async_trait::async_trait]
+impl<T: DeriveKeysWithFactorSourceDriver + std::marker::Sync>
+    UseFactorSourceDriver<DeriveKeyID, DerivationPath, HDPublicKey> for T
+{
+    async fn use_factor(
+        &self,
+        request: BatchDerivePublicKeysRequest,
+    ) -> Result<BatchDerivePublicKeysResponse> {
+        self.batch_derive_public_keys(request).await
+    }
+}
 
 /// ===== Public =====
 impl<ID, Path, Product> FactorInstanceAccumulator<ID, Path, Product>
@@ -244,12 +256,9 @@ impl FIATransactionSigning {
     }
 }
 
-impl<ID> FIADeriveKeys<ID>
-where
-    ID: Hash,
-{
+impl FIADeriveKeys {
     pub fn new_batch_derive_public_keys(
-        inputs: HashMap<FactorSourceID, HashMap<ID, Vec<DerivationPath>>>,
+        inputs: HashMap<FactorSourceID, HashMap<DeriveKeyID, Vec<DerivationPath>>>,
         factor_sources: Vec<FactorSource>,
     ) -> Result<Self> {
         Self::new(BatchUseFactorSourceRequest::new(inputs), factor_sources)
