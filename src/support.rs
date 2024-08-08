@@ -9,14 +9,16 @@ pub struct DerivationPath;
 #[derive(Debug, Clone)]
 pub struct FactorSourceID;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum FactorSourceKind {
     Device,
     Ledger,
 }
 
 #[derive(Debug, Clone)]
-pub struct FactorSource;
+pub struct FactorSource {
+    pub kind: FactorSourceKind,
+}
 
 #[derive(Debug, Clone, Hash)]
 pub struct IntentHash;
@@ -54,8 +56,11 @@ pub enum DeriveKeyID {
 #[derive(Debug, Clone)]
 pub enum AccountOrPersona {}
 
-#[derive(Debug, Clone)]
-pub enum Error {}
+#[derive(Debug, Clone, thiserror::Error)]
+pub enum Error {
+    #[error("InvalidFactorSourceKind")]
+    InvalidFactorSourceKind,
+}
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 

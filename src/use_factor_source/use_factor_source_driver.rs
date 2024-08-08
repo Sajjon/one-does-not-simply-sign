@@ -1,7 +1,7 @@
 use crate::prelude::*;
 
 pub trait BaseUseFactorSourceDriver {
-    fn can_be_used_for(&self, factor_source: &FactorSource) -> bool;
+    fn supports(&self, factor_source_kind: FactorSourceKind) -> bool;
 }
 
 #[async_trait::async_trait]
