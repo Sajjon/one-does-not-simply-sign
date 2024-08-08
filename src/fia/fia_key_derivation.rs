@@ -8,6 +8,7 @@ impl FiaKeyDerivation {
         inputs: HashMap<FactorSourceID, HashMap<DeriveKeyID, Vec<DerivationPath>>>,
         factor_sources: Vec<FactorSource>,
     ) -> Result<Self> {
-        Self::new(BatchUseFactorSourceRequest::new(inputs), factor_sources)
+        // Self::new(BatchUseFactorSourceRequest::new(inputs), factor_sources)
+        todo!()
     }
 }

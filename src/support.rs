@@ -10,6 +10,12 @@ pub struct DerivationPath;
 pub struct FactorSourceID;
 
 #[derive(Debug, Clone)]
+pub enum FactorSourceKind {
+    Device,
+    Ledger,
+}
+
+#[derive(Debug, Clone)]
 pub struct FactorSource;
 
 #[derive(Debug, Clone, Hash)]

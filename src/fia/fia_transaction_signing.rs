@@ -8,7 +8,8 @@ impl FiaTransactionSigning {
         inputs: HashMap<FactorSourceID, HashMap<IntentHash, Vec<HDPublicKey>>>,
         factor_sources: Vec<FactorSource>,
     ) -> Result<Self> {
-        Self::new(BatchUseFactorSourceRequest::new(inputs), factor_sources)
+        //        Self::new(BatchUseFactorSourceRequest::new(inputs), factor_sources)
+        todo!()
     }
 
     pub fn new_batch_sign_transactions_grouping(
