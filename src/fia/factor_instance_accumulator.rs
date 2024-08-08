@@ -50,22 +50,30 @@ where
 
     pub async fn accumulate(&self) -> Result<BatchUseFactorSourceResponse<ID, Product>> {
         for factor_source in self.factor_sources.iter() {
-            let driver = self.driver_for_factor_source(factor_source);
-            let request = self.request_for(factor_source);
-            let response = driver.use_factor(request).await?;
-            self.handle_response(response)?
+            self.reduce(factor_source).await?;
+
+            if self.is_done() {
+                break;
+            }
         }
-        todo!()
+        self.accumulated_response()
     }
 }
 
-/// ===== Private =====
+/// ===== Private Non Static =====
 impl<ID, Path, Product> FactorInstanceAccumulator<ID, Path, Product>
 where
     ID: Hash,
     Path: HasDerivationPath,
     Product: HasHDPublicKey,
 {
+    async fn reduce(&self, factor_source: &FactorSource) -> Result<()> {
+        let driver = self.driver_for_factor_source(factor_source);
+        let request = self.request_for(factor_source);
+        let response = driver.use_factor(request).await?;
+        self.handle_response(response)
+    }
+
     fn request_for(&self, factor_source: &FactorSource) -> Self::DriverRequest {
         todo!()
     }
@@ -74,6 +82,22 @@ where
         todo!()
     }
 
+    fn is_done(&self) -> bool {
+        todo!()
+    }
+
+    fn accumulated_response(&self) -> Result<BatchUseFactorSourceResponse<ID, Product>> {
+        todo!()
+    }
+}
+
+/// ===== Private Static =====
+impl<ID, Path, Product> FactorInstanceAccumulator<ID, Path, Product>
+where
+    ID: Hash,
+    Path: HasDerivationPath,
+    Product: HasHDPublicKey,
+{
     fn driver_for_factor_source(
         &self,
         factor_source: &FactorSource,
