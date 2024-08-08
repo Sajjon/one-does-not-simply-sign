@@ -22,7 +22,7 @@ pub struct FactorInstanceAccumulator<ID, Path, Product> where ID: Hash, Path: Ha
 
 Here are the two different operations kinds we use FIA for:
 
-````rust
+```rust
 /// Produce many signatures per transaction intent per FactorSource
 pub type FIATransactionSigning = FactorInstanceAccumulator<IntentHash, HDPublicKey, HDSignature>;
 
@@ -33,7 +33,7 @@ pub type FIAApplySecurityShield = FactorInstanceAccumulator<SecurityShieldID, De
 /// First generic not really used, but cannot use `()` since it is not `Hash`.
 /// the identity of the input, namely the `DerivationPath`s as ID.
 pub type FIAJustKeyDerivation = FactorInstanceAccumulator<DerivationPath, DerivationPath, HDPublicKey>;
-```.
+```
 
 
 
@@ -92,7 +92,7 @@ pub trait DeriveKeysWithFactorSourceDriver: UseFactorSourceDriver {
 		request: BatchDerivePublicKeysRequest
 	) -> Result<BatchDerivePublicKeysResponse>;
 }
-````
+```
 
 ```rust
 /// ===== Public =====
