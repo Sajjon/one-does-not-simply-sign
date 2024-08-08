@@ -1,6 +1,7 @@
 use crate::prelude::*;
 
 pub trait BaseUseFactorSourceDriver {
+    fn supports_parallelism(&self) -> bool;
     fn supports(&self, factor_source_kind: FactorSourceKind) -> bool;
 }
 
