@@ -1,6 +1,0 @@
-/// A kind of factor list, either threshold, or override kind.
-#[derive(PartialEq, Eq, Clone, Debug)]
-pub enum FactorListKind {
-    Threshold,
-    Override,
-}
