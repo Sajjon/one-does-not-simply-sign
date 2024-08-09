@@ -1,14 +1,14 @@
 {
-  "cSpell.words": [
-    "Caprese",
-    "FACTORINSTANCE",
-    "FACTORSOURCE",
-    "Quartier",
-    "Rémy",
-    "substate",
-    "txid",
-    "txids",
-    "unsecurified",
-    "Yubikey"
-  ]
+    "cSpell.words":
+    [
+        "FACTORINSTANCE",
+        "FACTORSOURCE",
+        "skippable",
+        "substate",
+        "txid",
+        "txids",
+        "unsecurified",
+        "unskippable",
+        "Yubikey"
+    ]
 }
