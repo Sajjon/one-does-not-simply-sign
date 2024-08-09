@@ -67,7 +67,7 @@ where
 }
 impl<ID, Path, Product> FiaState<ID, Path, Product>
 where
-    ID: Hash,
+    ID: Hash + 'static,
     Path: HasDerivationPath,
     Product: HasHDPublicKey,
 {
@@ -97,7 +97,7 @@ where
             HashMap::new()
         };
         if supports_skipping {
-            Self::DriverRequest::new_skippable(|_| Vec::new(), inputs)
+            Self::DriverRequest::new_skippable(|_| Vec::new(), HashMap::new())
         } else {
             Self::DriverRequest::new_unskippable(inputs)
         }
@@ -125,7 +125,7 @@ where
 /// ===== Public =====
 impl<ID, Path, Product> FactorInstanceAccumulator<ID, Path, Product>
 where
-    ID: Hash,
+    ID: Hash + 'static,
     Path: HasDerivationPath,
     Product: HasHDPublicKey,
 {
@@ -186,7 +186,7 @@ impl FactorSourcesOfKind {
 /// ===== Private Non Static =====
 impl<ID, Path, Product> FactorInstanceAccumulator<ID, Path, Product>
 where
-    ID: Hash,
+    ID: Hash + 'static,
     Path: HasDerivationPath,
     Product: HasHDPublicKey,
 {
@@ -231,7 +231,7 @@ where
 /// ===== Private Static =====
 impl<ID, Path, Product> FactorInstanceAccumulator<ID, Path, Product>
 where
-    ID: Hash,
+    ID: Hash + 'static,
     Path: HasDerivationPath,
     Product: HasHDPublicKey,
 {
