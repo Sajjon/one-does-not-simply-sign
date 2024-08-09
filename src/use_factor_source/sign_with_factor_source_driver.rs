@@ -4,7 +4,6 @@ pub type BatchSignTransactionsResponse = BatchUseFactorSourceResponse<IntentHash
 
 pub type BatchSignTransactionsRequest = BatchUseFactorSourceRequest<IntentHash, HDPublicKey>;
 
-
 #[async_trait::async_trait]
 pub trait SignWithFactorSourceDriver:
     UseFactorSourceDriver<IntentHash, HDPublicKey, HDSignature>
@@ -20,7 +19,7 @@ pub trait SignWithFactorSourceDriver:
 impl<T: SignWithFactorSourceDriver + std::marker::Sync>
     UseFactorSourceDriver<IntentHash, HDPublicKey, HDSignature> for T
 {
-    async fn use_factor(
+    async fn use_factors(
         &self,
         request: BatchUseFactorSourceRequest<IntentHash, HDPublicKey>,
     ) -> Result<BatchUseFactorSourceResponse<IntentHash, HDSignature>> {

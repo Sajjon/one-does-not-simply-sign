@@ -19,7 +19,7 @@ pub trait DeriveKeysWithFactorSourceDriver:
 impl<T: DeriveKeysWithFactorSourceDriver + std::marker::Sync>
     UseFactorSourceDriver<DeriveKeyID, DerivationPath, HDPublicKey> for T
 {
-    async fn use_factor(
+    async fn use_factors(
         &self,
         request: BatchDerivePublicKeysRequest,
     ) -> Result<BatchDerivePublicKeysResponse> {

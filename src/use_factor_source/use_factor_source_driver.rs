@@ -16,5 +16,5 @@ pub trait UseFactorSourceDriver<
     Path: HasDerivationPath,
     Product: HasHDPublicKey,
 {
-    async fn use_factor(&self, request: Request) -> Result<Response>;
+    async fn use_factors(&self, request: Request) -> Result<Response>;
 }

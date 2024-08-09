@@ -1,6 +1,7 @@
 use std::{
     borrow::Borrow,
     cell::{Ref, RefCell, RefMut},
+    collections::HashSet,
 };
 
 use crate::prelude::*;
@@ -88,19 +89,35 @@ where
         todo!()
     }
 
-    fn request_for(&self, factor_sources_of_kind: &FactorSourcesOfKind) -> Self::DriverRequest {
-        let supports_parallelism = factor_sources_of_kind.kind.supports_parallelism();
+    fn _request_for(&self, factor_sources: &[FactorSource]) -> Self::DriverRequest {
+        assert_eq!(
+            factor_sources
+                .iter()
+                .map(|f| f.kind)
+                .collect::<HashSet<FactorSourceKind>>()
+                .len(),
+            1
+        );
         let supports_skipping = self.supports_skipping_of_factor_sources;
-        let inputs = if supports_parallelism {
-            HashMap::new()
-        } else {
-            HashMap::new()
-        };
+        let inputs: HashMap<FactorSourceID, HashMap<ID, Vec<Path>>> = HashMap::new();
         if supports_skipping {
-            Self::DriverRequest::new_skippable(|_| Vec::new(), HashMap::new())
+            Self::DriverRequest::new_skippable(|_| Vec::new(), inputs)
         } else {
             Self::DriverRequest::new_unskippable(inputs)
         }
+    }
+
+    fn parallel_request_for(
+        &self,
+        factor_sources_of_kind: &FactorSourcesOfKind,
+    ) -> Self::DriverRequest {
+        assert!(factor_sources_of_kind.kind.supports_parallelism());
+        self._request_for(&factor_sources_of_kind.factor_sources)
+    }
+
+    fn serial_request_for(&self, factor_source: &FactorSource) -> Self::DriverRequest {
+        assert!(!factor_source.kind.supports_parallelism());
+        self._request_for(&[factor_source.clone()])
     }
 
     fn handle_response(&mut self, response: Self::DriverResponse) -> Result<()> {
@@ -203,10 +220,20 @@ where
 
     async fn reduce(&self, factor_sources_of_kind: &FactorSourcesOfKind) -> Result<()> {
         let driver = self.driver_for_factor_source_of_kind(factor_sources_of_kind.kind);
-        let request = self.state().request_for(factor_sources_of_kind);
-        let response = driver.use_factor(request).await?;
-        self.mut_state().handle_response(response)
+        if factor_sources_of_kind.kind.supports_parallelism() {
+            let parallel_request = self.state().parallel_request_for(factor_sources_of_kind);
+            let response = driver.use_factors(parallel_request).await?;
+            self.mut_state().handle_response(response)?
+        } else {
+            for factor_source in factor_sources_of_kind.factor_sources.iter() {
+                let request = self.state().serial_request_for(factor_source);
+                let response = driver.use_factors(request).await?;
+                self.mut_state().handle_response(response)?
+            }
+        }
+        Ok(())
     }
+
     fn driver_for_factor_source_of_kind(
         &self,
         factor_source_kind: FactorSourceKind,
