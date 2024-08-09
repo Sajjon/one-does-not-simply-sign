@@ -14,6 +14,14 @@ pub enum FactorSourceKind {
     Device,
     Ledger,
 }
+impl FactorSourceKind {
+    pub fn supports_parallelism(&self) -> bool {
+        match self {
+            Self::Device => true,
+            Self::Ledger => false,
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct FactorSource {

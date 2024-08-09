@@ -89,13 +89,18 @@ where
     }
 
     fn request_for(&self, factor_sources_of_kind: &FactorSourcesOfKind) -> Self::DriverRequest {
-        // let supports_parallelism =
-        // Self::DriverRequest::new(if self.supports_skipping_of_factor_sources {
-        //     None
-        // } else {
-        //     None
-        // })
-        todo!()
+        let supports_parallelism = factor_sources_of_kind.kind.supports_parallelism();
+        let supports_skipping = self.supports_skipping_of_factor_sources;
+        let inputs = if supports_parallelism {
+            HashMap::new()
+        } else {
+            HashMap::new()
+        };
+        if supports_skipping {
+            Self::DriverRequest::new_skippable(|_| Vec::new(), inputs)
+        } else {
+            Self::DriverRequest::new_unskippable(inputs)
+        }
     }
 
     fn handle_response(&mut self, response: Self::DriverResponse) -> Result<()> {

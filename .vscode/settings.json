@@ -5,10 +5,12 @@
     "FACTORSOURCE",
     "Quartier",
     "Rémy",
+    "skippable",
     "substate",
     "txid",
     "txids",
     "unsecurified",
+    "unskippable",
     "Yubikey"
   ]
 }

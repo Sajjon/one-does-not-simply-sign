@@ -4,6 +4,7 @@ pub type BatchSignTransactionsResponse = BatchUseFactorSourceResponse<IntentHash
 
 pub type BatchSignTransactionsRequest = BatchUseFactorSourceRequest<IntentHash, HDPublicKey>;
 
+
 #[async_trait::async_trait]
 pub trait SignWithFactorSourceDriver:
     UseFactorSourceDriver<IntentHash, HDPublicKey, HDSignature>
