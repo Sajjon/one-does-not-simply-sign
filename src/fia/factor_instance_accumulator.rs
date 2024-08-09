@@ -89,7 +89,7 @@ where
         todo!()
     }
 
-    fn _invalid_if_skipped(&self, factor_source_id: &FactorSourceID) -> Vec<ID> {
+    fn _invalid_if_skipped(&self, factor_sources: &[FactorSource]) -> Vec<ID> {
         assert!(self.supports_skipping_of_factor_sources);
         todo!()
     }
@@ -111,11 +111,7 @@ where
         let supports_skipping = self.supports_skipping_of_factor_sources;
         let inputs: HashMap<FactorSourceID, HashMap<ID, Vec<Path>>> = HashMap::new();
         if supports_skipping {
-            Self::DriverRequest::new_skippable(
-                |f| self._invalid_if_skipped(&f),
-                |f| self._skip(&f),
-                inputs,
-            )
+            Self::DriverRequest::new_skippable(self._invalid_if_skipped(factor_sources), inputs)
         } else {
             Self::DriverRequest::new_unskippable(inputs)
         }
@@ -134,7 +130,7 @@ where
         self._request_for(&[factor_source.clone()])
     }
 
-    fn handle_response(&mut self, response: Self::DriverResponse) -> Result<()> {
+    fn handle_outcome(&mut self, response: UseFactorsAction<Self::DriverResponse>) -> Result<()> {
         todo!()
     }
 
@@ -237,13 +233,13 @@ where
         let driver = self.driver_for_factor_source_of_kind(factor_sources_of_kind.kind);
         if factor_sources_of_kind.kind.supports_parallelism() {
             let parallel_request = self.state().parallel_request_for(factor_sources_of_kind);
-            let response = driver.use_factors(parallel_request).await?;
-            self.mut_state().handle_response(response)?
+            let outcome = driver.use_factors(parallel_request).await?;
+            self.mut_state().handle_outcome(outcome)?
         } else {
             for factor_source in factor_sources_of_kind.factor_sources.iter() {
                 let request = self.state().serial_request_for(factor_source);
-                let response = driver.use_factors(request).await?;
-                self.mut_state().handle_response(response)?
+                let outcome = driver.use_factors(request).await?;
+                self.mut_state().handle_outcome(outcome)?
             }
         }
         Ok(())
