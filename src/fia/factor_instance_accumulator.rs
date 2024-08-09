@@ -49,9 +49,9 @@ where
 
 struct FiaState<ID, Path, Product>
 where
-    ID: Hash,
-    Path: HasDerivationPath,
-    Product: HasHDPublicKey,
+    ID: Hash + Send + Sync,
+    Path: HasDerivationPath + Send + Sync,
+    Product: HasHDPublicKey + Send + Sync,
 {
     phantom_id: PhantomData<ID>,
     phantom_path: PhantomData<Path>,
@@ -68,9 +68,9 @@ where
 }
 impl<ID, Path, Product> FiaState<ID, Path, Product>
 where
-    ID: Hash + 'static,
-    Path: HasDerivationPath,
-    Product: HasHDPublicKey,
+    ID: Hash + Send + Sync + 'static,
+    Path: HasDerivationPath + Send + Sync,
+    Product: HasHDPublicKey + Send + Sync,
 {
     fn new(supports_skipping_of_factor_sources: bool, factor_sources: Vec<FactorSource>) -> Self {
         Self {
@@ -89,6 +89,16 @@ where
         todo!()
     }
 
+    fn _invalid_if_skipped(&self, factor_source_id: &FactorSourceID) -> Vec<ID> {
+        assert!(self.supports_skipping_of_factor_sources);
+        todo!()
+    }
+
+    fn _skip(&self, factor_source_id: &FactorSourceID) {
+        assert!(self.supports_skipping_of_factor_sources);
+        todo!()
+    }
+
     fn _request_for(&self, factor_sources: &[FactorSource]) -> Self::DriverRequest {
         assert_eq!(
             factor_sources
@@ -101,7 +111,11 @@ where
         let supports_skipping = self.supports_skipping_of_factor_sources;
         let inputs: HashMap<FactorSourceID, HashMap<ID, Vec<Path>>> = HashMap::new();
         if supports_skipping {
-            Self::DriverRequest::new_skippable(|_| Vec::new(), inputs)
+            Self::DriverRequest::new_skippable(
+                |f| self._invalid_if_skipped(&f),
+                |f| self._skip(&f),
+                inputs,
+            )
         } else {
             Self::DriverRequest::new_unskippable(inputs)
         }
@@ -131,9 +145,9 @@ where
 
 pub struct FactorInstanceAccumulator<ID, Path, Product>
 where
-    ID: Hash,
-    Path: HasDerivationPath,
-    Product: HasHDPublicKey,
+    ID: Hash + Send + Sync,
+    Path: HasDerivationPath + Send + Sync,
+    Product: HasHDPublicKey + Send + Sync,
 {
     state: RefCell<FiaState<ID, Path, Product>>,
     dependencies: FiaDependencies<ID, Path, Product>,
@@ -142,9 +156,9 @@ where
 /// ===== Public =====
 impl<ID, Path, Product> FactorInstanceAccumulator<ID, Path, Product>
 where
-    ID: Hash + 'static,
-    Path: HasDerivationPath,
-    Product: HasHDPublicKey,
+    ID: Hash + Send + Sync + 'static,
+    Path: HasDerivationPath + Send + Sync,
+    Product: HasHDPublicKey + Send + Sync,
 {
     type State = FiaState<ID, Path, Product>;
     type Dependencies = FiaDependencies<ID, Path, Product>;
@@ -203,13 +217,14 @@ impl FactorSourcesOfKind {
 /// ===== Private Non Static =====
 impl<ID, Path, Product> FactorInstanceAccumulator<ID, Path, Product>
 where
-    ID: Hash + 'static,
-    Path: HasDerivationPath,
-    Product: HasHDPublicKey,
+    ID: Hash + Send + Sync + 'static,
+    Path: HasDerivationPath + Send + Sync,
+    Product: HasHDPublicKey + Send + Sync,
 {
     fn state(&self) -> Ref<FiaState<ID, Path, Product>> {
         self.state.borrow()
     }
+
     fn mut_state(&self) -> RefMut<FiaState<ID, Path, Product>> {
         self.state.borrow_mut()
     }
@@ -258,9 +273,9 @@ where
 /// ===== Private Static =====
 impl<ID, Path, Product> FactorInstanceAccumulator<ID, Path, Product>
 where
-    ID: Hash + 'static,
-    Path: HasDerivationPath,
-    Product: HasHDPublicKey,
+    ID: Hash + Send + Sync + 'static,
+    Path: HasDerivationPath + Send + Sync,
+    Product: HasHDPublicKey + Send + Sync,
 {
     fn factor_sources_to_use(
         request: &BatchUseFactorSourceRequest<ID, Path>,

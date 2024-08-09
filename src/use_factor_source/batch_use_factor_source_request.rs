@@ -1,25 +1,32 @@
 use crate::prelude::*;
 
-pub trait CanSkipDelegate<ID> {
-    fn invalid_if_skipped(&self, factor_source_id: FactorSourceID) -> Vec<ID>;
+pub struct SkipDelegate<ID, I, S>
+where
+    I: Fn(FactorSourceID) -> Vec<ID>,
+    S: Fn(FactorSourceID) -> (),
+{
+    fn_invalid_if_skipped: I,
+    fn_skip: S,
 }
 
-pub struct CanSkipDelegateImpl<ID> {
-    fn_invalid_if_skipped: Box<dyn Fn(FactorSourceID) -> Vec<ID> + Send + 'static>,
-}
-impl<ID> CanSkipDelegateImpl<ID> {
-    pub fn new<F>(invalid_if_skipped: F) -> Self
-    where
-        F: Fn(FactorSourceID) -> Vec<ID> + Send + 'static,
-    {
+impl<ID, I, S> SkipDelegate<ID, I, S>
+where
+    I: Fn(FactorSourceID) -> Vec<ID>,
+    S: Fn(FactorSourceID) -> (),
+{
+    pub fn new(invalid_if_skipped: I, skip: S) -> Self {
         Self {
-            fn_invalid_if_skipped: Box::new(invalid_if_skipped),
+            fn_invalid_if_skipped: invalid_if_skipped,
+            fn_skip: skip,
         }
     }
-}
-impl<ID> CanSkipDelegate<ID> for CanSkipDelegateImpl<ID> {
-    fn invalid_if_skipped(&self, factor_source_id: FactorSourceID) -> Vec<ID> {
+
+    pub fn invalid_if_skipped(&self, factor_source_id: FactorSourceID) -> Vec<ID> {
         (self.fn_invalid_if_skipped)(factor_source_id)
+    }
+
+    pub fn skip(&self, factor_source_id: FactorSourceID) {
+        (self.fn_skip)(factor_source_id)
     }
 }
 
@@ -34,7 +41,7 @@ where
     /// We CANNOT represent this as a `HashMap<FactorSourceID, Vec<ID>>` because,
     /// if we skip with Factor `A`, that might affect the possibility of skipping
     /// with Factor `B`. Therefore some kind of closure / callback is needed.
-    invalid_if_skipped: Option<Box<dyn CanSkipDelegate<ID> + Send>>,
+    skipping: Option<SkipDelegate>,
 
     /// Inputs will only contain multiple `FactorSourceID` for when
     /// DeviceFactorSource is used, which is the only kind which supports
@@ -46,18 +53,20 @@ where
 
 impl<ID, Path> BatchUseFactorSourceRequest<ID, Path>
 where
-    ID: Hash + 'static,
+    ID: Hash,
     Path: HasDerivationPath,
 {
-    pub fn new_skippable<F>(
-        invalid_if_skipped: F,
+    pub fn new_skippable<I, S>(
+        invalid_if_skipped: I,
+        skip: S,
         inputs: HashMap<FactorSourceID, HashMap<ID, Vec<Path>>>,
     ) -> Self
     where
-        F: Fn(FactorSourceID) -> Vec<ID> + Send + 'static,
+        I: Fn(FactorSourceID) -> Vec<ID>,
+        S: Fn(FactorSourceID) -> (),
     {
         Self::new(
-            Some(Box::new(CanSkipDelegateImpl::new(invalid_if_skipped))),
+            Some(Box::new(SkipDelegateImpl::new(invalid_if_skipped, skip))),
             inputs,
         )
     }
@@ -69,13 +78,10 @@ where
     Path: HasDerivationPath,
 {
     pub fn new(
-        invalid_if_skipped: Option<Box<dyn CanSkipDelegate<ID> + Send>>,
+        skipping: Option<Box<dyn SkipDelegate<ID> + Send>>,
         inputs: HashMap<FactorSourceID, HashMap<ID, Vec<Path>>>,
     ) -> Self {
-        Self {
-            invalid_if_skipped,
-            inputs,
-        }
+        Self { skipping, inputs }
     }
 
     pub fn new_unskippable(inputs: HashMap<FactorSourceID, HashMap<ID, Vec<Path>>>) -> Self {
