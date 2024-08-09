@@ -1,6 +1,7 @@
 #![allow(unused)]
 #![allow(incomplete_features)]
 #![feature(inherent_associated_types)]
+#![allow(clippy::module_inception)]
 
 mod fia;
 mod support;
@@ -11,7 +12,14 @@ pub mod prelude {
     pub use crate::support::*;
     pub use crate::use_factor_source::*;
 
-    pub use std::{collections::HashMap, hash::Hash, marker::PhantomData};
+    pub use std::{
+        borrow::Borrow,
+        cell::{Ref, RefCell, RefMut},
+        collections::HashMap,
+        collections::HashSet,
+        hash::Hash,
+        marker::PhantomData,
+    };
 }
 
 pub use prelude::*;
