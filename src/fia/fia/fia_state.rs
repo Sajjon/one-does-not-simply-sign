@@ -95,6 +95,9 @@ where
         response: UseFactorsAction<Self::DriverResponse>,
     ) -> Result<()> {
         // Mutate using interior mutability
+        if response.skipped() && !self.supports_skipping_of_factor_sources {
+            panic!("Should not have been possible to skip.");
+        }
         todo!()
     }
 

@@ -4,9 +4,19 @@ pub trait BaseUseFactorSourceDriver {
     fn supports(&self, factor_source_kind: FactorSourceKind) -> bool;
 }
 
+#[derive(Debug, Clone)]
 pub enum UseFactorsAction<Response> {
     Skipped,
     Used(Response),
+}
+
+impl<T> UseFactorsAction<T> {
+    pub fn skipped(&self) -> bool {
+        match self {
+            Self::Skipped => true,
+            Self::Used(_) => false,
+        }
+    }
 }
 
 /// Implementors SHOULD handle failures and retry on their end. To be clear,
