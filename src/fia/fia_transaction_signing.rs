@@ -54,7 +54,6 @@ impl FiaTransactionSigning {
 
     fn new_batch_sign_by_analyzing_transactions_using<F>(
         transactions: Vec<TransactionIntent>,
-        entities: Vec<Entity>,
         factor_sources: IndexSet<FactorSource>,
         all_drivers: impl IntoIterator<Item = Box<dyn SignWithFactorSourceDriver>>,
         signers_of_transaction: F,
@@ -69,13 +68,11 @@ impl FiaTransactionSigning {
 
     pub fn new_batch_sign_by_analyzing_transactions(
         transactions: Vec<TransactionIntent>,
-        entities: Vec<Entity>,
         factor_sources: IndexSet<FactorSource>,
         all_drivers: impl IntoIterator<Item = Box<dyn SignWithFactorSourceDriver>>,
     ) -> Result<Self> {
         Self::new_batch_sign_by_analyzing_transactions_using(
             transactions,
-            entities,
             factor_sources,
             all_drivers,
             |t| todo!(),

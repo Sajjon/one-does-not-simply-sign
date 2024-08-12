@@ -81,6 +81,18 @@ pub fn fs_id_at(index: usize) -> FactorSourceID {
     fs_at(index).id
 }
 
+pub fn fs_with_kind(kind: FactorSourceKind) -> FactorSource {
+    ALL_FACTOR_SOURCES
+        .clone()
+        .into_iter()
+        .find(|x| x.kind() == kind)
+        .unwrap()
+}
+
+pub fn fs_id_with_kind(kind: FactorSourceKind) -> FactorSourceID {
+    fs_with_kind(kind).id
+}
+
 impl FactorSourceID {
     /// Device
     pub fn fs0() -> Self {

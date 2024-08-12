@@ -124,6 +124,9 @@ impl TransactionIntent {
             entities_requiring_auth: entities_requiring_auth.into_iter().collect_vec(),
         }
     }
+    pub fn just(entity: Entity) -> Self {
+        Self::new([entity])
+    }
 }
 
 #[derive(Debug, Clone, Hash)]
@@ -182,6 +185,10 @@ impl Entity {
             name,
             EntitySecurityState::Unsecured(FactorInstance::new(index, factor_source_id)),
         )
+    }
+
+    pub fn unsecurified_anonymous(factor_source_id: FactorSourceID) -> Self {
+        Self::unsecurified(0, "Anonymous", factor_source_id)
     }
 }
 
