@@ -27,3 +27,10 @@ repos:
         types: [file, rust]
         entry: cargo test --lib
         pass_filenames: false
+
+      - id: integration tests
+        name: integration tests
+        language: system
+        types: [file, rust]
+        entry: cargo test --test '*'
+        pass_filenames: false
