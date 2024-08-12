@@ -7,7 +7,7 @@ pub(super) struct FactorSourcesOfKind {
 
 impl FactorSourcesOfKind {
     pub(super) fn new(kind: FactorSourceKind, factor_sources: Vec<FactorSource>) -> Result<Self> {
-        if factor_sources.iter().all(|f| f.kind == kind) {
+        if factor_sources.iter().all(|f| f.kind() == kind) {
             return Err(Error::InvalidFactorSourceKind);
         }
         Ok(Self {

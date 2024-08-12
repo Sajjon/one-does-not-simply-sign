@@ -106,12 +106,12 @@ where
     fn factor_sources_to_use(
         request: &BatchUseFactorSourceRequest<ID, Path>,
         all_factor_sources_in_profile: impl IntoIterator<Item = FactorSource>,
-    ) -> Result<Vec<FactorSource>> {
+    ) -> Result<IndexSet<FactorSource>> {
         todo!()
     }
 
     fn drivers_to_use(
-        factor_sources_to_use: &[FactorSource],
+        factor_sources_to_use: &IndexSet<FactorSource>,
         all_drivers: impl IntoIterator<Item = Box<dyn UseFactorSourceDriver<ID, Path, Product>>>,
     ) -> Result<Vec<Self::BoxedDriver>> {
         todo!()

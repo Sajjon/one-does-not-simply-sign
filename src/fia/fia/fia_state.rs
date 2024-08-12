@@ -19,7 +19,7 @@ where
     pub(super) supports_skipping_of_factor_sources: bool,
 
     /// Factor Sources Left to use. When this is Vec empty, we are done.
-    pub(super) factor_sources: Vec<FactorSource>,
+    pub(super) factor_sources: IndexSet<FactorSource>,
 }
 
 impl<ID, Path, Product> FiaState<ID, Path, Product>
@@ -37,7 +37,7 @@ where
         assert_eq!(
             factor_sources
                 .iter()
-                .map(|f| f.kind)
+                .map(|f| f.kind())
                 .collect::<HashSet<FactorSourceKind>>()
                 .len(),
             1
@@ -60,7 +60,7 @@ where
     }
 
     fn serial_request_for(&self, factor_source: &FactorSource) -> Self::DriverRequest {
-        assert!(!factor_source.kind.supports_parallelism());
+        assert!(!factor_source.kind().supports_parallelism());
         self.request_for(&[factor_source.clone()])
     }
 }
@@ -73,7 +73,7 @@ where
 {
     pub(super) fn new(
         supports_skipping_of_factor_sources: bool,
-        factor_sources: Vec<FactorSource>,
+        factor_sources: IndexSet<FactorSource>,
     ) -> Self {
         Self {
             supports_skipping_of_factor_sources,
