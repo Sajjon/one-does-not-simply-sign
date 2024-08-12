@@ -1,14 +1,14 @@
 {
-    "cSpell.words":
-    [
-        "FACTORINSTANCE",
-        "FACTORSOURCE",
-        "skippable",
-        "substate",
-        "txid",
-        "txids",
-        "unsecurified",
-        "unskippable",
-        "Yubikey"
-    ]
+  "cSpell.words": [
+    "FACTORINSTANCE",
+    "FACTORSOURCE",
+    "frobnicate",
+    "skippable",
+    "substate",
+    "txid",
+    "txids",
+    "unsecurified",
+    "unskippable",
+    "Yubikey"
+  ]
 }

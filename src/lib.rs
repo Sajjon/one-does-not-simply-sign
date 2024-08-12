@@ -4,13 +4,17 @@
 #![allow(clippy::module_inception)]
 
 mod fia;
-mod support;
+mod sargon_types;
 mod use_factor_source;
+
+mod testing;
 
 pub mod prelude {
     pub use crate::fia::*;
-    pub use crate::support::*;
+    pub use crate::sargon_types::*;
     pub use crate::use_factor_source::*;
+
+    pub use crate::testing::*;
 
     pub use std::{
         borrow::Borrow,

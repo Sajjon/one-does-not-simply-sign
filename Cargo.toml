@@ -1,7 +1,15 @@
 [package]
-name = "signing"
+name = "fia"
 version = "0.1.0"
 edition = "2021"
+
+[[test]]
+name = "signing"
+path = "tests/signing/mod.rs"
+
+[[test]]
+name = "derivation"
+path = "tests/derivation/mod.rs"
 
 [dependencies]
 actix-rt = "2.10.0"

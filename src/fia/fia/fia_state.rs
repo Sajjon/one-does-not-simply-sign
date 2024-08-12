@@ -10,6 +10,7 @@ where
     phantom_id: PhantomData<ID>,
     phantom_path: PhantomData<Path>,
     phantom_product: PhantomData<Product>,
+
     /// If this FIA is used to derive public keys we cannot skip any
     /// factor source, we need to derive ALL keys, so this variable will
     /// be `false`. However, for transaction signing, this variable will
