@@ -18,7 +18,7 @@ impl SignWithFactorClient {
             // Parallel Interactor: Many Factor Sources at once
             SigningInteractor::Parallel(interactor) => {
                 // Prepare the request for the interactor
-                let request = collector.request_for_parallel_batch_interactor(
+                let request = collector.request_for_parallel_interactor(
                     factor_sources.into_iter().map(|f| f.id).collect(),
                 );
                 let response = interactor.sign(request).await?;
@@ -34,7 +34,7 @@ impl SignWithFactorClient {
             SigningInteractor::Serial(interactor) => {
                 for factor_source in factor_sources {
                     // Prepare the request for the interactor
-                    let request = collector.request_for_serial_batch_interactor(&factor_source.id);
+                    let request = collector.request_for_serial_interactor(&factor_source.id);
 
                     // Produce the results from the interactor
                     let response = interactor.sign(request).await?;

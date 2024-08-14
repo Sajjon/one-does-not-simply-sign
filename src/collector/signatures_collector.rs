@@ -88,7 +88,7 @@ impl SignaturesCollector {
 }
 
 impl SignaturesCollector {
-    fn input_for_parallel_batch_interactor(
+    fn input_for_interactor(
         &self,
         factor_source_id: &FactorSourceID,
     ) -> BatchTXBatchKeySigningRequest {
@@ -96,14 +96,14 @@ impl SignaturesCollector {
             .borrow()
             .petitions
             .borrow()
-            .input_for_parallel_batch_interactor(factor_source_id)
+            .input_for_interactor(factor_source_id)
     }
 
-    pub(crate) fn request_for_serial_batch_interactor(
+    pub(crate) fn request_for_serial_interactor(
         &self,
         factor_source_id: &FactorSourceID,
     ) -> SerialBatchSigningRequest {
-        let batch_signing_request = self.input_for_parallel_batch_interactor(factor_source_id);
+        let batch_signing_request = self.input_for_interactor(factor_source_id);
 
         SerialBatchSigningRequest::new(
             batch_signing_request,
@@ -113,14 +113,14 @@ impl SignaturesCollector {
         )
     }
 
-    pub(crate) fn request_for_parallel_batch_interactor(
+    pub(crate) fn request_for_parallel_interactor(
         &self,
         factor_source_ids: IndexSet<FactorSourceID>,
     ) -> ParallelBatchSigningRequest {
         let per_factor_source = factor_source_ids
             .clone()
             .iter()
-            .map(|fid| (*fid, self.input_for_parallel_batch_interactor(fid)))
+            .map(|fid| (*fid, self.input_for_interactor(fid)))
             .collect::<IndexMap<FactorSourceID, BatchTXBatchKeySigningRequest>>();
 
         let invalid_transactions_if_skipped =
