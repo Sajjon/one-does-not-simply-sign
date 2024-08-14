@@ -1,17 +1,27 @@
 use crate::prelude::*;
 
-/// A coordinator which gathers signatures from several factor sources of different
-/// kinds, in increasing friction order, for many transactions and for
-/// potentially multiple entities and for many factor instances (derivation paths)
-/// for each transaction.
-///
-/// By increasing friction order we mean, the quickest and easiest to use FactorSourceKind
-/// is last; namely `DeviceFactorSource`, and the most tedious FactorSourceKind is
-/// first; namely `LedgerFactorSource`, which user might also lack access to.
-pub struct SignaturesCollector {
+pub struct SignaturesCollectorState {
+    petitions: RefCell<Petitions>,
+}
+impl SignaturesCollectorState {
+    fn with_petitions(petitions: Petitions) -> Self {
+        Self {
+            petitions: RefCell::new(petitions),
+        }
+    }
+
+    fn new(
+        factor_to_txid: HashMap<FactorSourceID, IndexSet<IntentHash>>,
+        txid_to_petition: IndexMap<IntentHash, PetitionOfTransaction>,
+    ) -> Self {
+        Self::with_petitions(Petitions::new(factor_to_txid, txid_to_petition))
+    }
+}
+
+struct SignaturesCollectorDependencies {
     /// A context of drivers for "using" factor sources - either to (batch) sign
     /// transaction(s) with, or to derive public keys from.
-    drivers: Arc<dyn IsUseFactorSourceDriversContext>,
+    drivers: Arc<dyn SignatureCollectingInteractors>,
 
     /// Factor sources grouped by kind, sorted according to "friction order",
     /// that is, we want to control which FactorSourceKind users use
@@ -23,18 +33,38 @@ pub struct SignaturesCollector {
     /// computer and thus unable to make a connection between the Radix Wallet
     /// and a Ledger device.
     factors_of_kind: IndexMap<FactorSourceKind, IndexSet<FactorSource>>,
+}
 
-    /// FactorSource output builders for each factor source, for each OutputGroup
-    /// (Transaction or SecurityStructureOfFactorInstances), for each entity to
-    /// produce an output (signature or public key).
-    builders: RefCell<Builders>,
+impl SignaturesCollectorDependencies {
+    fn new(
+        drivers: Arc<dyn SignatureCollectingInteractors>,
+        factors_of_kind: IndexMap<FactorSourceKind, IndexSet<FactorSource>>,
+    ) -> Self {
+        Self {
+            drivers,
+            factors_of_kind,
+        }
+    }
+}
+
+/// A coordinator which gathers signatures from several factor sources of different
+/// kinds, in increasing friction order, for many transactions and for
+/// potentially multiple entities and for many factor instances (derivation paths)
+/// for each transaction.
+///
+/// By increasing friction order we mean, the quickest and easiest to use FactorSourceKind
+/// is last; namely `DeviceFactorSource`, and the most tedious FactorSourceKind is
+/// first; namely `LedgerFactorSource`, which user might also lack access to.
+pub struct SignaturesCollector {
+    dependencies: SignaturesCollectorDependencies,
+    state: RefCell<SignaturesCollectorState>,
 }
 
 impl SignaturesCollector {
     pub fn new(
         all_factor_sources_in_profile: IndexSet<FactorSource>,
         transactions: IndexSet<TransactionIntent>,
-        signing_drivers_context: Arc<dyn IsUseFactorSourceDriversContext>,
+        signing_drivers_context: Arc<dyn SignatureCollectingInteractors>,
     ) -> Self {
         let mut petitions_for_all_transactions =
             IndexMap::<IntentHash, PetitionOfTransaction>::new();
@@ -122,12 +152,15 @@ impl SignaturesCollector {
 
         factors_of_kind.sort_keys();
 
-        let petitions = Builders::new(factor_to_payloads, petitions_for_all_transactions);
+        let state =
+            SignaturesCollectorState::new(factor_to_payloads, petitions_for_all_transactions);
 
         Self {
-            drivers: signing_drivers_context,
-            factors_of_kind,
-            builders: petitions.into(),
+            dependencies: SignaturesCollectorDependencies::new(
+                signing_drivers_context,
+                factors_of_kind,
+            ),
+            state: RefCell::new(state),
         }
     }
 }
@@ -138,11 +171,17 @@ impl SignaturesCollector {
     ///
     /// `Ok(true)` means "continue", `Ok(false)` means "stop, we are done". `Err(_)` means "stop, we have failed".
     pub(super) fn continue_if_necessary(&self) -> Result<bool> {
-        self.builders.borrow().continue_if_necessary()
+        self.state
+            .borrow()
+            .petitions
+            .borrow()
+            .continue_if_necessary()
     }
 
     fn get_driver(&self, kind: FactorSourceKind) -> UseFactorSourceDriver {
-        self.drivers.driver_for_factor_source_kind(kind)
+        self.dependencies
+            .drivers
+            .driver_for_factor_source_kind(kind)
     }
 
     async fn use_certain_factor_sources(
@@ -166,7 +205,7 @@ impl SignaturesCollector {
     }
 
     async fn use_factor_sources_in_decreasing_friction_order(&self) -> Result<()> {
-        let factors_of_kind = self.factors_of_kind.clone();
+        let factors_of_kind = self.dependencies.factors_of_kind.clone();
         for (kind, factor_sources) in factors_of_kind.into_iter() {
             self.use_certain_factor_sources(factor_sources, kind)
                 .await?;
@@ -187,7 +226,9 @@ impl SignaturesCollector {
         let invalid_transactions_if_skipped =
             self.invalid_transactions_if_skipped(factor_source_id);
 
-        self.builders
+        self.state
+            .borrow()
+            .petitions
             .borrow()
             .inputs_for_serial_single_driver(factor_source_id)
             .into_iter()
@@ -210,7 +251,9 @@ impl SignaturesCollector {
         &self,
         factor_source_id: &FactorSourceID,
     ) -> BatchTXBatchKeySigningRequest {
-        self.builders
+        self.state
+            .borrow()
+            .petitions
             .borrow()
             .input_for_parallel_batch_driver(factor_source_id)
     }
@@ -250,7 +293,9 @@ impl SignaturesCollector {
         &self,
         factor_source_id: &FactorSourceID,
     ) -> IndexSet<InvalidTransactionIfSkipped> {
-        self.builders
+        self.state
+            .borrow()
+            .petitions
             .borrow()
             .invalid_transactions_if_skipped(factor_source_id)
     }
@@ -269,7 +314,8 @@ impl SignaturesCollector {
         &self,
         response: SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse>,
     ) {
-        let petitions = self.builders.borrow_mut();
+        let state = self.state.borrow_mut();
+        let petitions = state.petitions.borrow_mut();
         petitions.process_batch_response(response)
     }
 }
@@ -280,6 +326,6 @@ impl SignaturesCollector {
             .use_factor_sources_in_decreasing_friction_order()
             .await
             .inspect_err(|e| eprintln!("Failed to use factor sources: {:?}", e));
-        self.builders.into_inner().outcome()
+        self.state.into_inner().petitions.into_inner().outcome()
     }
 }

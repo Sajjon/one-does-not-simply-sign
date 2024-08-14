@@ -2,7 +2,7 @@
 
 use crate::prelude::*;
 
-pub(crate) struct Builders {
+pub(crate) struct Petitions {
     /// Lookup from factor to TXID.
     ///
     ///
@@ -21,7 +21,7 @@ pub(crate) struct Builders {
     pub txid_to_petition: RefCell<IndexMap<IntentHash, PetitionOfTransaction>>,
 }
 
-impl Builders {
+impl Petitions {
     pub fn outcome(self) -> SignaturesOutcome {
         let txid_to_petition = self.txid_to_petition.into_inner();
         let mut failed_transactions = MaybeSignedTransactions::empty();
