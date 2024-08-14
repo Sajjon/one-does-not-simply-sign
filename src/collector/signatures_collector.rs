@@ -14,7 +14,12 @@ use super::{
 /// is last; namely `DeviceFactorSource`, and the most tedious FactorSourceKind is
 /// first; namely `LedgerFactorSource`, which user might also lack access to.
 pub struct SignaturesCollector {
+    /// Stateless immutable values used by the collector to gather signatures
+    /// from factor sources.
     dependencies: SignaturesCollectorDependencies,
+
+    /// Mutable internal state of the collector which builds up the list
+    /// of signatures from each used factor source.
     state: RefCell<SignaturesCollectorState>,
 }
 
