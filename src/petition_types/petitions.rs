@@ -89,23 +89,7 @@ impl Petitions {
             .collect::<IndexSet<_>>()
     }
 
-    pub(crate) fn inputs_for_serial_single_driver(
-        &self,
-        factor_source_id: &FactorSourceID,
-    ) -> IndexMap<IntentHash, IndexSet<SerialSingleSigningRequestPartial>> {
-        let txids = self.factor_to_txid.get(factor_source_id).unwrap();
-        txids
-            .into_iter()
-            .map(|txid| {
-                let binding = self.txid_to_petition.borrow();
-                let petition = binding.get(txid).unwrap();
-                let value = petition.inputs_for_serial_single_driver(factor_source_id);
-                (txid.clone(), value)
-            })
-            .collect::<IndexMap<IntentHash, IndexSet<SerialSingleSigningRequestPartial>>>()
-    }
-
-    pub(crate) fn input_for_parallel_batch_driver(
+    pub(crate) fn input_for_parallel_batch_interactor(
         &self,
         factor_source_id: &FactorSourceID,
     ) -> BatchTXBatchKeySigningRequest {
@@ -115,7 +99,7 @@ impl Petitions {
             .map(|txid| {
                 let binding = self.txid_to_petition.borrow();
                 let petition = binding.get(txid).unwrap();
-                petition.input_for_parallel_batch_driver(factor_source_id)
+                petition.input_for_parallel_batch_interactor(factor_source_id)
             })
             .collect::<IndexSet<BatchKeySigningRequest>>();
 
@@ -240,29 +224,7 @@ impl PetitionOfTransaction {
         }
     }
 
-    pub(crate) fn inputs_for_serial_single_driver(
-        &self,
-        factor_source_id: &FactorSourceID,
-    ) -> IndexSet<SerialSingleSigningRequestPartial> {
-        let owned_factors = self
-            .all_factor_instances_of_source(factor_source_id)
-            .into_iter()
-            .filter(|fi| fi.by_factor_source(factor_source_id))
-            .collect::<IndexSet<_>>();
-
-        owned_factors
-            .into_iter()
-            .map(|f| {
-                SerialSingleSigningRequestPartial::new(
-                    *factor_source_id,
-                    self.intent_hash.clone(),
-                    f,
-                )
-            })
-            .collect::<IndexSet<_>>()
-    }
-
-    pub(crate) fn input_for_parallel_batch_driver(
+    pub(crate) fn input_for_parallel_batch_interactor(
         &self,
         factor_source_id: &FactorSourceID,
     ) -> BatchKeySigningRequest {

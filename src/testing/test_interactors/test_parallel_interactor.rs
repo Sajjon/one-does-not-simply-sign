@@ -17,13 +17,11 @@ impl IsTestUseFactorSourcesDriver for TestParallelBatchSigningDriver {
     }
 }
 
-impl IsUseFactorSourcesDriver for TestParallelBatchSigningDriver {}
-
 #[async_trait]
 impl ParallelBatchUseFactorSourcesDriver for TestParallelBatchSigningDriver {
     async fn sign(
         &self,
-        request: ParallelBatchSigningRequest,
+        request: SignWithFactorParallelInteractor,
     ) -> Result<SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse>> {
         if self.should_simulate_failure(request.per_factor_source.keys().cloned().collect()) {
             return Err(CommonError::Failure);

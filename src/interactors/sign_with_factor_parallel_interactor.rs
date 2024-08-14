@@ -2,7 +2,7 @@ use crate::prelude::*;
 
 /// A collection of factor sources to use to sign, transactions with multiple keys
 /// (derivations paths).
-pub struct ParallelBatchSigningRequest {
+pub struct SignWithFactorParallelInteractor {
     /// Per factor source, a set of transactions to sign, with
     /// multiple derivations paths.
     pub per_factor_source: IndexMap<FactorSourceID, BatchTXBatchKeySigningRequest>,
@@ -11,7 +11,7 @@ pub struct ParallelBatchSigningRequest {
     /// signing with this factor source.
     pub invalid_transactions_if_skipped: IndexSet<InvalidTransactionIfSkipped>,
 }
-impl ParallelBatchSigningRequest {
+impl SignWithFactorParallelInteractor {
     pub fn new(
         per_factor_source: IndexMap<FactorSourceID, BatchTXBatchKeySigningRequest>,
         invalid_transactions_if_skipped: IndexSet<InvalidTransactionIfSkipped>,
@@ -37,7 +37,7 @@ pub trait IsTestUseFactorSourcesDriver: Sync {
     }
 }
 
-/// A driver for a factor source kind which supports *Batch* usage of
+/// A interactor for a factor source kind which supports *Batch* usage of
 /// multiple factor sources in parallel.
 ///
 /// Most FactorSourceKinds does in fact NOT support parallel usage,
@@ -56,9 +56,9 @@ pub trait IsTestUseFactorSourcesDriver: Sync {
 ///
 /// Example of a Parallel Batch Signing Driver is that for DeviceFactorSource.
 #[async_trait::async_trait]
-pub trait ParallelBatchUseFactorSourcesDriver: IsUseFactorSourcesDriver {
+pub trait ParallelBatchUseFactorSourcesDriver {
     async fn sign(
         &self,
-        request: ParallelBatchSigningRequest,
+        request: SignWithFactorParallelInteractor,
     ) -> Result<SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse>>;
 }

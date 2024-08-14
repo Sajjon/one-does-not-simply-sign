@@ -19,13 +19,12 @@ impl SignaturesCollectorState {
 }
 
 struct SignaturesCollectorDependencies {
-    /// A context of drivers for "using" factor sources - either to (batch) sign
-    /// transaction(s) with, or to derive public keys from.
-    drivers: Arc<dyn SignatureCollectingInteractors>,
+    /// A collection of "interactors" used to sign with factor sources.
+    interactors: Arc<dyn SignatureCollectingInteractors>,
 
     /// Factor sources grouped by kind, sorted according to "friction order",
-    /// that is, we want to control which FactorSourceKind users use
-    /// first, second etc, e.g. typically we prompt user to use Ledgers
+    /// that is, we want to control which FactorSourceKind users sign with
+    /// first, second etc, e.g. typically we prompt user to sign with Ledgers
     /// first, and if a user might lack access to that Ledger device, then it is
     /// best to "fail fast", otherwise we might waste the users time, if she has
     /// e.g. answered security questions and then is asked to use a Ledger
@@ -37,11 +36,11 @@ struct SignaturesCollectorDependencies {
 
 impl SignaturesCollectorDependencies {
     fn new(
-        drivers: Arc<dyn SignatureCollectingInteractors>,
+        interactors: Arc<dyn SignatureCollectingInteractors>,
         factors_of_kind: IndexMap<FactorSourceKind, IndexSet<FactorSource>>,
     ) -> Self {
         Self {
-            drivers,
+            interactors,
             factors_of_kind,
         }
     }
@@ -64,7 +63,7 @@ impl SignaturesCollector {
     pub fn new(
         all_factor_sources_in_profile: IndexSet<FactorSource>,
         transactions: IndexSet<TransactionIntent>,
-        signing_drivers_context: Arc<dyn SignatureCollectingInteractors>,
+        signing_interactors_context: Arc<dyn SignatureCollectingInteractors>,
     ) -> Self {
         let mut petitions_for_all_transactions =
             IndexMap::<IntentHash, PetitionOfTransaction>::new();
@@ -157,7 +156,7 @@ impl SignaturesCollector {
 
         Self {
             dependencies: SignaturesCollectorDependencies::new(
-                signing_drivers_context,
+                signing_interactors_context,
                 factors_of_kind,
             ),
             state: RefCell::new(state),
@@ -178,10 +177,8 @@ impl SignaturesCollector {
             .continue_if_necessary()
     }
 
-    fn get_driver(&self, kind: FactorSourceKind) -> UseFactorSourceDriver {
-        self.dependencies
-            .drivers
-            .driver_for_factor_source_kind(kind)
+    fn get_interactor(&self, kind: FactorSourceKind) -> SigningInteractor {
+        self.dependencies.interactors.interactor_for(kind)
     }
 
     async fn use_certain_factor_sources(
@@ -190,8 +187,8 @@ impl SignaturesCollector {
         kind: FactorSourceKind,
     ) -> Result<()> {
         assert!(factor_sources.iter().all(|f| f.kind() == kind));
-        let driver = self.get_driver(kind);
-        let client = UseFactorSourceClient::new(driver);
+        let interactor = self.get_interactor(kind);
+        let client = SignWithFactorClient::new(interactor);
         let result = client
             .use_factor_sources(factor_sources.clone(), self)
             .await;
@@ -219,35 +216,7 @@ impl SignaturesCollector {
 }
 
 impl SignaturesCollector {
-    pub(super) fn requests_for_serial_single_driver(
-        &self,
-        factor_source_id: &FactorSourceID,
-    ) -> IndexMap<IntentHash, IndexSet<SerialSingleSigningRequestFull>> {
-        let invalid_transactions_if_skipped =
-            self.invalid_transactions_if_skipped(factor_source_id);
-
-        self.state
-            .borrow()
-            .petitions
-            .borrow()
-            .inputs_for_serial_single_driver(factor_source_id)
-            .into_iter()
-            .map(|(intent_hash, requests)| {
-                let values = requests
-                    .into_iter()
-                    .map(|p| {
-                        SerialSingleSigningRequestFull::new(
-                            p,
-                            invalid_transactions_if_skipped.clone(),
-                        )
-                    })
-                    .collect::<IndexSet<_>>();
-                (intent_hash, values)
-            })
-            .collect()
-    }
-
-    fn input_for_parallel_batch_driver(
+    fn input_for_parallel_batch_interactor(
         &self,
         factor_source_id: &FactorSourceID,
     ) -> BatchTXBatchKeySigningRequest {
@@ -255,14 +224,14 @@ impl SignaturesCollector {
             .borrow()
             .petitions
             .borrow()
-            .input_for_parallel_batch_driver(factor_source_id)
+            .input_for_parallel_batch_interactor(factor_source_id)
     }
 
-    pub(super) fn request_for_serial_batch_driver(
+    pub(super) fn request_for_serial_batch_interactor(
         &self,
         factor_source_id: &FactorSourceID,
     ) -> SerialBatchSigningRequest {
-        let batch_signing_request = self.input_for_parallel_batch_driver(factor_source_id);
+        let batch_signing_request = self.input_for_parallel_batch_interactor(factor_source_id);
 
         SerialBatchSigningRequest::new(
             batch_signing_request,
@@ -272,21 +241,21 @@ impl SignaturesCollector {
         )
     }
 
-    pub(super) fn request_for_parallel_batch_driver(
+    pub(super) fn request_for_parallel_batch_interactor(
         &self,
         factor_source_ids: IndexSet<FactorSourceID>,
-    ) -> ParallelBatchSigningRequest {
+    ) -> SignWithFactorParallelInteractor {
         let per_factor_source = factor_source_ids
             .clone()
             .iter()
-            .map(|fid| (*fid, self.input_for_parallel_batch_driver(fid)))
+            .map(|fid| (*fid, self.input_for_parallel_batch_interactor(fid)))
             .collect::<IndexMap<FactorSourceID, BatchTXBatchKeySigningRequest>>();
 
         let invalid_transactions_if_skipped =
             self.invalid_transactions_if_skipped_factor_sources(factor_source_ids);
 
-        // Prepare the request for the driver
-        ParallelBatchSigningRequest::new(per_factor_source, invalid_transactions_if_skipped)
+        // Prepare the request for the interactor
+        SignWithFactorParallelInteractor::new(per_factor_source, invalid_transactions_if_skipped)
     }
 
     pub(super) fn invalid_transactions_if_skipped(
