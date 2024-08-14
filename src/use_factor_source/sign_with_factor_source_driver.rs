@@ -12,7 +12,7 @@ pub trait SignWithFactorSourceDriver:
     async fn batch_sign_transactions(
         &self,
         request: BatchSignTransactionsRequest,
-    ) -> Result<UseFactorsAction<BatchSignTransactionsResponse>>;
+    ) -> Result<UseFactorsAction<BatchSignTransactionsRequest, BatchSignTransactionsResponse>>;
 }
 
 #[async_trait::async_trait]
@@ -22,7 +22,12 @@ impl<T: SignWithFactorSourceDriver + std::marker::Sync>
     async fn use_factors(
         &self,
         request: BatchUseFactorSourceRequest<IntentHash, HDPublicKey>,
-    ) -> Result<UseFactorsAction<BatchUseFactorSourceResponse<IntentHash, HDSignature>>> {
+    ) -> Result<
+        UseFactorsAction<
+            BatchSignTransactionsRequest,
+            BatchUseFactorSourceResponse<IntentHash, HDSignature>,
+        >,
+    > {
         self.batch_sign_transactions(request).await
     }
 }

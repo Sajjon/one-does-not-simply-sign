@@ -5,15 +5,21 @@ pub trait BaseUseFactorSourceDriver {
 }
 
 #[derive(Debug, Clone)]
-pub enum UseFactorsAction<Response> {
-    Skipped,
+pub enum UseFactorsAction<Request, Response>
+where
+    Request: UseFactorSourceRequest,
+{
+    Skipped(Request),
     Used(Response),
 }
 
-impl<T> UseFactorsAction<T> {
+impl<Request, Response> UseFactorsAction<Request, Response>
+where
+    Request: UseFactorSourceRequest,
+{
     pub fn skipped(&self) -> bool {
         match self {
-            Self::Skipped => true,
+            Self::Skipped(_) => true,
             Self::Used(_) => false,
         }
     }
@@ -35,9 +41,10 @@ pub trait UseFactorSourceDriver<
     ID: Hash,
     Path: HasDerivationPath,
     Product: HasHDPublicKey,
+    Request: UseFactorSourceRequest,
 {
     /// Retries is NOT handled by FIA, so implementors SHOULD prompt user to
     /// retry if e.g. signing with Ledger failed, and only if user does not wanna
     /// retry or if host cannot retry, should implementor return `Err`.
-    async fn use_factors(&self, request: Request) -> Result<UseFactorsAction<Response>>;
+    async fn use_factors(&self, request: Request) -> Result<UseFactorsAction<Request, Response>>;
 }

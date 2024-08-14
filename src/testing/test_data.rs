@@ -241,7 +241,7 @@ impl SignWithFactorSourceDriver for TestSignDriver {
     async fn batch_sign_transactions(
         &self,
         request: BatchSignTransactionsRequest,
-    ) -> Result<UseFactorsAction<BatchSignTransactionsResponse>> {
+    ) -> Result<UseFactorsAction<BatchSignTransactionsRequest, BatchSignTransactionsResponse>> {
         todo!()
     }
 }

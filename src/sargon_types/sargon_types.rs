@@ -94,6 +94,7 @@ pub struct Signature;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct HDPublicKey {
+    factor_source_id: FactorSourceID,
     derivation_path: DerivationPath,
     public_key: PublicKey,
 }
@@ -215,10 +216,13 @@ impl HasDerivationPath for HDPublicKey {
     }
 }
 
-pub trait HasHDPublicKey {
+pub trait HasHDPublicKey: Clone {
     fn hd_public_key(&self) -> HDPublicKey;
     fn derivation_path(&self) -> DerivationPath {
         self.hd_public_key().derivation_path.clone()
+    }
+    fn factor_source_id(&self) -> FactorSourceID {
+        self.hd_public_key().factor_source_id.clone()
     }
 }
 

@@ -22,7 +22,7 @@ impl<T: DeriveKeysWithFactorSourceDriver + std::marker::Sync>
     async fn use_factors(
         &self,
         request: BatchDerivePublicKeysRequest,
-    ) -> Result<UseFactorsAction<BatchDerivePublicKeysResponse>> {
+    ) -> Result<UseFactorsAction<BatchDerivePublicKeysRequest, BatchDerivePublicKeysResponse>> {
         let response = self.batch_derive_public_keys(request).await?;
 
         Ok(UseFactorsAction::Used(response))

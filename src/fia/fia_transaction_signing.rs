@@ -2,33 +2,6 @@ use std::process::Output;
 
 use crate::prelude::*;
 
-pub struct FiaOutputReducer<ID, Path, Product>
-where
-    ID: Hash,
-    Path: HasDerivationPath,
-    Product: HasHDPublicKey,
-{
-    id: ID,
-    products: RefCell<HashMap<Path, Product>>,
-}
-
-impl<ID, Path, Product> FiaOutputReducer<ID, Path, Product>
-where
-    ID: Hash,
-    Path: HasDerivationPath,
-    Product: HasHDPublicKey,
-{
-    fn reduce(&self, outputs: HashMap<ID, Vec<Product>>) -> Result<()> {
-        // let mut m = self.products.borrow_mut();
-        // for (id, product) in outputs.into_iter() {
-        //     let path = product.der
-        //     m.insert()
-        // }
-        // Ok(())
-        todo!()
-    }
-}
-
 /// Produce many signatures per transaction intent per FactorSource
 pub type FiaTransactionSigning = FactorInstanceAccumulator<IntentHash, HDPublicKey, HDSignature>;
 
@@ -63,7 +36,12 @@ impl FiaTransactionSigning {
     {
         //    let inputs: HashMap<IntentHash, Vec<HDPublicKey>> = transaction.into_iter().
         //    Self::new_batch_sign_transactions_grouping(inputs, )
-        todo!()
+        let instances_per_transaction: HashMap<IntentHash, Vec<HDPublicKey>> = HashMap::new();
+        Self::new_batch_sign_transactions_grouping(
+            instances_per_transaction,
+            factor_sources,
+            all_drivers,
+        )
     }
 
     pub fn new_batch_sign_by_analyzing_transactions(

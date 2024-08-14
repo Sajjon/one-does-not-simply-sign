@@ -1,5 +1,11 @@
 use crate::prelude::*;
 
+pub trait UseFactorSourceRequestResponse {
+    fn factor_source_id(&self) -> HashSet<FactorSourceID>;
+}
+
+pub trait UseFactorSourceRequest: UseFactorSourceRequestResponse {}
+
 pub struct BatchUseFactorSourceRequest<ID, Path>
 where
     ID: Hash,
@@ -48,4 +54,21 @@ where
     pub fn new_unskippable(inputs: HashMap<FactorSourceID, HashMap<ID, Vec<Path>>>) -> Self {
         Self::new(None, inputs)
     }
+}
+
+impl<ID, Path> UseFactorSourceRequestResponse for BatchUseFactorSourceRequest<ID, Path>
+where
+    ID: Hash,
+    Path: HasDerivationPath,
+{
+    fn factor_source_id(&self) -> HashSet<FactorSourceID> {
+        HashSet::from_iter(self.inputs.keys().clone().into_iter().map(|x| x.clone()))
+    }
+}
+
+impl<ID, Path> UseFactorSourceRequest for BatchUseFactorSourceRequest<ID, Path>
+where
+    ID: Hash,
+    Path: HasDerivationPath,
+{
 }

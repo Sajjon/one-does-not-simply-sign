@@ -30,15 +30,16 @@ where
 
     pub fn new(
         supports_skipping_of_factor_sources: bool,
-        request: BatchUseFactorSourceRequest<ID, Path>,
+        combiners: Vec<FiaCombiner<ID, Path, Product>>,
         all_factor_sources_in_profile: impl IntoIterator<Item = FactorSource>,
         all_drivers: impl IntoIterator<Item = Box<dyn UseFactorSourceDriver<ID, Path, Product>>>,
     ) -> Result<Self> {
-        let factor_sources = Self::factor_sources_to_use(&request, all_factor_sources_in_profile)?;
+        let factor_sources =
+            Self::factor_sources_to_use(&combiners, all_factor_sources_in_profile)?;
         let drivers = Self::drivers_to_use(&factor_sources, all_drivers)?;
 
         let dependencies = Self::Dependencies::new(drivers);
-        let state = FiaState::new(supports_skipping_of_factor_sources, factor_sources);
+        let state = FiaState::new(supports_skipping_of_factor_sources, factor_sources, vec![]);
 
         Ok(Self {
             state: RefCell::new(state),
@@ -104,7 +105,7 @@ where
     Product: HasHDPublicKey,
 {
     fn factor_sources_to_use(
-        request: &BatchUseFactorSourceRequest<ID, Path>,
+        combiners: &[FiaCombiner<ID, Path, Product>],
         all_factor_sources_in_profile: impl IntoIterator<Item = FactorSource>,
     ) -> Result<IndexSet<FactorSource>> {
         todo!()

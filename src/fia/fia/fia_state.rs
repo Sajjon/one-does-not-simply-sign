@@ -1,6 +1,66 @@
 use super::*;
 use crate::prelude::*;
 
+pub struct FiaCombiners<ID, Path, Product>
+where
+    ID: Hash,
+    Path: HasDerivationPath,
+    Product: HasHDPublicKey,
+{
+    id: ID,
+    combiners: RefCell<HashMap<ID, FiaCombiner<ID, Path, Product>>>,
+}
+
+impl<ID, Path, Product> FiaCombiners<ID, Path, Product>
+where
+    ID: Hash,
+    Path: HasDerivationPath,
+    Product: HasHDPublicKey,
+{
+    pub(super) fn handle_outcome(&self, action: Self::UserAction) -> Result<()> {
+        if action.skipped() && !self.supports_skipping_of_factor_sources {
+            panic!("Should not have been possible to skip.");
+        }
+        self.combiners.borrow_mut().handle_outcome(action)
+    }
+    // for combiner in self.combiners.borrow_mut().iter() {
+    //     combiner.reduce(&action)?
+    // }
+    // Ok(())
+}
+
+pub struct FiaCombiner<ID, Path, Product>
+where
+    ID: Hash,
+    Path: HasDerivationPath,
+    Product: HasHDPublicKey,
+{
+    id: ID,
+    products: RefCell<HashMap<Path, Product>>,
+}
+
+impl<ID, Path, Product> FiaCombiner<ID, Path, Product>
+where
+    ID: Hash,
+    Path: HasDerivationPath,
+    Product: HasHDPublicKey,
+{
+    pub(super) type DriverRequest = BatchUseFactorSourceRequest<ID, Path>;
+    pub(super) type DriverResponse = BatchUseFactorSourceResponse<ID, Product>;
+
+    pub(super) type UserAction = UseFactorsAction<Self::DriverRequest, Self::DriverResponse>;
+
+    fn reduce(&self, action: &Self::UserAction) -> Result<()> {
+        // let mut m = self.products.borrow_mut();
+        // for (id, product) in outputs.into_iter() {
+        //     let path = product.der
+        //     m.insert()
+        // }
+        // Ok(())
+        todo!()
+    }
+}
+
 pub(super) struct FiaState<ID, Path, Product>
 where
     ID: Hash,
@@ -19,7 +79,9 @@ where
     pub(super) supports_skipping_of_factor_sources: bool,
 
     /// Factor Sources Left to use. When this is Vec empty, we are done.
-    pub(super) factor_sources: IndexSet<FactorSource>,
+    pub(super) factor_sources: RefCell<IndexSet<FactorSource>>,
+
+    pub(super) combiners: RefCell<FiaCombiners<ID, Path, Product>>,
 }
 
 impl<ID, Path, Product> FiaState<ID, Path, Product>
@@ -74,32 +136,31 @@ where
     pub(super) fn new(
         supports_skipping_of_factor_sources: bool,
         factor_sources: IndexSet<FactorSource>,
+        combiners: Vec<FiaCombiner<ID, Path, Product>>,
     ) -> Self {
         Self {
             supports_skipping_of_factor_sources,
             phantom_id: PhantomData,
             phantom_path: PhantomData,
             phantom_product: PhantomData,
-            factor_sources,
+            factor_sources: RefCell::new(factor_sources),
+            combiners: RefCell::new(combiners),
         }
     }
 
     pub(super) type DriverRequest = BatchUseFactorSourceRequest<ID, Path>;
     pub(super) type DriverResponse = BatchUseFactorSourceResponse<ID, Product>;
+    pub(super) type UserAction = UseFactorsAction<Self::DriverRequest, Self::DriverResponse>;
 
     pub(super) fn next_factor_sources(&self) -> Option<FactorSourcesOfKind> {
         todo!()
     }
 
-    pub(super) fn handle_outcome(
-        &self,
-        response: UseFactorsAction<Self::DriverResponse>,
-    ) -> Result<()> {
-        // Mutate using interior mutability
-        if response.skipped() && !self.supports_skipping_of_factor_sources {
+    pub(super) fn handle_outcome(&self, action: Self::UserAction) -> Result<()> {
+        if action.skipped() && !self.supports_skipping_of_factor_sources {
             panic!("Should not have been possible to skip.");
         }
-        todo!()
+        self.combiners.borrow_mut().handle_outcome(action)
     }
 
     pub(super) fn is_done_early(&self) -> bool {
