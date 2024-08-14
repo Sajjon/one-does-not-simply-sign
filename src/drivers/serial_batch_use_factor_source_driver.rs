@@ -10,6 +10,7 @@ pub struct SerialBatchSigningRequest {
     /// signing with this factor source.
     pub invalid_transactions_if_skipped: Vec<InvalidTransactionIfSkipped>,
 }
+
 impl SerialBatchSigningRequest {
     pub fn new(
         input: BatchTXBatchKeySigningRequest,

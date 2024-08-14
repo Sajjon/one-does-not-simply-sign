@@ -9,44 +9,7 @@ impl UseFactorSourceClient {
         Self { driver }
     }
 
-    /// `Ok(false)` means that we failed to sign and failed to retry.
     pub async fn use_factor_sources(
-        &self,
-        factor_sources: IndexSet<FactorSource>,
-        coordinator: &FactorResultsBuildingCoordinator,
-    ) -> Result<bool> {
-        match self
-            .do_use_factor_sources(factor_sources.clone(), coordinator)
-            .await
-        {
-            Ok(()) => Ok(true),
-            Err(_) => {
-                // Ask user if she wants to retry.
-                if self
-                    .driver
-                    .did_fail_ask_if_retry(
-                        factor_sources.clone().into_iter().map(|f| f.id).collect(),
-                    )
-                    .await
-                {
-                    // recursive call (Box::pin is needed since we are recursively calling ourselves and we are async)
-                    Box::pin(self.use_factor_sources(factor_sources.clone(), coordinator)).await
-                } else {
-                    coordinator.process_batch_response(
-                        SignWithFactorSourceOrSourcesOutcome::Skipped {
-                            ids_of_skipped_factors_sources: factor_sources
-                                .into_iter()
-                                .map(|f| f.id)
-                                .collect(),
-                        },
-                    );
-                    Ok(false)
-                }
-            }
-        }
-    }
-
-    async fn do_use_factor_sources(
         &self,
         factor_sources: IndexSet<FactorSource>,
         coordinator: &FactorResultsBuildingCoordinator,

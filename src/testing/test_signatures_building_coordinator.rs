@@ -27,18 +27,18 @@ impl FactorResultsBuildingCoordinator {
         Self::test_prudent_with_factors(FactorSource::all(), transactions)
     }
 
-    pub fn test_prudent_with_retry(
+    pub fn test_prudent_with_failures(
         transactions: impl IntoIterator<Item = TransactionIntent>,
-        retry: SimulatedUserRetries,
+        simulated_failures: SimulatedFailures,
     ) -> Self {
         Self::new_test(
             FactorSource::all(),
             transactions,
-            SimulatedUser::prudent_with_retry(retry),
+            SimulatedUser::prudent_with_failures(simulated_failures),
         )
     }
 
-    pub fn test_lazy_sign_minimum_no_retry_with_factors(
+    pub fn test_lazy_sign_minimum_no_failures_with_factors(
         all_factor_sources_in_profile: impl IntoIterator<Item = FactorSource>,
         transactions: impl IntoIterator<Item = TransactionIntent>,
     ) -> Self {
@@ -49,10 +49,10 @@ impl FactorResultsBuildingCoordinator {
         )
     }
 
-    pub fn test_lazy_sign_minimum_no_retry(
+    pub fn test_lazy_sign_minimum_no_failures(
         transactions: impl IntoIterator<Item = TransactionIntent>,
     ) -> Self {
-        Self::test_lazy_sign_minimum_no_retry_with_factors(FactorSource::all(), transactions)
+        Self::test_lazy_sign_minimum_no_failures_with_factors(FactorSource::all(), transactions)
     }
 
     pub fn test_lazy_always_skip_with_factors(
