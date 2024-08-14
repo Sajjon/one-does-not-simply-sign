@@ -17,6 +17,8 @@ impl IsTestUseFactorSourcesDriver for TestParallelBatchSigningDriver {
     }
 }
 
+impl IsUseFactorSourcesDriver for TestParallelBatchSigningDriver {}
+
 #[async_trait]
 impl ParallelBatchUseFactorSourcesDriver for TestParallelBatchSigningDriver {
     async fn sign(

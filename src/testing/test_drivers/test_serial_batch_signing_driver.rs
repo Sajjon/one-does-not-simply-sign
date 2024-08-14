@@ -17,6 +17,8 @@ impl IsTestUseFactorSourcesDriver for TestSerialBatchSigningDriver {
     }
 }
 
+impl IsUseFactorSourcesDriver for TestSerialBatchSigningDriver {}
+
 #[async_trait]
 impl SerialBatchUseFactorSourceDriver for TestSerialBatchSigningDriver {
     async fn sign(

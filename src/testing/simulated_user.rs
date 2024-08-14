@@ -18,137 +18,42 @@ pub enum SigningUserInput {
 #[derive(Debug, Clone)]
 pub struct SimulatedUser {
     mode: SimulatedUserMode,
-    /// `None` means never fail / retry
-    retry: Option<RefCell<SimulatedUserRetries>>,
+    /// `None` means never failures
+    failures: Option<SimulatedFailures>,
 }
 
 impl SimulatedUser {
-    pub fn new(mode: SimulatedUserMode, retry: impl Into<Option<SimulatedUserRetries>>) -> Self {
+    pub fn new(mode: SimulatedUserMode, failures: impl Into<Option<SimulatedFailures>>) -> Self {
         Self {
             mode,
-            retry: retry.into().map(RefCell::new),
+            failures: failures.into(),
         }
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct SimulatedUserRetries {
-    max_retries: usize,
-
-    /// Counters of failures and retries for each factor source.
-    /// Has to be Arc<Mutex> since our implementations of `use_factor_sources`
-    /// are async and recursively call itself, so we need a thread-safe of
-    /// reading and writing the counters.
-    retries: Arc<Mutex<HashMap<FactorSourceID, SimulatedUserRetry>>>,
-
-    /// `0` means "never fail", `1` means fail first time only, succeed second time.
-    /// `2` means fail first two times, succeed third time, and so on.
-    simulated_failures: HashMap<FactorSourceID, usize>,
+#[derive(Debug, Clone, Default)]
+pub struct SimulatedFailures {
+    /// Set of FactorSources which should always fail.
+    simulated_failures: IndexSet<FactorSourceID>,
 }
-impl Default for SimulatedUserRetry {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-impl SimulatedUserRetries {
-    pub const DEFAULT_RETRY_COUNT: usize = 2;
-    pub fn with_details(
-        max_retries: usize,
-        retries: HashMap<FactorSourceID, SimulatedUserRetry>,
-        simulated_failures: HashMap<FactorSourceID, usize>,
-    ) -> Self {
-        Self {
-            max_retries,
-            retries: Arc::new(Mutex::new(retries)),
-            simulated_failures,
-        }
+impl SimulatedFailures {
+    pub fn with_details(simulated_failures: IndexSet<FactorSourceID>) -> Self {
+        Self { simulated_failures }
     }
 
-    pub fn with_simulated_failures(
-        max_retries: usize,
-        failures: impl IntoIterator<Item = (FactorSourceID, usize)>,
-    ) -> Self {
-        Self::with_details(max_retries, HashMap::new(), HashMap::from_iter(failures))
+    pub fn with_simulated_failures(failures: impl IntoIterator<Item = FactorSourceID>) -> Self {
+        Self::with_details(IndexSet::from_iter(failures))
     }
 
     pub fn new() -> Self {
-        Self::with_details(Self::DEFAULT_RETRY_COUNT, HashMap::new(), HashMap::new())
-    }
-
-    /// returns `true` if we should retry, which updates increases retry count
-    fn single_retry_if_needed(&self, factor_source_id: &FactorSourceID) -> bool {
-        let mut retries = self.retries.try_lock().unwrap();
-        if let Some(retry) = retries.get(factor_source_id) {
-            if retry.retry_count() > self.max_retries {
-                return false;
-            }
-            retry.retry();
-        } else {
-            let retry = SimulatedUserRetry::default();
-            retry.retry();
-            retries.insert(*factor_source_id, retry);
-        }
-        true
-    }
-
-    /// returns `true` if we should fail, which updates increases failure count
-    fn single_simulate_failure_if_needed(&self, factor_source_id: &FactorSourceID) -> bool {
-        let mut retries = self.retries.try_lock().unwrap();
-
-        let Some(failure) = self.simulated_failures.get(factor_source_id) else {
-            return false;
-        };
-
-        if let Some(retry) = retries.get(factor_source_id) {
-            if *failure < retry.failures.get() {
-                return false;
-            }
-            retry.fail();
-        } else {
-            let retry = SimulatedUserRetry::default();
-            retry.fail();
-            retries.insert(*factor_source_id, retry);
-        }
-        true
-    }
-
-    /// If needed, retries ALL factor sources or NONE.
-    pub fn retry_if_needed(&self, factor_source_ids: IndexSet<FactorSourceID>) -> bool {
-        factor_source_ids
-            .into_iter()
-            .map(|id| self.single_retry_if_needed(&id))
-            .any(|x| x)
+        Self::default()
     }
 
     /// If needed, simulates failure for ALL factor sources or NONE.
     pub fn simulate_failure_if_needed(&self, factor_source_ids: IndexSet<FactorSourceID>) -> bool {
         factor_source_ids
             .into_iter()
-            .map(|id| self.single_simulate_failure_if_needed(&id))
-            .any(|x| x)
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct SimulatedUserRetry {
-    failures: Cell<usize>,
-    retries: Cell<usize>,
-}
-impl SimulatedUserRetry {
-    pub fn new() -> Self {
-        Self {
-            failures: Cell::new(0),
-            retries: Cell::new(0),
-        }
-    }
-    pub fn fail(&self) {
-        self.failures.set(self.failures.get() + 1);
-    }
-    pub fn retry(&self) {
-        self.retries.set(self.retries.get() + 1);
-    }
-    pub fn retry_count(&self) -> usize {
-        self.retries.get()
+            .all(|id| self.simulated_failures.contains(&id))
     }
 }
 
@@ -183,24 +88,20 @@ impl SimulatedUser {
         Self::new(SimulatedUserMode::Prudent, None)
     }
 
-    pub fn prudent_with_retry(retry: SimulatedUserRetries) -> Self {
-        Self::new(SimulatedUserMode::Prudent, retry)
+    pub fn prudent_with_failures(simulated_failures: SimulatedFailures) -> Self {
+        Self::new(SimulatedUserMode::Prudent, simulated_failures)
     }
 
     pub fn lazy_always_skip_no_fail() -> Self {
         Self::new(SimulatedUserMode::lazy_always_skip(), None)
     }
 
-    /// Skips only if `invalid_tx_if_skipped` is empty, if retry_on_failure
-    pub fn lazy_sign_minimum(
-        simulated_failures: impl IntoIterator<Item = (FactorSourceID, usize)>,
-    ) -> Self {
+    /// Skips only if `invalid_tx_if_skipped` is empty
+    /// (or if simulated failure for that factor source)
+    pub fn lazy_sign_minimum(simulated_failures: impl IntoIterator<Item = FactorSourceID>) -> Self {
         Self::new(
             SimulatedUserMode::lazy_sign_minimum(),
-            SimulatedUserRetries::with_simulated_failures(
-                SimulatedUserRetries::DEFAULT_RETRY_COUNT,
-                simulated_failures,
-            ),
+            SimulatedFailures::with_simulated_failures(simulated_failures),
         )
     }
 }
@@ -235,19 +136,9 @@ impl SimulatedUser {
         }
     }
 
-    pub fn retry_if_needed(&self, factor_source_ids: IndexSet<FactorSourceID>) -> bool {
-        if let Some(retry) = &self.retry {
-            retry.borrow_mut().retry_if_needed(factor_source_ids)
-        } else {
-            false
-        }
-    }
-
     pub fn simulate_failure_if_needed(&self, factor_source_ids: IndexSet<FactorSourceID>) -> bool {
-        if let Some(retry) = &self.retry {
-            retry
-                .borrow_mut()
-                .simulate_failure_if_needed(factor_source_ids)
+        if let Some(failures) = &self.failures {
+            failures.simulate_failure_if_needed(factor_source_ids)
         } else {
             false
         }

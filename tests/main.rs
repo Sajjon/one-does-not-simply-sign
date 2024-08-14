@@ -154,7 +154,7 @@ mod tests {
 
     #[actix_rt::test]
     async fn lazy_sign_minimum_user_single_tx_a0() {
-        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum_no_retry([
+        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum_no_failures([
             TransactionIntent::new([Entity::a0()]),
         ]);
         let outcome = coordinator.use_factor_sources().await;
@@ -165,7 +165,7 @@ mod tests {
 
     #[actix_rt::test]
     async fn lazy_sign_minimum_user_single_tx_a1() {
-        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum_no_retry([
+        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum_no_failures([
             TransactionIntent::new([Entity::a1()]),
         ]);
         let outcome = coordinator.use_factor_sources().await;
@@ -176,7 +176,7 @@ mod tests {
 
     #[actix_rt::test]
     async fn lazy_sign_minimum_user_single_tx_a2() {
-        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum_no_retry([
+        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum_no_failures([
             TransactionIntent::new([Entity::a2()]),
         ]);
         let outcome = coordinator.use_factor_sources().await;
@@ -187,7 +187,7 @@ mod tests {
 
     #[actix_rt::test]
     async fn lazy_sign_minimum_user_a3() {
-        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum_no_retry([
+        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum_no_failures([
             TransactionIntent::new([Entity::a3()]),
         ]);
         let outcome = coordinator.use_factor_sources().await;
@@ -198,7 +198,7 @@ mod tests {
 
     #[actix_rt::test]
     async fn lazy_sign_minimum_user_a4() {
-        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum_no_retry([
+        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum_no_failures([
             TransactionIntent::new([Entity::a4()]),
         ]);
         let outcome = coordinator.use_factor_sources().await;
@@ -209,7 +209,7 @@ mod tests {
 
     #[actix_rt::test]
     async fn lazy_sign_minimum_user_a5() {
-        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum_no_retry([
+        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum_no_failures([
             TransactionIntent::new([Entity::a5()]),
         ]);
         let outcome = coordinator.use_factor_sources().await;
@@ -220,7 +220,7 @@ mod tests {
 
     #[actix_rt::test]
     async fn lazy_sign_minimum_user_a6() {
-        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum_no_retry([
+        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum_no_failures([
             TransactionIntent::new([Entity::a6()]),
         ]);
         let outcome = coordinator.use_factor_sources().await;
@@ -232,7 +232,7 @@ mod tests {
 
     #[actix_rt::test]
     async fn lazy_sign_minimum_user_a7() {
-        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum_no_retry([
+        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum_no_failures([
             TransactionIntent::new([Entity::a7()]),
         ]);
         let outcome = coordinator.use_factor_sources().await;
@@ -245,7 +245,7 @@ mod tests {
     #[actix_rt::test]
     async fn lazy_sign_minimum_user_a5_last_factor_used() {
         let entity = Entity::a5();
-        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum_no_retry([
+        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum_no_failures([
             TransactionIntent::new([entity.clone()]),
         ]);
         let outcome = coordinator.use_factor_sources().await;
@@ -271,7 +271,7 @@ mod tests {
 
     #[actix_rt::test]
     async fn lazy_sign_minimum_all_known_factors_used_as_override_factors_signed_with_device() {
-        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum_no_retry([
+        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum_no_failures([
             TransactionIntent::new([Entity::securified(0, "all override", |idx| {
                 MatrixOfFactorInstances::override_only(
                     FactorSource::all()
@@ -384,47 +384,20 @@ mod tests {
     }
 
     #[actix_rt::test]
-    async fn failure_user_does_not_retry() {
-        let coordinator = FactorResultsBuildingCoordinator::test_prudent_with_retry(
+    async fn failure() {
+        let coordinator = FactorResultsBuildingCoordinator::test_prudent_with_failures(
             [TransactionIntent::new([Entity::a0()])],
-            SimulatedUserRetries::with_simulated_failures(0, [(FactorSourceID::fs0(), usize::MAX)]),
+            SimulatedFailures::with_simulated_failures([FactorSourceID::fs0()]),
         );
         let outcome = coordinator.use_factor_sources().await;
         assert!(!outcome.successful());
     }
 
     #[actix_rt::test]
-    async fn failure_user_does_not_retry_enough() {
-        let coordinator = FactorResultsBuildingCoordinator::test_prudent_with_retry(
-            [TransactionIntent::new([Entity::a0()])],
-            SimulatedUserRetries::with_simulated_failures(1, [(FactorSourceID::fs0(), usize::MAX)]),
-        );
-        let outcome = coordinator.use_factor_sources().await;
-        assert!(!outcome.successful());
-    }
-
-    async fn failure_user_succeeds_after_nth_retry(n: usize) {
-        let coordinator = FactorResultsBuildingCoordinator::test_prudent_with_retry(
-            [TransactionIntent::new([Entity::a0()])],
-            SimulatedUserRetries::with_simulated_failures(n, [(FactorSourceID::fs0(), n)]),
-        );
-        let outcome = coordinator.use_factor_sources().await;
-        assert!(outcome.successful());
-    }
-
-    #[actix_rt::test]
-    async fn test_failure_user_succeeds_after_nth_retry() {
-        failure_user_succeeds_after_nth_retry(1).await;
-        failure_user_succeeds_after_nth_retry(2).await;
-        failure_user_succeeds_after_nth_retry(3).await;
-        failure_user_succeeds_after_nth_retry(10).await;
-    }
-
-    #[actix_rt::test]
-    async fn building_can_succeed_even_if_one_factor_source_fails_ids_of_successful_tx() {
-        let coordinator = FactorResultsBuildingCoordinator::test_prudent_with_retry(
+    async fn building_can_succeed_even_if_one_factor_source_fails_assert_ids_of_successful_tx() {
+        let coordinator = FactorResultsBuildingCoordinator::test_prudent_with_failures(
             [TransactionIntent::new([Entity::a4()])],
-            SimulatedUserRetries::with_simulated_failures(2, [(FactorSourceID::fs3(), 99)]),
+            SimulatedFailures::with_simulated_failures([FactorSourceID::fs3()]),
         );
         let outcome = coordinator.use_factor_sources().await;
         assert!(outcome.successful());
@@ -439,12 +412,13 @@ mod tests {
     }
 
     #[actix_rt::test]
-    async fn building_can_succeed_even_if_one_factor_source_fails_ids_of_failed_tx() {
-        let coordinator = FactorResultsBuildingCoordinator::test_prudent_with_retry(
+    async fn building_can_succeed_even_if_one_factor_source_fails_assert_ids_of_failed_tx() {
+        let coordinator = FactorResultsBuildingCoordinator::test_prudent_with_failures(
             [TransactionIntent::new([Entity::a4()])],
-            SimulatedUserRetries::with_simulated_failures(2, [(FactorSourceID::fs3(), 99)]),
+            SimulatedFailures::with_simulated_failures([FactorSourceID::fs3()]),
         );
         let outcome = coordinator.use_factor_sources().await;
+        assert!(outcome.successful());
         assert_eq!(
             outcome.skipped_factor_sources(),
             IndexSet::<_>::from_iter([FactorSourceID::fs3()])

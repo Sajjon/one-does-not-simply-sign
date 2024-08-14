@@ -153,7 +153,15 @@ impl FactorResultsBuildingCoordinator {
         assert!(factor_sources.iter().all(|f| f.kind() == kind));
         let driver = self.get_driver(kind);
         let client = UseFactorSourceClient::new(driver);
-        let _ = client.use_factor_sources(factor_sources, self).await;
+        let result = client
+            .use_factor_sources(factor_sources.clone(), self)
+            .await;
+        match result {
+            Ok(_) => {}
+            Err(_) => self.process_batch_response(SignWithFactorSourceOrSourcesOutcome::Skipped {
+                ids_of_skipped_factors_sources: factor_sources.into_iter().map(|f| f.id).collect(),
+            }),
+        }
         Ok(())
     }
 
