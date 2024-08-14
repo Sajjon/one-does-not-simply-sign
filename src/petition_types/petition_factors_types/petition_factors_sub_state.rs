@@ -1,7 +1,9 @@
 use crate::prelude::*;
 
+/// A sub-state of `PetitionFactorsState` which can be used to track factors
+/// that have signed or skipped.
 #[derive(Clone, PartialEq, Eq, Debug)]
-pub struct BuilderFactorsStateSubstate<F>
+pub struct PetitionFactorsSubState<F>
 where
     F: FactorSourceReferencing,
 {
@@ -9,7 +11,7 @@ where
     factors: RefCell<IndexSet<F>>,
 }
 
-impl<F: FactorSourceReferencing> BuilderFactorsStateSubstate<F> {
+impl<F: FactorSourceReferencing> PetitionFactorsSubState<F> {
     pub(super) fn new() -> Self {
         Self {
             factors: RefCell::new(IndexSet::new()),

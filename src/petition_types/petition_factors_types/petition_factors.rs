@@ -1,21 +1,22 @@
 use super::*;
 use crate::prelude::*;
 
+/// Petition of signatures from a factors list of an entity in a transaction.
 #[derive(Clone, PartialEq, Eq, Debug)]
-pub struct BuilderFactors {
+pub struct PetitionFactors {
     factor_list_kind: FactorListKind,
 
     /// Factors to sign with and the required number of them.
-    input: BuilderFactorsInput,
-    state: RefCell<BuilderFactorsState>,
+    input: PetitionFactorsInput,
+    state: RefCell<PetitionFactorsState>,
 }
 
-impl BuilderFactors {
-    pub fn new(factor_list_kind: FactorListKind, input: BuilderFactorsInput) -> Self {
+impl PetitionFactors {
+    pub fn new(factor_list_kind: FactorListKind, input: PetitionFactorsInput) -> Self {
         Self {
             factor_list_kind,
             input,
-            state: RefCell::new(BuilderFactorsState::new()),
+            state: RefCell::new(PetitionFactorsState::new()),
         }
     }
 
@@ -37,7 +38,7 @@ impl BuilderFactors {
         }
         Some(Self::new(
             FactorListKind::Threshold,
-            BuilderFactorsInput::new_threshold(IndexSet::from_iter(factors), threshold),
+            PetitionFactorsInput::new_threshold(IndexSet::from_iter(factors), threshold),
         ))
     }
 
@@ -51,18 +52,18 @@ impl BuilderFactors {
         }
         Some(Self::new(
             FactorListKind::Override,
-            BuilderFactorsInput::new_override(IndexSet::from_iter(factors)),
+            PetitionFactorsInput::new_override(IndexSet::from_iter(factors)),
         ))
     }
 
     pub fn new_not_used() -> Self {
         Self {
             factor_list_kind: FactorListKind::Override, // does not matter..
-            input: BuilderFactorsInput {
+            input: PetitionFactorsInput {
                 factors: IndexSet::new(),
                 required: 0,
             },
-            state: RefCell::new(BuilderFactorsState::new()),
+            state: RefCell::new(PetitionFactorsState::new()),
         }
     }
 
@@ -103,7 +104,7 @@ impl BuilderFactors {
         self.input.reference_factor_source_with_id(factor_source_id)
     }
 
-    fn state_snapshot(&self) -> BuilderFactorsStateSnapshot {
+    fn state_snapshot(&self) -> PetitionFactorsStateSnapshot {
         self.state.borrow().snapshot()
     }
 
@@ -115,20 +116,20 @@ impl BuilderFactors {
         self.input.is_failure_with(self.state_snapshot())
     }
 
-    fn finished_with(&self) -> Option<BuilderFactorsStatusFinished> {
+    fn finished_with(&self) -> Option<PetitionFactorsStatusFinished> {
         if self.is_finished_successfully() {
-            Some(BuilderFactorsStatusFinished::Success)
+            Some(PetitionFactorsStatusFinished::Success)
         } else if self.is_finished_with_fail() {
-            Some(BuilderFactorsStatusFinished::Fail)
+            Some(PetitionFactorsStatusFinished::Fail)
         } else {
             None
         }
     }
 
-    pub fn status(&self) -> BuilderFactorsStatus {
+    pub fn status(&self) -> PetitionFactorsStatus {
         if let Some(finished_state) = self.finished_with() {
-            return BuilderFactorsStatus::Finished(finished_state);
+            return PetitionFactorsStatus::Finished(finished_state);
         }
-        BuilderFactorsStatus::InProgress
+        PetitionFactorsStatus::InProgress
     }
 }

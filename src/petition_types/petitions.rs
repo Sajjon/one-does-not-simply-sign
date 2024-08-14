@@ -18,7 +18,7 @@ pub(crate) struct Petitions {
 
     /// Lookup from TXID to signatures builders, sorted according to the order of
     /// transactions passed to the SignaturesBuilder.
-    pub txid_to_petition: RefCell<IndexMap<IntentHash, PetitionOfTransaction>>,
+    pub txid_to_petition: RefCell<IndexMap<IntentHash, PetitionTransaction>>,
 }
 
 impl Petitions {
@@ -46,7 +46,7 @@ impl Petitions {
 
     pub(crate) fn new(
         factor_to_txid: HashMap<FactorSourceID, IndexSet<IntentHash>>,
-        txid_to_petition: IndexMap<IntentHash, PetitionOfTransaction>,
+        txid_to_petition: IndexMap<IntentHash, PetitionTransaction>,
     ) -> Self {
         Self {
             factor_to_txid,

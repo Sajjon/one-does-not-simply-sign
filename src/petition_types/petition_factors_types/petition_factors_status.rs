@@ -1,17 +1,17 @@
 /// The status of building using a certain list of factors, e.g. threshold or
 /// override factors list.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum BuilderFactorsStatus {
+pub enum PetitionFactorsStatus {
     /// In progress, still gathering output from factors (signatures or public keys).
     InProgress,
 
     /// Finished building with factors, either successfully or failed.
-    Finished(BuilderFactorsStatusFinished),
+    Finished(PetitionFactorsStatusFinished),
 }
 
 /// Finished building with factors, either successfully or failed.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum BuilderFactorsStatusFinished {
+pub enum PetitionFactorsStatusFinished {
     /// Successful completion of building with factors.
     Success,
 

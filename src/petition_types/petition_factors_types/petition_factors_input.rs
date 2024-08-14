@@ -2,7 +2,7 @@ use super::*;
 use crate::prelude::*;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
-pub struct BuilderFactorsInput {
+pub struct PetitionFactorsInput {
     /// Factors to sign with.
     pub(super) factors: IndexSet<FactorInstance>,
 
@@ -10,7 +10,7 @@ pub struct BuilderFactorsInput {
     pub(super) required: i8,
 }
 
-impl BuilderFactorsInput {
+impl PetitionFactorsInput {
     pub(super) fn new(factors: IndexSet<FactorInstance>, required: i8) -> Self {
         Self { factors, required }
     }
@@ -36,19 +36,19 @@ impl BuilderFactorsInput {
         self.factors.len() as i8
     }
 
-    fn remaining_factors_until_success(&self, snapshot: BuilderFactorsStateSnapshot) -> i8 {
+    fn remaining_factors_until_success(&self, snapshot: PetitionFactorsStateSnapshot) -> i8 {
         self.required - snapshot.signed_count()
     }
 
-    pub(super) fn is_fulfilled_by(&self, snapshot: BuilderFactorsStateSnapshot) -> bool {
+    pub(super) fn is_fulfilled_by(&self, snapshot: PetitionFactorsStateSnapshot) -> bool {
         self.remaining_factors_until_success(snapshot) <= 0
     }
 
-    fn factors_left_to_prompt(&self, snapshot: BuilderFactorsStateSnapshot) -> i8 {
+    fn factors_left_to_prompt(&self, snapshot: PetitionFactorsStateSnapshot) -> i8 {
         self.factors_count() - snapshot.prompted_count()
     }
 
-    pub(super) fn is_failure_with(&self, snapshot: BuilderFactorsStateSnapshot) -> bool {
+    pub(super) fn is_failure_with(&self, snapshot: PetitionFactorsStateSnapshot) -> bool {
         let signed_or_pending =
             self.factors_left_to_prompt(snapshot.clone()) + snapshot.signed_count();
         signed_or_pending < self.required

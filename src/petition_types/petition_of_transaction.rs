@@ -1,14 +1,15 @@
 use crate::prelude::*;
 
-/// Essentially a wrapper around `Iterator<Item = BuilderEntity>`.
-pub(crate) struct PetitionOfTransaction {
+/// Petition of signatures for a transaction.
+/// Essentially a wrapper around `Iterator<Item = PetitionEntity>`.
+pub(crate) struct PetitionTransaction {
     /// Hash of transaction to sign
     pub intent_hash: IntentHash,
 
-    pub for_entities: RefCell<HashMap<AccountAddressOrIdentityAddress, BuilderEntity>>,
+    pub for_entities: RefCell<HashMap<AccountAddressOrIdentityAddress, PetitionEntity>>,
 }
 
-impl PetitionOfTransaction {
+impl PetitionTransaction {
     /// Returns `(true, _)` if this transaction has been successfully signed by
     /// all required factor instances.
     ///
@@ -102,7 +103,7 @@ impl PetitionOfTransaction {
 
     pub(crate) fn new(
         intent_hash: IntentHash,
-        for_entities: HashMap<AccountAddressOrIdentityAddress, BuilderEntity>,
+        for_entities: HashMap<AccountAddressOrIdentityAddress, PetitionEntity>,
     ) -> Self {
         Self {
             intent_hash,

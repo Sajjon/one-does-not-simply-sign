@@ -1,7 +1,8 @@
 use crate::prelude::*;
 
+/// An immutable "snapshot" of `PetitionFactorsState`
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(super) struct BuilderFactorsStateSnapshot {
+pub(super) struct PetitionFactorsStateSnapshot {
     /// Factors that have signed.
     signed: IndexSet<HDSignature>,
 
@@ -9,7 +10,7 @@ pub(super) struct BuilderFactorsStateSnapshot {
     skipped: IndexSet<FactorInstance>,
 }
 
-impl BuilderFactorsStateSnapshot {
+impl PetitionFactorsStateSnapshot {
     pub(super) fn new(signed: IndexSet<HDSignature>, skipped: IndexSet<FactorInstance>) -> Self {
         Self { signed, skipped }
     }
