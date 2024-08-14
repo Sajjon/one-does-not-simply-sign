@@ -1,7 +1,8 @@
 use crate::prelude::*;
 
 use super::{
-    factor_sources_of_kind::*, signatures_collector_dependencies::*, signatures_collector_state::*,
+    factor_sources_of_kind::*, signatures_collector_dependencies::*,
+    signatures_collector_preprocessor::*, signatures_collector_state::*,
 };
 
 /// A coordinator which gathers signatures from several factor sources of different
@@ -18,107 +19,21 @@ pub struct SignaturesCollector {
 }
 
 impl SignaturesCollector {
-    fn with(
-        dependencies: SignaturesCollectorDependencies,
-        state: SignaturesCollectorState,
-    ) -> Self {
-        Self {
-            dependencies,
-            state: RefCell::new(state),
-        }
-    }
-
     pub fn new(
         all_factor_sources_in_profile: IndexSet<FactorSource>,
         transactions: IndexSet<TransactionIntent>,
         interactors: Arc<dyn SignatureCollectingInteractors>,
     ) -> Self {
-        let mut petitions_for_all_transactions =
-            IndexMap::<IntentHash, PetitionOfTransaction>::new();
+        let preprocessor = SignaturesCollectorPreprocessor::new(transactions);
+        let (petitions, factors) = preprocessor.preprocess(all_factor_sources_in_profile);
 
-        let all_factor_sources_in_profile = all_factor_sources_in_profile
-            .into_iter()
-            .map(|f| (f.id, f))
-            .collect::<HashMap<FactorSourceID, FactorSource>>();
+        let dependencies = SignaturesCollectorDependencies::new(interactors, factors);
+        let state = SignaturesCollectorState::new(petitions);
 
-        let mut factor_to_payloads = HashMap::<FactorSourceID, IndexSet<IntentHash>>::new();
-
-        let mut used_factor_sources = HashSet::<FactorSource>::new();
-
-        let mut use_factor_in_tx = |id: &FactorSourceID, txid: &IntentHash| {
-            if let Some(ref mut txids) = factor_to_payloads.get_mut(id) {
-                txids.insert(txid.clone());
-            } else {
-                factor_to_payloads.insert(*id, IndexSet::from_iter([txid.clone()]));
-            }
-
-            assert!(!factor_to_payloads.is_empty());
-
-            let factor_source = all_factor_sources_in_profile
-                .get(id)
-                .expect("Should have all factor sources");
-            used_factor_sources.insert(factor_source.clone());
-
-            assert!(!used_factor_sources.is_empty());
-        };
-
-        for transaction in transactions.into_iter() {
-            let mut petitions_for_entities =
-                HashMap::<AccountAddressOrIdentityAddress, BuilderEntity>::new();
-
-            for entity in transaction.clone().entities_requiring_auth {
-                let address = entity.address;
-                match entity.security_state {
-                    EntitySecurityState::Securified(sec) => {
-                        let primary_role_matrix = sec;
-
-                        let mut add = |factors: Vec<FactorInstance>| {
-                            factors.into_iter().for_each(|f| {
-                                let factor_source_id = f.factor_source_id;
-                                use_factor_in_tx(&factor_source_id, &transaction.intent_hash);
-                            })
-                        };
-
-                        add(primary_role_matrix.override_factors.clone());
-                        add(primary_role_matrix.threshold_factors.clone());
-                        let petition = BuilderEntity::new_securified(
-                            transaction.intent_hash.clone(),
-                            address.clone(),
-                            primary_role_matrix,
-                        );
-                        petitions_for_entities.insert(address.clone(), petition);
-                    }
-                    EntitySecurityState::Unsecured(uec) => {
-                        let factor_instance = uec;
-                        let factor_source_id = factor_instance.factor_source_id;
-                        use_factor_in_tx(&factor_source_id, &transaction.intent_hash);
-                        let petition = BuilderEntity::new_unsecurified(
-                            transaction.intent_hash.clone(),
-                            address.clone(),
-                            factor_instance,
-                        );
-                        petitions_for_entities.insert(address.clone(), petition);
-                    }
-                }
-            }
-            let petition_of_tx =
-                PetitionOfTransaction::new(transaction.intent_hash.clone(), petitions_for_entities);
-
-            petitions_for_all_transactions.insert(transaction.intent_hash, petition_of_tx);
+        Self {
+            dependencies,
+            state: RefCell::new(state),
         }
-
-        let dependencies = SignaturesCollectorDependencies::new(interactors, used_factor_sources);
-
-        let state = Self::new_state(factor_to_payloads, petitions_for_all_transactions);
-
-        Self::with(dependencies, state)
-    }
-
-    fn new_state(
-        factor_to_txid: HashMap<FactorSourceID, IndexSet<IntentHash>>,
-        txid_to_petition: IndexMap<IntentHash, PetitionOfTransaction>,
-    ) -> SignaturesCollectorState {
-        SignaturesCollectorState::new(factor_to_txid, txid_to_petition)
     }
 }
 

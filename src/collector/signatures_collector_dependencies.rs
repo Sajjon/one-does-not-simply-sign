@@ -19,7 +19,7 @@ pub(super) struct SignaturesCollectorDependencies {
 }
 
 impl SignaturesCollectorDependencies {
-    fn with(
+    pub fn new(
         interactors: Arc<dyn SignatureCollectingInteractors>,
         factors_of_kind: IndexSet<FactorSourcesOfKind>,
     ) -> Self {
@@ -27,28 +27,5 @@ impl SignaturesCollectorDependencies {
             interactors,
             factors_of_kind,
         }
-    }
-
-    pub fn new(
-        interactors: Arc<dyn SignatureCollectingInteractors>,
-        used_factor_sources: HashSet<FactorSource>,
-    ) -> Self {
-        let factors_of_kind = used_factor_sources
-            .into_iter()
-            .into_grouping_map_by(|x| x.kind())
-            .collect::<IndexSet<FactorSource>>();
-
-        let mut factors_of_kind = factors_of_kind
-            .into_iter()
-            .map(|(k, v)| (k, v.into_iter().sorted().collect::<IndexSet<_>>()))
-            .collect::<IndexMap<FactorSourceKind, IndexSet<FactorSource>>>();
-
-        factors_of_kind.sort_keys();
-        let factors_of_kind = factors_of_kind
-            .into_iter()
-            .map(|(k, v)| FactorSourcesOfKind::new(k, v).unwrap())
-            .collect::<IndexSet<_>>();
-
-        Self::with(interactors, factors_of_kind)
     }
 }
