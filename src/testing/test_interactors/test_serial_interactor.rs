@@ -1,24 +1,24 @@
 use crate::prelude::*;
 
-pub struct TestSerialInteractor {
+pub struct TestSigningSerialInteractor {
     simulated_user: SimulatedUser,
 }
 
-impl TestSerialInteractor {
+impl TestSigningSerialInteractor {
     pub fn new(simulated_user: SimulatedUser) -> Self {
         Self { simulated_user }
     }
 }
 
 #[async_trait]
-impl IsTestUseFactorSourcesDriver for TestSerialInteractor {
+impl IsTestInteractor for TestSigningSerialInteractor {
     fn simulated_user(&self) -> SimulatedUser {
         self.simulated_user.clone()
     }
 }
 
 #[async_trait]
-impl SignWithFactorSerialInteractor for TestSerialInteractor {
+impl SignWithFactorSerialInteractor for TestSigningSerialInteractor {
     async fn sign(
         &self,
         request: SerialBatchSigningRequest,

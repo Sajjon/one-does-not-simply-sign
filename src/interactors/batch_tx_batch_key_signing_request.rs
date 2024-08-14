@@ -15,6 +15,7 @@ pub struct BatchKeySigningRequest {
     /// `factor_source_id` of each item must match `factor_source_id`.
     owned_factor_instances: Vec<OwnedFactorInstance>,
 }
+
 impl BatchKeySigningRequest {
     pub fn signature_inputs(&self) -> IndexSet<HDSignatureInput> {
         self.owned_factor_instances

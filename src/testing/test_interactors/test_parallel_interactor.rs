@@ -1,27 +1,27 @@
 use crate::prelude::*;
 
-pub struct TestParallelBatchSigningDriver {
+pub struct TestSigningParallelInteractor {
     simulated_user: SimulatedUser,
 }
 
-impl TestParallelBatchSigningDriver {
+impl TestSigningParallelInteractor {
     pub fn new(simulated_user: SimulatedUser) -> Self {
         Self { simulated_user }
     }
 }
 
 #[async_trait]
-impl IsTestUseFactorSourcesDriver for TestParallelBatchSigningDriver {
+impl IsTestInteractor for TestSigningParallelInteractor {
     fn simulated_user(&self) -> SimulatedUser {
         self.simulated_user.clone()
     }
 }
 
 #[async_trait]
-impl ParallelBatchUseFactorSourcesDriver for TestParallelBatchSigningDriver {
+impl SignWithFactorParallelInteractor for TestSigningParallelInteractor {
     async fn sign(
         &self,
-        request: SignWithFactorParallelInteractor,
+        request: ParallelBatchSigningRequest,
     ) -> Result<SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse>> {
         if self.should_simulate_failure(request.per_factor_source.keys().cloned().collect()) {
             return Err(CommonError::Failure);

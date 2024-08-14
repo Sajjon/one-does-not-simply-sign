@@ -1,50 +1,8 @@
 use crate::prelude::*;
 
-pub struct SignaturesCollectorState {
-    petitions: RefCell<Petitions>,
-}
-impl SignaturesCollectorState {
-    fn with_petitions(petitions: Petitions) -> Self {
-        Self {
-            petitions: RefCell::new(petitions),
-        }
-    }
-
-    fn new(
-        factor_to_txid: HashMap<FactorSourceID, IndexSet<IntentHash>>,
-        txid_to_petition: IndexMap<IntentHash, PetitionOfTransaction>,
-    ) -> Self {
-        Self::with_petitions(Petitions::new(factor_to_txid, txid_to_petition))
-    }
-}
-
-struct SignaturesCollectorDependencies {
-    /// A collection of "interactors" used to sign with factor sources.
-    interactors: Arc<dyn SignatureCollectingInteractors>,
-
-    /// Factor sources grouped by kind, sorted according to "friction order",
-    /// that is, we want to control which FactorSourceKind users sign with
-    /// first, second etc, e.g. typically we prompt user to sign with Ledgers
-    /// first, and if a user might lack access to that Ledger device, then it is
-    /// best to "fail fast", otherwise we might waste the users time, if she has
-    /// e.g. answered security questions and then is asked to use a Ledger
-    /// she might not have handy at the moment - or might not be in front of a
-    /// computer and thus unable to make a connection between the Radix Wallet
-    /// and a Ledger device.
-    factors_of_kind: IndexMap<FactorSourceKind, IndexSet<FactorSource>>,
-}
-
-impl SignaturesCollectorDependencies {
-    fn new(
-        interactors: Arc<dyn SignatureCollectingInteractors>,
-        factors_of_kind: IndexMap<FactorSourceKind, IndexSet<FactorSource>>,
-    ) -> Self {
-        Self {
-            interactors,
-            factors_of_kind,
-        }
-    }
-}
+use super::{
+    factor_sources_of_kind::*, signatures_collector_dependencies::*, signatures_collector_state::*,
+};
 
 /// A coordinator which gathers signatures from several factor sources of different
 /// kinds, in increasing friction order, for many transactions and for
@@ -151,6 +109,11 @@ impl SignaturesCollector {
 
         factors_of_kind.sort_keys();
 
+        let factors_of_kind = factors_of_kind
+            .into_iter()
+            .map(|(k, v)| FactorSourcesOfKind::new(k, v).unwrap())
+            .collect::<IndexSet<_>>();
+
         let state =
             SignaturesCollectorState::new(factor_to_payloads, petitions_for_all_transactions);
 
@@ -169,7 +132,7 @@ impl SignaturesCollector {
     /// no point in continuing.
     ///
     /// `Ok(true)` means "continue", `Ok(false)` means "stop, we are done". `Err(_)` means "stop, we have failed".
-    pub(super) fn continue_if_necessary(&self) -> Result<bool> {
+    pub(crate) fn continue_if_necessary(&self) -> Result<bool> {
         self.state
             .borrow()
             .petitions
@@ -181,30 +144,29 @@ impl SignaturesCollector {
         self.dependencies.interactors.interactor_for(kind)
     }
 
-    async fn use_certain_factor_sources(
+    async fn sign_with_factors_of_kind(
         &self,
-        factor_sources: IndexSet<FactorSource>,
-        kind: FactorSourceKind,
+        factor_sources_of_kind: FactorSourcesOfKind,
     ) -> Result<()> {
-        assert!(factor_sources.iter().all(|f| f.kind() == kind));
-        let interactor = self.get_interactor(kind);
+        let interactor = self.get_interactor(factor_sources_of_kind.kind);
         let client = SignWithFactorClient::new(interactor);
         let result = client
-            .use_factor_sources(factor_sources.clone(), self)
+            .use_factor_sources(factor_sources_of_kind.factor_sources(), self)
             .await;
         match result {
             Ok(_) => {}
             Err(_) => self.process_batch_response(SignWithFactorSourceOrSourcesOutcome::Skipped {
-                ids_of_skipped_factors_sources: factor_sources.into_iter().map(|f| f.id).collect(),
+                ids_of_skipped_factors_sources: factor_sources_of_kind.factor_source_ids(),
             }),
         }
         Ok(())
     }
 
-    async fn use_factor_sources_in_decreasing_friction_order(&self) -> Result<()> {
+    /// In decreasing "friction order"
+    async fn sign_with_factors(&self) -> Result<()> {
         let factors_of_kind = self.dependencies.factors_of_kind.clone();
-        for (kind, factor_sources) in factors_of_kind.into_iter() {
-            self.use_certain_factor_sources(factor_sources, kind)
+        for factor_sources_of_kind in factors_of_kind.into_iter() {
+            self.sign_with_factors_of_kind(factor_sources_of_kind)
                 .await?;
 
             if !self.continue_if_necessary()? {
@@ -227,7 +189,7 @@ impl SignaturesCollector {
             .input_for_parallel_batch_interactor(factor_source_id)
     }
 
-    pub(super) fn request_for_serial_batch_interactor(
+    pub(crate) fn request_for_serial_batch_interactor(
         &self,
         factor_source_id: &FactorSourceID,
     ) -> SerialBatchSigningRequest {
@@ -241,10 +203,10 @@ impl SignaturesCollector {
         )
     }
 
-    pub(super) fn request_for_parallel_batch_interactor(
+    pub(crate) fn request_for_parallel_batch_interactor(
         &self,
         factor_source_ids: IndexSet<FactorSourceID>,
-    ) -> SignWithFactorParallelInteractor {
+    ) -> ParallelBatchSigningRequest {
         let per_factor_source = factor_source_ids
             .clone()
             .iter()
@@ -255,7 +217,7 @@ impl SignaturesCollector {
             self.invalid_transactions_if_skipped_factor_sources(factor_source_ids);
 
         // Prepare the request for the interactor
-        SignWithFactorParallelInteractor::new(per_factor_source, invalid_transactions_if_skipped)
+        ParallelBatchSigningRequest::new(per_factor_source, invalid_transactions_if_skipped)
     }
 
     pub(super) fn invalid_transactions_if_skipped(
@@ -279,7 +241,7 @@ impl SignaturesCollector {
             .collect::<IndexSet<_>>()
     }
 
-    pub(super) fn process_batch_response(
+    pub(crate) fn process_batch_response(
         &self,
         response: SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse>,
     ) {
@@ -292,7 +254,7 @@ impl SignaturesCollector {
 impl SignaturesCollector {
     pub async fn collect_signatures(self) -> SignaturesOutcome {
         _ = self
-            .use_factor_sources_in_decreasing_friction_order()
+            .sign_with_factors() // in decreasing "friction order"
             .await
             .inspect_err(|e| eprintln!("Failed to use factor sources: {:?}", e));
         self.state.into_inner().petitions.into_inner().outcome()

@@ -13,10 +13,10 @@ impl TestSignatureCollectingInteractors {
 impl SignatureCollectingInteractors for TestSignatureCollectingInteractors {
     fn interactor_for(&self, kind: FactorSourceKind) -> SigningInteractor {
         match kind {
-            FactorSourceKind::Device => SigningInteractor::parallel_batch(Arc::new(
-                TestParallelBatchSigningDriver::new(self.simulated_user.clone()),
+            FactorSourceKind::Device => SigningInteractor::parallel(Arc::new(
+                TestSigningParallelInteractor::new(self.simulated_user.clone()),
             )),
-            _ => SigningInteractor::serial_batch(Arc::new(TestSerialInteractor::new(
+            _ => SigningInteractor::serial(Arc::new(TestSigningSerialInteractor::new(
                 self.simulated_user.clone(),
             ))),
         }
