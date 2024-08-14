@@ -18,6 +18,16 @@ pub struct SignaturesCollector {
 }
 
 impl SignaturesCollector {
+    fn with(
+        dependencies: SignaturesCollectorDependencies,
+        state: SignaturesCollectorState,
+    ) -> Self {
+        Self {
+            dependencies,
+            state: RefCell::new(state),
+        }
+    }
+
     pub fn new(
         all_factor_sources_in_profile: IndexSet<FactorSource>,
         transactions: IndexSet<TransactionIntent>,
@@ -114,16 +124,17 @@ impl SignaturesCollector {
             .map(|(k, v)| FactorSourcesOfKind::new(k, v).unwrap())
             .collect::<IndexSet<_>>();
 
+        let dependencies =
+            SignaturesCollectorDependencies::new(signing_interactors_context, factors_of_kind);
+
         let state =
             SignaturesCollectorState::new(factor_to_payloads, petitions_for_all_transactions);
 
-        Self {
-            dependencies: SignaturesCollectorDependencies::new(
-                signing_interactors_context,
-                factors_of_kind,
-            ),
-            state: RefCell::new(state),
-        }
+        Self::with(dependencies, state)
+    }
+
+    fn dependencies() -> SignaturesCollectorDependencies {
+        
     }
 }
 
