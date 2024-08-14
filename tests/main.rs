@@ -31,10 +31,8 @@ mod tests {
 
     #[actix_rt::test]
     async fn prudent_user_single_tx_a0() {
-        let coordinator = FactorResultsBuildingCoordinator::test_prudent([TransactionIntent::new(
-            [Entity::a0()],
-        )]);
-        let outcome = coordinator.use_factor_sources().await;
+        let collector = SignaturesCollector::test_prudent([TransactionIntent::new([Entity::a0()])]);
+        let outcome = collector.collect_signatures().await;
         assert!(outcome.successful());
         let signatures = outcome.all_signatures();
         assert_eq!(signatures.len(), 1);
@@ -43,8 +41,8 @@ mod tests {
     #[actix_rt::test]
     async fn prudent_user_single_tx_a0_assert_correct_intent_hash_is_signed() {
         let tx = TransactionIntent::new([Entity::a0()]);
-        let coordinator = FactorResultsBuildingCoordinator::test_prudent([tx.clone()]);
-        let signature = &coordinator.use_factor_sources().await.all_signatures()[0];
+        let collector = SignaturesCollector::test_prudent([tx.clone()]);
+        let signature = &collector.collect_signatures().await.all_signatures()[0];
         assert_eq!(signature.intent_hash(), &tx.intent_hash);
     }
 
@@ -52,8 +50,8 @@ mod tests {
     async fn prudent_user_single_tx_a0_assert_correct_owner_has_signed() {
         let account = Entity::a0();
         let tx = TransactionIntent::new([account.clone()]);
-        let coordinator = FactorResultsBuildingCoordinator::test_prudent([tx.clone()]);
-        let signature = &coordinator.use_factor_sources().await.all_signatures()[0];
+        let collector = SignaturesCollector::test_prudent([tx.clone()]);
+        let signature = &collector.collect_signatures().await.all_signatures()[0];
         assert_eq!(signature.owned_factor_instance().owner, account.address);
     }
 
@@ -61,8 +59,8 @@ mod tests {
     async fn prudent_user_single_tx_a0_assert_correct_owner_factor_instance_signed() {
         let account = Entity::a0();
         let tx = TransactionIntent::new([account.clone()]);
-        let coordinator = FactorResultsBuildingCoordinator::test_prudent([tx.clone()]);
-        let signature = &coordinator.use_factor_sources().await.all_signatures()[0];
+        let collector = SignaturesCollector::test_prudent([tx.clone()]);
+        let signature = &collector.collect_signatures().await.all_signatures()[0];
 
         assert_eq!(
             signature.owned_factor_instance().factor_instance(),
@@ -76,10 +74,8 @@ mod tests {
 
     #[actix_rt::test]
     async fn prudent_user_single_tx_a1() {
-        let coordinator = FactorResultsBuildingCoordinator::test_prudent([TransactionIntent::new(
-            [Entity::a1()],
-        )]);
-        let outcome = coordinator.use_factor_sources().await;
+        let collector = SignaturesCollector::test_prudent([TransactionIntent::new([Entity::a1()])]);
+        let outcome = collector.collect_signatures().await;
         assert!(outcome.successful());
         let signatures = outcome.all_signatures();
         assert_eq!(signatures.len(), 1);
@@ -87,10 +83,8 @@ mod tests {
 
     #[actix_rt::test]
     async fn prudent_user_single_tx_a2() {
-        let coordinator = FactorResultsBuildingCoordinator::test_prudent([TransactionIntent::new(
-            [Entity::a2()],
-        )]);
-        let outcome = coordinator.use_factor_sources().await;
+        let collector = SignaturesCollector::test_prudent([TransactionIntent::new([Entity::a2()])]);
+        let outcome = collector.collect_signatures().await;
         assert!(outcome.successful());
         let signatures = outcome.all_signatures();
         assert_eq!(signatures.len(), 1);
@@ -98,10 +92,8 @@ mod tests {
 
     #[actix_rt::test]
     async fn prudent_user_single_tx_a3() {
-        let coordinator = FactorResultsBuildingCoordinator::test_prudent([TransactionIntent::new(
-            [Entity::a3()],
-        )]);
-        let outcome = coordinator.use_factor_sources().await;
+        let collector = SignaturesCollector::test_prudent([TransactionIntent::new([Entity::a3()])]);
+        let outcome = collector.collect_signatures().await;
         assert!(outcome.successful());
         let signatures = outcome.all_signatures();
         assert_eq!(signatures.len(), 1);
@@ -109,10 +101,8 @@ mod tests {
 
     #[actix_rt::test]
     async fn prudent_user_single_tx_a4() {
-        let coordinator = FactorResultsBuildingCoordinator::test_prudent([TransactionIntent::new(
-            [Entity::a4()],
-        )]);
-        let outcome = coordinator.use_factor_sources().await;
+        let collector = SignaturesCollector::test_prudent([TransactionIntent::new([Entity::a4()])]);
+        let outcome = collector.collect_signatures().await;
         assert!(outcome.successful());
         let signatures = outcome.all_signatures();
         assert_eq!(signatures.len(), 2);
@@ -120,10 +110,8 @@ mod tests {
 
     #[actix_rt::test]
     async fn prudent_user_single_tx_a5() {
-        let coordinator = FactorResultsBuildingCoordinator::test_prudent([TransactionIntent::new(
-            [Entity::a5()],
-        )]);
-        let outcome = coordinator.use_factor_sources().await;
+        let collector = SignaturesCollector::test_prudent([TransactionIntent::new([Entity::a5()])]);
+        let outcome = collector.collect_signatures().await;
         assert!(outcome.successful());
         let signatures = outcome.all_signatures();
         assert_eq!(signatures.len(), 1);
@@ -131,10 +119,8 @@ mod tests {
 
     #[actix_rt::test]
     async fn prudent_user_single_tx_a6() {
-        let coordinator = FactorResultsBuildingCoordinator::test_prudent([TransactionIntent::new(
-            [Entity::a6()],
-        )]);
-        let outcome = coordinator.use_factor_sources().await;
+        let collector = SignaturesCollector::test_prudent([TransactionIntent::new([Entity::a6()])]);
+        let outcome = collector.collect_signatures().await;
         assert!(outcome.successful());
         let signatures = outcome.all_signatures();
         assert_eq!(signatures.len(), 1);
@@ -142,10 +128,8 @@ mod tests {
 
     #[actix_rt::test]
     async fn prudent_user_single_tx_a7() {
-        let coordinator = FactorResultsBuildingCoordinator::test_prudent([TransactionIntent::new(
-            [Entity::a7()],
-        )]);
-        let outcome = coordinator.use_factor_sources().await;
+        let collector = SignaturesCollector::test_prudent([TransactionIntent::new([Entity::a7()])]);
+        let outcome = collector.collect_signatures().await;
         assert!(outcome.successful());
         let signatures = outcome.all_signatures();
 
@@ -154,10 +138,10 @@ mod tests {
 
     #[actix_rt::test]
     async fn lazy_sign_minimum_user_single_tx_a0() {
-        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum_no_failures([
+        let collector = SignaturesCollector::test_lazy_sign_minimum_no_failures([
             TransactionIntent::new([Entity::a0()]),
         ]);
-        let outcome = coordinator.use_factor_sources().await;
+        let outcome = collector.collect_signatures().await;
         assert!(outcome.successful());
         let signatures = outcome.all_signatures();
         assert_eq!(signatures.len(), 1);
@@ -165,10 +149,10 @@ mod tests {
 
     #[actix_rt::test]
     async fn lazy_sign_minimum_user_single_tx_a1() {
-        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum_no_failures([
+        let collector = SignaturesCollector::test_lazy_sign_minimum_no_failures([
             TransactionIntent::new([Entity::a1()]),
         ]);
-        let outcome = coordinator.use_factor_sources().await;
+        let outcome = collector.collect_signatures().await;
         assert!(outcome.successful());
         let signatures = outcome.all_signatures();
         assert_eq!(signatures.len(), 1);
@@ -176,10 +160,10 @@ mod tests {
 
     #[actix_rt::test]
     async fn lazy_sign_minimum_user_single_tx_a2() {
-        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum_no_failures([
+        let collector = SignaturesCollector::test_lazy_sign_minimum_no_failures([
             TransactionIntent::new([Entity::a2()]),
         ]);
-        let outcome = coordinator.use_factor_sources().await;
+        let outcome = collector.collect_signatures().await;
         assert!(outcome.successful());
         let signatures = outcome.all_signatures();
         assert_eq!(signatures.len(), 1);
@@ -187,10 +171,10 @@ mod tests {
 
     #[actix_rt::test]
     async fn lazy_sign_minimum_user_a3() {
-        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum_no_failures([
+        let collector = SignaturesCollector::test_lazy_sign_minimum_no_failures([
             TransactionIntent::new([Entity::a3()]),
         ]);
-        let outcome = coordinator.use_factor_sources().await;
+        let outcome = collector.collect_signatures().await;
         assert!(outcome.successful());
         let signatures = outcome.all_signatures();
         assert_eq!(signatures.len(), 1);
@@ -198,10 +182,10 @@ mod tests {
 
     #[actix_rt::test]
     async fn lazy_sign_minimum_user_a4() {
-        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum_no_failures([
+        let collector = SignaturesCollector::test_lazy_sign_minimum_no_failures([
             TransactionIntent::new([Entity::a4()]),
         ]);
-        let outcome = coordinator.use_factor_sources().await;
+        let outcome = collector.collect_signatures().await;
         assert!(outcome.successful());
         let signatures = outcome.all_signatures();
         assert_eq!(signatures.len(), 2);
@@ -209,10 +193,10 @@ mod tests {
 
     #[actix_rt::test]
     async fn lazy_sign_minimum_user_a5() {
-        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum_no_failures([
+        let collector = SignaturesCollector::test_lazy_sign_minimum_no_failures([
             TransactionIntent::new([Entity::a5()]),
         ]);
-        let outcome = coordinator.use_factor_sources().await;
+        let outcome = collector.collect_signatures().await;
         assert!(outcome.successful());
         let signatures = outcome.all_signatures();
         assert_eq!(signatures.len(), 1);
@@ -220,10 +204,10 @@ mod tests {
 
     #[actix_rt::test]
     async fn lazy_sign_minimum_user_a6() {
-        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum_no_failures([
+        let collector = SignaturesCollector::test_lazy_sign_minimum_no_failures([
             TransactionIntent::new([Entity::a6()]),
         ]);
-        let outcome = coordinator.use_factor_sources().await;
+        let outcome = collector.collect_signatures().await;
         assert!(outcome.successful());
         let signatures = outcome.all_signatures();
 
@@ -232,10 +216,10 @@ mod tests {
 
     #[actix_rt::test]
     async fn lazy_sign_minimum_user_a7() {
-        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum_no_failures([
+        let collector = SignaturesCollector::test_lazy_sign_minimum_no_failures([
             TransactionIntent::new([Entity::a7()]),
         ]);
-        let outcome = coordinator.use_factor_sources().await;
+        let outcome = collector.collect_signatures().await;
         assert!(outcome.successful());
         let signatures = outcome.all_signatures();
 
@@ -245,10 +229,10 @@ mod tests {
     #[actix_rt::test]
     async fn lazy_sign_minimum_user_a5_last_factor_used() {
         let entity = Entity::a5();
-        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum_no_failures([
+        let collector = SignaturesCollector::test_lazy_sign_minimum_no_failures([
             TransactionIntent::new([entity.clone()]),
         ]);
-        let outcome = coordinator.use_factor_sources().await;
+        let outcome = collector.collect_signatures().await;
         assert!(outcome.successful());
         let signatures = outcome.all_signatures();
         assert_eq!(signatures.len(), 1);
@@ -271,7 +255,7 @@ mod tests {
 
     #[actix_rt::test]
     async fn lazy_sign_minimum_all_known_factors_used_as_override_factors_signed_with_device() {
-        let coordinator = FactorResultsBuildingCoordinator::test_lazy_sign_minimum_no_failures([
+        let collector = SignaturesCollector::test_lazy_sign_minimum_no_failures([
             TransactionIntent::new([Entity::securified(0, "all override", |idx| {
                 MatrixOfFactorInstances::override_only(
                     FactorSource::all()
@@ -280,7 +264,7 @@ mod tests {
                 )
             })]),
         ]);
-        let outcome = coordinator.use_factor_sources().await;
+        let outcome = collector.collect_signatures().await;
         assert!(outcome.successful());
         let signatures = outcome.all_signatures();
         assert_eq!(signatures.len(), 1);
@@ -297,10 +281,9 @@ mod tests {
 
     #[actix_rt::test]
     async fn lazy_always_skip_user_single_tx_a0() {
-        let coordinator = FactorResultsBuildingCoordinator::test_lazy_always_skip([
-            TransactionIntent::new([Entity::a0()]),
-        ]);
-        let outcome = coordinator.use_factor_sources().await;
+        let collector =
+            SignaturesCollector::test_lazy_always_skip([TransactionIntent::new([Entity::a0()])]);
+        let outcome = collector.collect_signatures().await;
         assert!(!outcome.successful());
         let signatures = outcome.all_signatures();
         assert!(signatures.is_empty());
@@ -308,10 +291,9 @@ mod tests {
 
     #[actix_rt::test]
     async fn lazy_always_skip_user_single_tx_a1() {
-        let coordinator = FactorResultsBuildingCoordinator::test_lazy_always_skip([
-            TransactionIntent::new([Entity::a1()]),
-        ]);
-        let outcome = coordinator.use_factor_sources().await;
+        let collector =
+            SignaturesCollector::test_lazy_always_skip([TransactionIntent::new([Entity::a1()])]);
+        let outcome = collector.collect_signatures().await;
         assert!(!outcome.successful());
         let signatures = outcome.all_signatures();
         assert!(signatures.is_empty());
@@ -319,10 +301,9 @@ mod tests {
 
     #[actix_rt::test]
     async fn lazy_always_skip_user_single_tx_a2() {
-        let coordinator = FactorResultsBuildingCoordinator::test_lazy_always_skip([
-            TransactionIntent::new([Entity::a2()]),
-        ]);
-        let outcome = coordinator.use_factor_sources().await;
+        let collector =
+            SignaturesCollector::test_lazy_always_skip([TransactionIntent::new([Entity::a2()])]);
+        let outcome = collector.collect_signatures().await;
         assert!(!outcome.successful());
         let signatures = outcome.all_signatures();
         assert!(signatures.is_empty());
@@ -330,10 +311,9 @@ mod tests {
 
     #[actix_rt::test]
     async fn lazy_always_skip_user_a3() {
-        let coordinator = FactorResultsBuildingCoordinator::test_lazy_always_skip([
-            TransactionIntent::new([Entity::a3()]),
-        ]);
-        let outcome = coordinator.use_factor_sources().await;
+        let collector =
+            SignaturesCollector::test_lazy_always_skip([TransactionIntent::new([Entity::a3()])]);
+        let outcome = collector.collect_signatures().await;
         assert!(!outcome.successful());
         let signatures = outcome.all_signatures();
         assert!(signatures.is_empty());
@@ -341,10 +321,9 @@ mod tests {
 
     #[actix_rt::test]
     async fn lazy_always_skip_user_a4() {
-        let coordinator = FactorResultsBuildingCoordinator::test_lazy_always_skip([
-            TransactionIntent::new([Entity::a4()]),
-        ]);
-        let outcome = coordinator.use_factor_sources().await;
+        let collector =
+            SignaturesCollector::test_lazy_always_skip([TransactionIntent::new([Entity::a4()])]);
+        let outcome = collector.collect_signatures().await;
         assert!(!outcome.successful());
         let signatures = outcome.all_signatures();
         assert!(signatures.is_empty());
@@ -352,10 +331,9 @@ mod tests {
 
     #[actix_rt::test]
     async fn lazy_always_skip_user_a5() {
-        let coordinator = FactorResultsBuildingCoordinator::test_lazy_always_skip([
-            TransactionIntent::new([Entity::a5()]),
-        ]);
-        let outcome = coordinator.use_factor_sources().await;
+        let collector =
+            SignaturesCollector::test_lazy_always_skip([TransactionIntent::new([Entity::a5()])]);
+        let outcome = collector.collect_signatures().await;
         assert!(!outcome.successful());
         let signatures = outcome.all_signatures();
         assert!(signatures.is_empty());
@@ -363,10 +341,9 @@ mod tests {
 
     #[actix_rt::test]
     async fn lazy_always_skip_user_a6() {
-        let coordinator = FactorResultsBuildingCoordinator::test_lazy_always_skip([
-            TransactionIntent::new([Entity::a6()]),
-        ]);
-        let outcome = coordinator.use_factor_sources().await;
+        let collector =
+            SignaturesCollector::test_lazy_always_skip([TransactionIntent::new([Entity::a6()])]);
+        let outcome = collector.collect_signatures().await;
         assert!(!outcome.successful());
         let signatures = outcome.all_signatures();
         assert!(signatures.is_empty());
@@ -374,10 +351,9 @@ mod tests {
 
     #[actix_rt::test]
     async fn lazy_always_skip_user_a7() {
-        let coordinator = FactorResultsBuildingCoordinator::test_lazy_always_skip([
-            TransactionIntent::new([Entity::a7()]),
-        ]);
-        let outcome = coordinator.use_factor_sources().await;
+        let collector =
+            SignaturesCollector::test_lazy_always_skip([TransactionIntent::new([Entity::a7()])]);
+        let outcome = collector.collect_signatures().await;
         assert!(!outcome.successful());
         let signatures = outcome.all_signatures();
         assert!(signatures.is_empty());
@@ -385,21 +361,21 @@ mod tests {
 
     #[actix_rt::test]
     async fn failure() {
-        let coordinator = FactorResultsBuildingCoordinator::test_prudent_with_failures(
+        let collector = SignaturesCollector::test_prudent_with_failures(
             [TransactionIntent::new([Entity::a0()])],
             SimulatedFailures::with_simulated_failures([FactorSourceID::fs0()]),
         );
-        let outcome = coordinator.use_factor_sources().await;
+        let outcome = collector.collect_signatures().await;
         assert!(!outcome.successful());
     }
 
     #[actix_rt::test]
     async fn building_can_succeed_even_if_one_factor_source_fails_assert_ids_of_successful_tx() {
-        let coordinator = FactorResultsBuildingCoordinator::test_prudent_with_failures(
+        let collector = SignaturesCollector::test_prudent_with_failures(
             [TransactionIntent::new([Entity::a4()])],
             SimulatedFailures::with_simulated_failures([FactorSourceID::fs3()]),
         );
-        let outcome = coordinator.use_factor_sources().await;
+        let outcome = collector.collect_signatures().await;
         assert!(outcome.successful());
         assert_eq!(
             outcome
@@ -413,11 +389,11 @@ mod tests {
 
     #[actix_rt::test]
     async fn building_can_succeed_even_if_one_factor_source_fails_assert_ids_of_failed_tx() {
-        let coordinator = FactorResultsBuildingCoordinator::test_prudent_with_failures(
+        let collector = SignaturesCollector::test_prudent_with_failures(
             [TransactionIntent::new([Entity::a4()])],
             SimulatedFailures::with_simulated_failures([FactorSourceID::fs3()]),
         );
-        let outcome = coordinator.use_factor_sources().await;
+        let outcome = collector.collect_signatures().await;
         assert!(outcome.successful());
         assert_eq!(
             outcome.skipped_factor_sources(),

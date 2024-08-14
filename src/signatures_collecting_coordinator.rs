@@ -8,7 +8,7 @@ use crate::prelude::*;
 /// By increasing friction order we mean, the quickest and easiest to use FactorSourceKind
 /// is last; namely `DeviceFactorSource`, and the most tedious FactorSourceKind is
 /// first; namely `LedgerFactorSource`, which user might also lack access to.
-pub struct FactorResultsBuildingCoordinator {
+pub struct SignaturesCollector {
     /// A context of drivers for "using" factor sources - either to (batch) sign
     /// transaction(s) with, or to derive public keys from.
     drivers: Arc<dyn IsUseFactorSourceDriversContext>,
@@ -30,7 +30,7 @@ pub struct FactorResultsBuildingCoordinator {
     builders: RefCell<Builders>,
 }
 
-impl FactorResultsBuildingCoordinator {
+impl SignaturesCollector {
     pub fn new(
         all_factor_sources_in_profile: IndexSet<FactorSource>,
         transactions: IndexSet<TransactionIntent>,
@@ -132,12 +132,12 @@ impl FactorResultsBuildingCoordinator {
     }
 }
 
-impl FactorResultsBuildingCoordinator {
+impl SignaturesCollector {
     /// If all transactions already would fail, or if all transactions already are done, then
     /// no point in continuing.
     ///
     /// `Ok(true)` means "continue", `Ok(false)` means "stop, we are done". `Err(_)` means "stop, we have failed".
-    pub(crate) fn continue_if_necessary(&self) -> Result<bool> {
+    pub(super) fn continue_if_necessary(&self) -> Result<bool> {
         self.builders.borrow().continue_if_necessary()
     }
 
@@ -179,8 +179,8 @@ impl FactorResultsBuildingCoordinator {
     }
 }
 
-impl FactorResultsBuildingCoordinator {
-    pub(crate) fn requests_for_serial_single_driver(
+impl SignaturesCollector {
+    pub(super) fn requests_for_serial_single_driver(
         &self,
         factor_source_id: &FactorSourceID,
     ) -> IndexMap<IntentHash, IndexSet<SerialSingleSigningRequestFull>> {
@@ -215,7 +215,7 @@ impl FactorResultsBuildingCoordinator {
             .input_for_parallel_batch_driver(factor_source_id)
     }
 
-    pub(crate) fn request_for_serial_batch_driver(
+    pub(super) fn request_for_serial_batch_driver(
         &self,
         factor_source_id: &FactorSourceID,
     ) -> SerialBatchSigningRequest {
@@ -229,7 +229,7 @@ impl FactorResultsBuildingCoordinator {
         )
     }
 
-    pub(crate) fn request_for_parallel_batch_driver(
+    pub(super) fn request_for_parallel_batch_driver(
         &self,
         factor_source_ids: IndexSet<FactorSourceID>,
     ) -> ParallelBatchSigningRequest {
@@ -246,7 +246,7 @@ impl FactorResultsBuildingCoordinator {
         ParallelBatchSigningRequest::new(per_factor_source, invalid_transactions_if_skipped)
     }
 
-    pub fn invalid_transactions_if_skipped(
+    pub(super) fn invalid_transactions_if_skipped(
         &self,
         factor_source_id: &FactorSourceID,
     ) -> IndexSet<InvalidTransactionIfSkipped> {
@@ -265,7 +265,7 @@ impl FactorResultsBuildingCoordinator {
             .collect::<IndexSet<_>>()
     }
 
-    pub(crate) fn process_batch_response(
+    pub(super) fn process_batch_response(
         &self,
         response: SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse>,
     ) {
@@ -274,8 +274,8 @@ impl FactorResultsBuildingCoordinator {
     }
 }
 
-impl FactorResultsBuildingCoordinator {
-    pub async fn use_factor_sources(self) -> SignaturesOutcome {
+impl SignaturesCollector {
+    pub async fn collect_signatures(self) -> SignaturesOutcome {
         _ = self
             .use_factor_sources_in_decreasing_friction_order()
             .await

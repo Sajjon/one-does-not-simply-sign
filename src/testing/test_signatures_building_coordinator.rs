@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-impl FactorResultsBuildingCoordinator {
+impl SignaturesCollector {
     pub fn new_test(
         all_factor_sources_in_profile: impl IntoIterator<Item = FactorSource>,
         transactions: impl IntoIterator<Item = TransactionIntent>,
