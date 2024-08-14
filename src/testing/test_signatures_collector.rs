@@ -9,7 +9,7 @@ impl SignaturesCollector {
         Self::new(
             all_factor_sources_in_profile.into_iter().collect(),
             transactions.into_iter().collect(),
-            Arc::new(TestSigningDriversContext::new(simulated_user)),
+            Arc::new(TestSignatureCollectingInteractors::new(simulated_user)),
         )
     }
     pub fn test_prudent_with_factors(

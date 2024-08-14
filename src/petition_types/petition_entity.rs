@@ -2,25 +2,28 @@ use std::cell::Ref;
 
 use crate::prelude::*;
 
+/// Petition of signatures from an entity in a transaction.
+/// Essentially a wrapper around a tuple
+/// `{ threshold: PetitionFactors, override: PetitionFactors }`
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct BuilderEntity {
+pub struct PetitionEntity {
     /// The owner of these factors
     pub entity: AccountAddressOrIdentityAddress,
 
     /// Index and hash of transaction
     pub intent_hash: IntentHash,
 
-    pub threshold_factors: Option<RefCell<BuilderFactors>>,
+    pub threshold_factors: Option<RefCell<PetitionFactors>>,
 
-    pub override_factors: Option<RefCell<BuilderFactors>>,
+    pub override_factors: Option<RefCell<PetitionFactors>>,
 }
 
-impl BuilderEntity {
+impl PetitionEntity {
     pub fn new(
         intent_hash: IntentHash,
         entity: AccountAddressOrIdentityAddress,
-        threshold_factors: impl Into<Option<BuilderFactors>>,
-        override_factors: impl Into<Option<BuilderFactors>>,
+        threshold_factors: impl Into<Option<PetitionFactors>>,
+        override_factors: impl Into<Option<PetitionFactors>>,
     ) -> Self {
         let threshold_factors = threshold_factors.into();
         let override_factors = override_factors.into();
@@ -42,8 +45,8 @@ impl BuilderEntity {
         Self::new(
             intent_hash,
             entity,
-            BuilderFactors::new_threshold(matrix.threshold_factors, matrix.threshold as i8),
-            BuilderFactors::new_override(matrix.override_factors),
+            PetitionFactors::new_threshold(matrix.threshold_factors, matrix.threshold as i8),
+            PetitionFactors::new_override(matrix.override_factors),
         )
     }
     pub fn new_unsecurified(
@@ -54,7 +57,7 @@ impl BuilderEntity {
         Self::new(
             intent_hash,
             entity,
-            BuilderFactors::new_unsecurified(instance),
+            PetitionFactors::new_unsecurified(instance),
             None,
         )
     }
@@ -80,13 +83,13 @@ impl BuilderEntity {
     /// Returns `true` signatures requirement has been fulfilled, either by
     /// override factors or by threshold factors
     pub fn has_signatures_requirement_been_fulfilled(&self) -> bool {
-        self.status() == BuilderFactorsStatus::Finished(BuilderFactorsStatusFinished::Success)
+        self.status() == PetitionFactorsStatus::Finished(PetitionFactorsStatusFinished::Success)
     }
 
     fn union_of<F, T>(&self, map: F) -> IndexSet<T>
     where
         T: Eq + std::hash::Hash + Clone,
-        F: Fn(Ref<BuilderFactors>) -> IndexSet<T>,
+        F: Fn(Ref<PetitionFactors>) -> IndexSet<T>,
     {
         let o = self
             .override_factors
@@ -191,27 +194,27 @@ impl BuilderEntity {
     ) -> IndexSet<InvalidTransactionIfSkipped> {
         let skip_status = self.status_if_skipped_factor_source(factor_source_id);
         match skip_status {
-            BuilderFactorsStatus::Finished(finished_reason) => match finished_reason {
-                BuilderFactorsStatusFinished::Fail => {
+            PetitionFactorsStatus::Finished(finished_reason) => match finished_reason {
+                PetitionFactorsStatusFinished::Fail => {
                     let intent_hash = self.intent_hash.clone();
                     let invalid_transaction =
                         InvalidTransactionIfSkipped::new(intent_hash, vec![self.entity.clone()]);
                     IndexSet::from_iter([invalid_transaction])
                 }
-                BuilderFactorsStatusFinished::Success => IndexSet::new(),
+                PetitionFactorsStatusFinished::Success => IndexSet::new(),
             },
-            BuilderFactorsStatus::InProgress => IndexSet::new(),
+            PetitionFactorsStatus::InProgress => IndexSet::new(),
         }
     }
 
     /// `Ok(true)` means "continue", `Ok(false)` means "stop, we are done". `Err(_)` means "stop, we have failed".
     pub(super) fn continue_if_necessary(&self) -> Result<bool> {
         match self.status() {
-            BuilderFactorsStatus::InProgress => Ok(true),
-            BuilderFactorsStatus::Finished(BuilderFactorsStatusFinished::Fail) => {
+            PetitionFactorsStatus::InProgress => Ok(true),
+            PetitionFactorsStatus::Finished(PetitionFactorsStatusFinished::Fail) => {
                 Err(CommonError::Failure)
             }
-            BuilderFactorsStatus::Finished(BuilderFactorsStatusFinished::Success) => Ok(false),
+            PetitionFactorsStatus::Finished(PetitionFactorsStatusFinished::Success) => Ok(false),
         }
     }
 
@@ -238,7 +241,7 @@ impl BuilderEntity {
     pub fn status_if_skipped_factor_source(
         &self,
         factor_source_id: &FactorSourceID,
-    ) -> BuilderFactorsStatus {
+    ) -> PetitionFactorsStatus {
         let simulation = self.clone();
         simulation.did_skip(factor_source_id, true);
         simulation.status()
@@ -264,9 +267,9 @@ impl BuilderEntity {
         }
     }
 
-    pub fn status(&self) -> BuilderFactorsStatus {
-        use BuilderFactorsStatus::*;
-        use BuilderFactorsStatusFinished::*;
+    pub fn status(&self) -> PetitionFactorsStatus {
+        use PetitionFactorsStatus::*;
+        use PetitionFactorsStatusFinished::*;
 
         let maybe_threshold = self.threshold_factors.as_ref().map(|t| t.borrow().status());
         let maybe_override = self.override_factors.as_ref().map(|o| o.borrow().status());
@@ -276,12 +279,12 @@ impl BuilderEntity {
             (Some(threshold), None) => threshold,
             (None, Some(r#override)) => r#override,
             (Some(threshold), Some(r#override)) => match (threshold, r#override) {
-                (InProgress, InProgress) => BuilderFactorsStatus::InProgress,
-                (Finished(Fail), InProgress) => BuilderFactorsStatus::InProgress,
-                (InProgress, Finished(Fail)) => BuilderFactorsStatus::InProgress,
-                (Finished(Fail), Finished(Fail)) => BuilderFactorsStatus::Finished(Fail),
-                (Finished(Success), _) => BuilderFactorsStatus::Finished(Success),
-                (_, Finished(Success)) => BuilderFactorsStatus::Finished(Success),
+                (InProgress, InProgress) => PetitionFactorsStatus::InProgress,
+                (Finished(Fail), InProgress) => PetitionFactorsStatus::InProgress,
+                (InProgress, Finished(Fail)) => PetitionFactorsStatus::InProgress,
+                (Finished(Fail), Finished(Fail)) => PetitionFactorsStatus::Finished(Fail),
+                (Finished(Success), _) => PetitionFactorsStatus::Finished(Success),
+                (_, Finished(Success)) => PetitionFactorsStatus::Finished(Success),
             },
         }
     }

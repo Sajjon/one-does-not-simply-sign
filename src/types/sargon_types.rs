@@ -414,4 +414,7 @@ pub enum CommonError {
 
     #[error("Failed")]
     Failure,
+
+    #[error("Invalid factor source kind")]
+    InvalidFactorSourceKind,
 }

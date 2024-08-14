@@ -3,19 +3,22 @@ use std::cell::Ref;
 use super::*;
 use crate::prelude::*;
 
+/// Mutable state of `PetitionFactors`, keeping track of which factors that
+/// have either signed or been skipped.
 #[derive(Clone, PartialEq, Eq, Debug)]
-pub struct BuilderFactorsState {
+pub struct PetitionFactorsState {
     /// Factors that have signed.
-    signed: RefCell<BuilderFactorsStateSubstate<HDSignature>>,
+    signed: RefCell<PetitionFactorsSubState<HDSignature>>,
+
     /// Factors that user skipped.
-    skipped: RefCell<BuilderFactorsStateSubstate<FactorInstance>>,
+    skipped: RefCell<PetitionFactorsSubState<FactorInstance>>,
 }
 
-impl BuilderFactorsState {
-    pub(super) fn skipped(&self) -> Ref<BuilderFactorsStateSubstate<FactorInstance>> {
+impl PetitionFactorsState {
+    pub(super) fn skipped(&self) -> Ref<PetitionFactorsSubState<FactorInstance>> {
         self.skipped.borrow()
     }
-    pub(super) fn signed(&self) -> Ref<BuilderFactorsStateSubstate<HDSignature>> {
+    pub(super) fn signed(&self) -> Ref<PetitionFactorsSubState<HDSignature>> {
         self.signed.borrow()
     }
 
@@ -47,13 +50,13 @@ impl BuilderFactorsState {
 
     pub(super) fn new() -> Self {
         Self {
-            signed: RefCell::new(BuilderFactorsStateSubstate::<_>::new()),
-            skipped: RefCell::new(BuilderFactorsStateSubstate::<_>::new()),
+            signed: RefCell::new(PetitionFactorsSubState::<_>::new()),
+            skipped: RefCell::new(PetitionFactorsSubState::<_>::new()),
         }
     }
 
-    pub(super) fn snapshot(&self) -> BuilderFactorsStateSnapshot {
-        BuilderFactorsStateSnapshot::new(self.signed().snapshot(), self.skipped().snapshot())
+    pub(super) fn snapshot(&self) -> PetitionFactorsStateSnapshot {
+        PetitionFactorsStateSnapshot::new(self.signed().snapshot(), self.skipped().snapshot())
     }
 
     fn references_factor_source_by_id(&self, factor_source_id: FactorSourceID) -> bool {

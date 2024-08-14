@@ -19,6 +19,7 @@ pub struct SignaturesOutcome {
     /// Potentially empty
     failed_transactions: MaybeSignedTransactions,
 
+    /// List of ids of all factor sources which failed.
     skipped_factor_sources: IndexSet<FactorSourceID>,
 }
 
