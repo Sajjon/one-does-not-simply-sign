@@ -375,4 +375,9 @@ mod tests {
         let sut = Sut::sample();
         sut.invalid_transactions_if_skipped(&FactorSourceID::fs9());
     }
+
+    #[test]
+    fn inequality() {
+        assert_ne!(Sut::sample(), Sut::sample_other())
+    }
 }
