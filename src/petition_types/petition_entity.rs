@@ -168,7 +168,7 @@ impl PetitionEntity {
         }
 
         if added_to_override && added_to_threshold {
-            panic!("A factor source should only be present in one of the lists.");
+            unreachable!("Matrix of FactorInstances does not allow for a factor to be present in both threshold and override list, thus this will never happen.");
         } else if !added_to_override && !added_to_threshold {
             panic!("Factor source not found in any of the lists.");
         }
@@ -204,12 +204,12 @@ impl PetitionEntity {
         }
     }
 
-    fn petition(&self, factor_source_id: &FactorSourceID) -> Option<FactorListKind> {
+    fn petition(&self, factor_source_id: &FactorSourceID) -> Result<FactorListKind> {
         if let Some(t) = self.threshold_factors.as_ref() {
             if t.borrow()
                 .references_factor_source_with_id(factor_source_id)
             {
-                return Some(FactorListKind::Threshold);
+                return Ok(FactorListKind::Threshold);
             }
         }
 
@@ -217,11 +217,11 @@ impl PetitionEntity {
             if o.borrow()
                 .references_factor_source_with_id(factor_source_id)
             {
-                return Some(FactorListKind::Override);
+                return Ok(FactorListKind::Override);
             }
         }
 
-        None
+        Err(CommonError::UnknownFactorSource)
     }
 
     pub fn status_if_skipped_factor_source(
@@ -229,14 +229,12 @@ impl PetitionEntity {
         factor_source_id: &FactorSourceID,
     ) -> PetitionFactorsStatus {
         let simulation = self.clone();
-        simulation.did_skip(factor_source_id, true);
+        simulation.did_skip(factor_source_id, true).unwrap();
         simulation.status()
     }
 
-    pub fn did_skip(&self, factor_source_id: &FactorSourceID, simulated: bool) {
-        let Some(petition) = self.petition(factor_source_id) else {
-            return;
-        };
+    pub fn did_skip(&self, factor_source_id: &FactorSourceID, simulated: bool) -> Result<()> {
+        let petition = self.petition(factor_source_id)?;
         match petition {
             FactorListKind::Threshold => self
                 .threshold_factors
@@ -250,7 +248,8 @@ impl PetitionEntity {
                 .expect("Should have override factors!")
                 .borrow_mut()
                 .did_skip(factor_source_id, simulated),
-        }
+        };
+        Ok(())
     }
 
     pub fn status(&self) -> PetitionFactorsStatus {
@@ -357,5 +356,37 @@ mod tests {
 
         sut.add_signature(signature.clone());
         sut.add_signature(signature.clone());
+    }
+
+    #[test]
+    fn invalid_transactions_if_skipped_success() {
+        let sut = Sut::sample();
+        sut.add_signature(HDSignature::produced_signing_with_input(
+            HDSignatureInput::new(
+                sut.intent_hash.clone(),
+                OwnedFactorInstance::new(
+                    sut.entity.clone(),
+                    FactorInstance::new(6, FactorSourceID::fs1()),
+                ),
+            ),
+        ));
+        let can_skip = |f: FactorSourceID| {
+            assert!(sut
+                // Already signed with override factor `FactorSourceID::fs1()`. Thus
+                // can skip
+                .invalid_transactions_if_skipped(&f)
+                .is_empty())
+        };
+        can_skip(FactorSourceID::fs0());
+        can_skip(FactorSourceID::fs3());
+        can_skip(FactorSourceID::fs4());
+        can_skip(FactorSourceID::fs5());
+    }
+
+    #[test]
+    #[should_panic]
+    fn invalid_transactions_if_skipped_panics_for_unknown_factors() {
+        let sut = Sut::sample();
+        sut.invalid_transactions_if_skipped(&FactorSourceID::fs9());
     }
 }

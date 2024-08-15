@@ -4,7 +4,7 @@ use crate::prelude::*;
 /// Petition of signatures from a factors list of an entity in a transaction.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct PetitionFactors {
-    factor_list_kind: FactorListKind,
+    pub factor_list_kind: FactorListKind,
 
     /// Factors to sign with and the required number of them.
     input: PetitionFactorsInput,
