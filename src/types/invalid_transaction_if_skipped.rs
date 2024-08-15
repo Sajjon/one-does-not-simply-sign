@@ -28,11 +28,14 @@ impl InvalidTransactionIfSkipped {
         let entities_which_would_fail_auth = entities_which_would_fail_auth
             .into_iter()
             .collect::<IndexSet<_>>();
+
         assert!(!entities_which_would_fail_auth.is_empty(), "'entities_which_would_fail_auth' must not be empty, this type is not useful if it is empty.");
+
         assert!(
             entities_which_would_fail_auth.len() == len,
             "entities_which_would_fail_auth must not contain duplicates."
         );
+
         Self {
             intent_hash,
             entities_which_would_fail_auth: entities_which_would_fail_auth
@@ -43,15 +46,6 @@ impl InvalidTransactionIfSkipped {
 
     pub fn entities_which_would_fail_auth(&self) -> IndexSet<AccountAddressOrIdentityAddress> {
         IndexSet::from_iter(self.entities_which_would_fail_auth.clone())
-    }
-
-    /// Constructs a new `InvalidTransactionIfSkipped` from a single entity
-    /// which would fail auth.
-    pub fn new_single_entity(
-        intent_hash: IntentHash,
-        entity_which_would_fail_auth: AccountAddressOrIdentityAddress,
-    ) -> Self {
-        Self::new(intent_hash, [entity_which_would_fail_auth])
     }
 }
 

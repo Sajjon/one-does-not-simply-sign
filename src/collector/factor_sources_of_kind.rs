@@ -12,6 +12,9 @@ impl FactorSourcesOfKind {
         factor_sources: impl IntoIterator<Item = FactorSource>,
     ) -> Result<Self> {
         let factor_sources = factor_sources.into_iter().collect::<IndexSet<_>>();
+        if factor_sources.is_empty() {
+            return Err(CommonError::FactorSourcesOfKindEmptyFactors);
+        }
         if factor_sources.iter().any(|f| f.kind() != kind) {
             return Err(CommonError::InvalidFactorSourceKind);
         }
@@ -27,5 +30,58 @@ impl FactorSourcesOfKind {
 
     pub(super) fn factor_source_ids(&self) -> Vec<FactorSourceID> {
         self.factor_sources.iter().map(|f| f.id).collect()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    type Sut = FactorSourcesOfKind;
+
+    #[test]
+    fn invalid_empty() {
+        assert_eq!(
+            Sut::new(FactorSourceKind::Device, []),
+            Err(CommonError::FactorSourcesOfKindEmptyFactors)
+        );
+    }
+
+    #[test]
+    fn invalid_single_element() {
+        assert_eq!(
+            Sut::new(FactorSourceKind::Device, [FactorSource::arculus()]),
+            Err(CommonError::InvalidFactorSourceKind)
+        );
+    }
+
+    #[test]
+    fn invalid_two_two() {
+        assert_eq!(
+            Sut::new(
+                FactorSourceKind::Device,
+                [
+                    FactorSource::arculus(),
+                    FactorSource::device(),
+                    FactorSource::arculus(),
+                    FactorSource::device()
+                ]
+            ),
+            Err(CommonError::InvalidFactorSourceKind)
+        );
+    }
+
+    #[test]
+    fn valid_one() {
+        let sources = IndexSet::<FactorSource>::from_iter([FactorSource::device()]);
+        let sut = Sut::new(FactorSourceKind::Device, sources.clone()).unwrap();
+        assert_eq!(sut.factor_sources(), sources);
+    }
+
+    #[test]
+    fn valid_two() {
+        let sources =
+            IndexSet::<FactorSource>::from_iter([FactorSource::ledger(), FactorSource::ledger()]);
+        let sut = Sut::new(FactorSourceKind::Ledger, sources.clone()).unwrap();
+        assert_eq!(sut.factor_sources(), sources);
     }
 }
