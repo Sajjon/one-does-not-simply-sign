@@ -2,20 +2,12 @@
 //! SingleSigningDrivers other than the fact that BatchSigningDerivers can sign
 //! many transactions with many derivations paths at once?
 
-mod collector;
-mod interactors;
-mod owned_types;
-mod petition_types;
-mod signatures_outcome_types;
+mod signing;
 mod testing;
 mod types;
 
 pub mod prelude {
-    pub use crate::collector::*;
-    pub use crate::interactors::*;
-    pub use crate::owned_types::*;
-    pub use crate::petition_types::*;
-    pub use crate::signatures_outcome_types::*;
+    pub use crate::signing::*;
     pub use crate::testing::*;
     pub use crate::types::*;
 
