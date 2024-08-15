@@ -1,7 +1,7 @@
 use signing::prelude::*;
 
 #[cfg(test)]
-mod tests {
+mod common_tests {
 
     use super::*;
 
@@ -28,6 +28,12 @@ mod tests {
             Entity::a6().security_state.all_factor_instances()
         );
     }
+}
+
+#[cfg(test)]
+mod signing_tests {
+
+    use super::*;
 
     #[actix_rt::test]
     async fn prudent_user_single_tx_a0() {
