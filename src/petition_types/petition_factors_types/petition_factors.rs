@@ -56,21 +56,37 @@ impl PetitionFactors {
         ))
     }
 
-    pub fn did_skip(&self, factor_source_id: &FactorSourceID, simulated: bool) {
+    pub fn did_skip_if_relevant(&self, factor_source_id: &FactorSourceID, simulated: bool) {
+        if let Some(_x_) = self.reference_to_factor_source_with_id(factor_source_id) {
+            self.did_skip(factor_source_id, simulated)
+        }
+    }
+
+    fn did_skip(&self, factor_source_id: &FactorSourceID, simulated: bool) {
         let factor_instance = self.expect_reference_to_factor_source_with_id(factor_source_id);
         self.state.borrow_mut().did_skip(factor_instance, simulated);
     }
 
-    pub fn has_instance_with_id(&self, owned_factor_instance: &OwnedFactorInstance) -> bool {
-        self.input
-            .factors
-            .iter()
-            .any(|f| f == owned_factor_instance.factor_instance())
+    pub fn has_owned_instance_with_id(&self, owned_factor_instance: &OwnedFactorInstance) -> bool {
+        self.has_instance_with_id(owned_factor_instance.factor_instance())
+    }
+
+    pub fn has_instance_with_id(&self, factor_instance: &FactorInstance) -> bool {
+        self.input.factors.iter().any(|f| f == factor_instance)
+    }
+
+    pub fn add_signature_if_relevant(&self, signature: &HDSignature) -> bool {
+        if self.has_owned_instance_with_id(signature.owned_factor_instance()) {
+            self.add_signature(signature);
+            true
+        } else {
+            false
+        }
     }
 
     /// # Panics
     /// Panics if this factor source has already been skipped or signed with.
-    pub fn add_signature(&self, signature: &HDSignature) {
+    fn add_signature(&self, signature: &HDSignature) {
         let state = self.state.borrow_mut();
         state.add_signature(signature)
     }
@@ -78,6 +94,12 @@ impl PetitionFactors {
     pub fn references_factor_source_with_id(&self, factor_source_id: &FactorSourceID) -> bool {
         self.reference_to_factor_source_with_id(factor_source_id)
             .is_some()
+    }
+
+    pub fn skip_if_references(&self, factor_source_id: &FactorSourceID, simulated: bool) {
+        if self.references_factor_source_with_id(factor_source_id) {
+            self.did_skip(factor_source_id, simulated)
+        }
     }
 
     fn expect_reference_to_factor_source_with_id(
