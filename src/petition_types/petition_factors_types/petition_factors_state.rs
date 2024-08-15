@@ -82,3 +82,73 @@ impl PetitionFactorsState {
                 .references_factor_source_by_id(factor_source_id)
     }
 }
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    type Sut = PetitionFactorsState;
+
+    #[test]
+    #[should_panic]
+    fn skipping_twice_panics() {
+        let sut = Sut::new();
+        let fi = FactorInstance::sample();
+        sut.did_skip(&fi, false);
+        sut.did_skip(&fi, false);
+    }
+
+    #[test]
+    #[should_panic]
+    fn signing_twice_panics() {
+        let sut = Sut::new();
+        let sig = HDSignature::sample();
+        sut.add_signature(&sig);
+        sut.add_signature(&sig);
+    }
+
+    #[test]
+    #[should_panic]
+    fn skipping_already_signed_panics() {
+        let sut = Sut::new();
+
+        let intent_hash = IntentHash::sample();
+
+        let factor_instance = FactorInstance::new(0, FactorSourceID::fs0());
+        let sign_input = HDSignatureInput::new(
+            intent_hash,
+            OwnedFactorInstance::new(
+                AccountAddressOrIdentityAddress::sample(),
+                factor_instance.clone(),
+            ),
+        );
+        let signature = HDSignature::produced_signing_with_input(sign_input);
+
+        sut.add_signature(&signature);
+
+        sut.did_skip(&factor_instance, false);
+    }
+
+    #[test]
+    #[should_panic]
+    fn signing_already_skipped_panics() {
+        let sut = Sut::new();
+
+        let intent_hash = IntentHash::sample();
+        let factor_instance = FactorInstance::new(0, FactorSourceID::fs0());
+
+        sut.did_skip(&factor_instance, false);
+
+        let sign_input = HDSignatureInput::new(
+            intent_hash,
+            OwnedFactorInstance::new(
+                AccountAddressOrIdentityAddress::sample(),
+                factor_instance.clone(),
+            ),
+        );
+
+        let signature = HDSignature::produced_signing_with_input(sign_input);
+        sut.add_signature(&signature);
+    }
+}
