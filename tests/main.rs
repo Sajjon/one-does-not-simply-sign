@@ -290,6 +290,19 @@ mod tests {
     }
 
     #[actix_rt::test]
+    async fn fail_get_skipped() {
+        let failing = IndexSet::<_>::from_iter([FactorSourceID::fs0()]);
+        let collector = SignaturesCollector::test_prudent_with_failures(
+            [TransactionIntent::new([Entity::a0()])],
+            SimulatedFailures::with_simulated_failures(failing.clone()),
+        );
+        let outcome = collector.collect_signatures().await;
+        assert!(!outcome.successful());
+        let skipped = outcome.skipped_factor_sources();
+        assert_eq!(skipped, failing);
+    }
+
+    #[actix_rt::test]
     async fn lazy_always_skip_user_single_tx_a1() {
         let collector =
             SignaturesCollector::test_lazy_always_skip([TransactionIntent::new([Entity::a1()])]);
