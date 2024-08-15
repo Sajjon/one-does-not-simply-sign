@@ -45,10 +45,6 @@ impl SimulatedFailures {
         Self::with_details(IndexSet::from_iter(failures))
     }
 
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     /// If needed, simulates failure for ALL factor sources or NONE.
     pub fn simulate_failure_if_needed(&self, factor_source_ids: IndexSet<FactorSourceID>) -> bool {
         factor_source_ids
@@ -66,10 +62,6 @@ pub enum SimulatedUserMode {
     /// Emulation of a "lazy" user, that skips signing with as many factor
     /// sources as possible.
     Lazy(Laziness),
-
-    /// Emulation of a "random" user, that skips signing some factor sources
-    ///  at random.
-    Random,
 }
 
 impl SimulatedUserMode {
@@ -156,11 +148,6 @@ impl SimulatedUser {
                 Laziness::AlwaysSkip => false,
                 Laziness::SignMinimum => is_prudent(),
             },
-            SimulatedUserMode::Random => {
-                let mut rng = rand::thread_rng();
-                let num: f64 = rng.gen(); // generates a float between 0 and 1
-                num < 0.5
-            }
         }
     }
 }

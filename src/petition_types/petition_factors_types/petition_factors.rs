@@ -56,17 +56,6 @@ impl PetitionFactors {
         ))
     }
 
-    pub fn new_not_used() -> Self {
-        Self {
-            factor_list_kind: FactorListKind::Override, // does not matter..
-            input: PetitionFactorsInput {
-                factors: IndexSet::new(),
-                required: 0,
-            },
-            state: RefCell::new(PetitionFactorsState::new()),
-        }
-    }
-
     pub fn did_skip(&self, factor_source_id: &FactorSourceID, simulated: bool) {
         let factor_instance = self.expect_reference_to_factor_source_with_id(factor_source_id);
         self.state.borrow_mut().did_skip(factor_instance, simulated);

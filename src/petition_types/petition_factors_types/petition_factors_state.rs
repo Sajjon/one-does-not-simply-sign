@@ -15,17 +15,30 @@ pub struct PetitionFactorsState {
 }
 
 impl PetitionFactorsState {
+    /// Creates a new `PetitionFactorsState`.
+    pub(super) fn new() -> Self {
+        Self {
+            signed: RefCell::new(PetitionFactorsSubState::<_>::new()),
+            skipped: RefCell::new(PetitionFactorsSubState::<_>::new()),
+        }
+    }
+
+    /// A reference to the skipped factors so far.
     pub(super) fn skipped(&self) -> Ref<PetitionFactorsSubState<FactorInstance>> {
         self.skipped.borrow()
     }
+
+    /// A reference to the factors which have been signed with so far.
     pub(super) fn signed(&self) -> Ref<PetitionFactorsSubState<HDSignature>> {
         self.signed.borrow()
     }
 
+    /// A set of signatures from factors that have been signed with so far.
     pub fn all_signatures(&self) -> IndexSet<HDSignature> {
         self.signed().snapshot()
     }
 
+    /// A set factors have been skipped so far.
     pub fn all_skipped(&self) -> IndexSet<FactorInstance> {
         self.skipped().snapshot()
     }
@@ -33,11 +46,16 @@ impl PetitionFactorsState {
     /// # Panics
     /// Panics if this factor source has already been skipped or signed with.
     fn assert_not_referencing_factor_source(&self, factor_source_id: FactorSourceID) {
-        if self.references_factor_source_by_id(factor_source_id) {
-            panic!("Programmer error! Factor source {:?} already used, should only be referenced once.", factor_source_id);
-        }
+        assert!(
+            !self.references_factor_source_by_id(factor_source_id),
+            "Programmer error! Factor source {:?} already used, should only be referenced once.",
+            factor_source_id,
+        );
     }
 
+    /// # Panics
+    /// Panics if this factor source has already been skipped or signed and
+    /// this is not a simulation.
     pub(crate) fn did_skip(&self, factor_instance: &FactorInstance, simulated: bool) {
         if !simulated {
             self.assert_not_referencing_factor_source(factor_instance.factor_source_id);
@@ -52,34 +70,15 @@ impl PetitionFactorsState {
         self.signed.borrow_mut().insert(signature)
     }
 
-    pub(super) fn new() -> Self {
-        Self {
-            signed: RefCell::new(PetitionFactorsSubState::<_>::new()),
-            skipped: RefCell::new(PetitionFactorsSubState::<_>::new()),
-        }
-    }
-
     pub(super) fn snapshot(&self) -> PetitionFactorsStateSnapshot {
         PetitionFactorsStateSnapshot::new(self.signed().snapshot(), self.skipped().snapshot())
     }
 
     fn references_factor_source_by_id(&self, factor_source_id: FactorSourceID) -> bool {
-        if self
-            .signed
-            .borrow()
+        self.signed()
             .references_factor_source_by_id(factor_source_id)
-        {
-            return true;
-        }
-
-        if self
-            .skipped
-            .borrow()
-            .references_factor_source_by_id(factor_source_id)
-        {
-            return true;
-        }
-
-        false
+            || self
+                .skipped()
+                .references_factor_source_by_id(factor_source_id)
     }
 }
