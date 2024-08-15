@@ -85,7 +85,7 @@ impl SignaturesCollector {
                 .await?;
 
             if !self.continue_if_necessary()? {
-                return Ok(()); // finished early, we have fulfilled signing requirements of all transactions
+                break; // finished early, we have fulfilled signing requirements of all transactions
             }
         }
         Ok(())
