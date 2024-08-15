@@ -23,8 +23,6 @@ impl SignWithFactorClient {
                 );
                 let response = interactor.sign(request).await?;
                 collector.process_batch_response(response);
-
-                Ok(())
             }
 
             // Serial Interactor: One Factor Sources at a time
@@ -46,8 +44,8 @@ impl SignWithFactorClient {
                         break;
                     }
                 }
-                Ok(())
             }
         }
+        Ok(())
     }
 }

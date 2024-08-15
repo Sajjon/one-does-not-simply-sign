@@ -21,8 +21,4 @@ impl ParallelBatchSigningRequest {
             invalid_transactions_if_skipped,
         }
     }
-
-    pub fn factor_source_ids(&self) -> IndexSet<FactorSourceID> {
-        self.per_factor_source.keys().cloned().collect()
-    }
 }
