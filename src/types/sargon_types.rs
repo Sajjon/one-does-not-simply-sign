@@ -53,7 +53,7 @@ impl FactorSource {
     pub fn new(kind: FactorSourceKind) -> Self {
         Self {
             id: FactorSourceID::new(kind),
-            last_used: SystemTime::now(),
+            last_used: SystemTime::UNIX_EPOCH,
         }
     }
     pub fn arculus() -> Self {
@@ -245,7 +245,32 @@ pub struct Entity {
     pub security_state: EntitySecurityState,
 }
 
+impl HasSampleValues for Entity {
+    fn sample() -> Self {
+        Self::sample_unsecurified()
+    }
+    fn sample_other() -> Self {
+        Self::sample_securified()
+    }
+}
+
 impl Entity {
+    pub(crate) fn sample_unsecurified() -> Self {
+        Self::unsecurified(0, "Alice", FactorSourceID::fs0())
+    }
+
+    pub(crate) fn sample_securified() -> Self {
+        type F = FactorSourceID;
+        Self::securified(6, "Grace", |idx| {
+            let fi = FactorInstance::f(idx);
+            MatrixOfFactorInstances::new(
+                [F::fs0(), F::fs3(), F::fs5()].map(&fi),
+                2,
+                [F::fs1(), F::fs4()].map(&fi),
+            )
+        })
+    }
+
     fn new(name: impl AsRef<str>, security_state: impl Into<EntitySecurityState>) -> Self {
         Self {
             address: AccountAddressOrIdentityAddress::new(name),
@@ -281,32 +306,53 @@ pub struct MatrixOfFactorInstances {
 }
 
 impl MatrixOfFactorInstances {
+    /// # Panics
     /// Panics if threshold > threshold_factor.len()
+    ///
+    /// Panics if the same factor is present in both lists
     pub fn new(
         threshold_factors: impl IntoIterator<Item = FactorInstance>,
         threshold: u8,
         override_factors: impl IntoIterator<Item = FactorInstance>,
     ) -> Self {
         let threshold_factors = threshold_factors.into_iter().collect_vec();
+
         assert!(threshold_factors.len() >= threshold as usize);
+
+        let override_factors = override_factors.into_iter().collect_vec();
+
+        assert!(
+            HashSet::<FactorInstance>::from_iter(threshold_factors.clone())
+                .intersection(&HashSet::<FactorInstance>::from_iter(
+                    override_factors.clone()
+                ))
+                .collect_vec()
+                .is_empty(),
+            "A factor MUST NOT be present in both threshold AND override list."
+        );
+
         Self {
             threshold_factors,
             threshold,
             override_factors: override_factors.into_iter().collect_vec(),
         }
     }
+
     pub fn override_only(factors: impl IntoIterator<Item = FactorInstance>) -> Self {
         Self::new([], 0, factors)
     }
+
     pub fn single_override(factor: FactorInstance) -> Self {
         Self::override_only([factor])
     }
+
     pub fn threshold_only(
         factors: impl IntoIterator<Item = FactorInstance>,
         threshold: u8,
     ) -> Self {
         Self::new(factors, threshold, [])
     }
+
     pub fn single_threshold(factor: FactorInstance) -> Self {
         Self::threshold_only([factor], 1)
     }
@@ -407,7 +453,7 @@ impl Signature {
 
 pub type Result<T, E = CommonError> = std::result::Result<T, E>;
 
-#[derive(thiserror::Error, Clone, Debug)]
+#[derive(thiserror::Error, Clone, Debug, PartialEq, Eq)]
 pub enum CommonError {
     #[error("Unknown factor source")]
     UnknownFactorSource,
@@ -417,4 +463,7 @@ pub enum CommonError {
 
     #[error("Invalid factor source kind")]
     InvalidFactorSourceKind,
+
+    #[error("Empty FactorSources list")]
+    FactorSourcesOfKindEmptyFactors,
 }

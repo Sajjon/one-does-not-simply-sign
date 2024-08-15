@@ -79,6 +79,8 @@ impl PetitionFactors {
             .any(|f| f == owned_factor_instance.factor_instance())
     }
 
+    /// # Panics
+    /// Panics if this factor source has already been skipped or signed with.
     pub fn add_signature(&self, signature: &HDSignature) {
         let state = self.state.borrow_mut();
         state.add_signature(signature)

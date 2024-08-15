@@ -24,3 +24,4 @@ strum = { git = "https://github.com/Peternator7/strum/", rev = "f746c3699acf1501
 ] }
 thiserror = "1.0.61"
 uuid = { version = "1.9.0", features = ["v4"] }
+pretty_assertions = "1.4.0"

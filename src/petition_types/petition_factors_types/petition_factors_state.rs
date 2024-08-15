@@ -30,6 +30,8 @@ impl PetitionFactorsState {
         self.skipped().snapshot()
     }
 
+    /// # Panics
+    /// Panics if this factor source has already been skipped or signed with.
     fn assert_not_referencing_factor_source(&self, factor_source_id: FactorSourceID) {
         if self.references_factor_source_by_id(factor_source_id) {
             panic!("Programmer error! Factor source {:?} already used, should only be referenced once.", factor_source_id);
@@ -43,6 +45,8 @@ impl PetitionFactorsState {
         self.skipped.borrow_mut().insert(factor_instance);
     }
 
+    /// # Panics
+    /// Panics if this factor source has already been skipped or signed with.
     pub(crate) fn add_signature(&self, signature: &HDSignature) {
         self.assert_not_referencing_factor_source(signature.factor_source_id());
         self.signed.borrow_mut().insert(signature)

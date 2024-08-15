@@ -121,24 +121,6 @@ impl PetitionEntity {
         self.union_of(|f| f.all_signatures())
     }
 
-    pub fn references_factor_source_with_id(&self, factor_source_id: &FactorSourceID) -> bool {
-        if let Some(references) = self.override_factors.as_ref().map(|o| {
-            o.borrow()
-                .references_factor_source_with_id(factor_source_id)
-        }) {
-            return references;
-        }
-
-        if let Some(references) = self.threshold_factors.as_ref().map(|t| {
-            t.borrow()
-                .references_factor_source_with_id(factor_source_id)
-        }) {
-            return references;
-        }
-
-        panic!("Programmer error! Should have at least one factors list.");
-    }
-
     pub fn skipped_factor_source_if_relevant(&self, factor_source_id: &FactorSourceID) {
         if let Some(t) = self.threshold_factors.as_ref() {
             if t.borrow()
@@ -157,6 +139,10 @@ impl PetitionEntity {
         }
     }
 
+    /// # Panics
+    /// Panics if this factor source has already been skipped or signed with.
+    ///
+    /// Or panics if the factor source is not known to this petition.
     pub fn add_signature(&self, signature: HDSignature) {
         let mut added_to_threshold = false;
         let mut added_to_override = false;
@@ -287,5 +273,89 @@ impl PetitionEntity {
                 (_, Finished(Success)) => PetitionFactorsStatus::Finished(Success),
             },
         }
+    }
+}
+
+impl PetitionEntity {
+    fn from_entity(entity: Entity, intent_hash: IntentHash) -> Self {
+        match entity.security_state {
+            EntitySecurityState::Securified(matrix) => {
+                Self::new_securified(intent_hash, entity.address, matrix)
+            }
+            EntitySecurityState::Unsecured(factor) => {
+                Self::new_unsecurified(intent_hash, entity.address, factor)
+            }
+        }
+    }
+}
+impl HasSampleValues for PetitionEntity {
+    fn sample() -> Self {
+        Self::from_entity(Entity::sample_securified(), IntentHash::sample())
+    }
+    fn sample_other() -> Self {
+        Self::from_entity(Entity::sample_unsecurified(), IntentHash::sample_other())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    type Sut = PetitionEntity;
+
+    #[test]
+    #[should_panic(expected = "Programmer error! Must have at least one factors list.")]
+    fn invalid_empty_factors() {
+        Sut::new(
+            IntentHash::sample(),
+            AccountAddressOrIdentityAddress::sample(),
+            None,
+            None,
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "Factor source not found in any of the lists.")]
+    fn cannot_add_unrelated_signature() {
+        let sut = Sut::sample();
+        sut.add_signature(HDSignature::sample());
+    }
+
+    #[test]
+    #[should_panic(expected = "A factor MUST NOT be present in both threshold AND override list.")]
+    fn factor_should_not_be_used_in_both_lists() {
+        Entity::securified(0, "Jane Doe", |idx| {
+            let fi = FactorInstance::f(idx);
+            MatrixOfFactorInstances::new(
+                [FactorSourceID::fs0()].map(&fi),
+                1,
+                [FactorSourceID::fs0()].map(&fi),
+            )
+        });
+    }
+
+    #[test]
+    #[should_panic]
+    fn cannot_add_same_signature_twice() {
+        let intent_hash = IntentHash::sample();
+        let entity = Entity::securified(0, "Jane Doe", |idx| {
+            let fi = FactorInstance::f(idx);
+            MatrixOfFactorInstances::new(
+                [FactorSourceID::fs0()].map(&fi),
+                1,
+                [FactorSourceID::fs1()].map(&fi),
+            )
+        });
+        let sut = Sut::from_entity(entity.clone(), intent_hash.clone());
+        let sign_input = HDSignatureInput::new(
+            intent_hash,
+            OwnedFactorInstance::new(
+                entity.address.clone(),
+                FactorInstance::new(0, FactorSourceID::fs0()),
+            ),
+        );
+        let signature = HDSignature::produced_signing_with_input(sign_input);
+
+        sut.add_signature(signature.clone());
+        sut.add_signature(signature.clone());
     }
 }

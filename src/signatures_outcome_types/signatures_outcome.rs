@@ -41,11 +41,13 @@ impl SignaturesOutcome {
         let failure_hashes: IndexSet<IntentHash> =
             failed_transactions.transactions.keys().cloned().collect();
 
+        let valid = successful_hashes
+            .intersection(&failure_hashes)
+            .collect_vec()
+            .is_empty();
+
         assert!(
-            successful_hashes
-                .intersection(&failure_hashes)
-                .collect_vec()
-                .is_empty(),
+            valid,
             "Discrepancy, found intent hash in both successful and failed transactions, this is a programmer error."
         );
 
