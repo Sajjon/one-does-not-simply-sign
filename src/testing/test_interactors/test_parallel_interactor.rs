@@ -16,26 +16,13 @@ impl IsTestInteractor for TestSigningParallelInteractor {
     }
 }
 
-pub fn do_sign(
+fn do_sign(
     per_factor_source: IndexMap<FactorSourceID, BatchTXBatchKeySigningRequest>,
 ) -> Result<SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse>> {
     let signatures = per_factor_source
-        .iter()
-        .map(|(k, v)| {
-            let value = v
-                .per_transaction
-                .iter()
-                .flat_map(|x| {
-                    x.signature_inputs()
-                        .iter()
-                        .map(|y| HDSignature::produced_signing_with_input(y.clone()))
-                        .collect_vec()
-                })
-                .collect::<IndexSet<HDSignature>>();
-            (*k, value)
-        })
-        .collect::<IndexMap<FactorSourceID, IndexSet<HDSignature>>>();
-
+        .into_iter()
+        .flat_map(|(_, v)| do_do_sign(v.per_transaction))
+        .collect();
     let response = BatchSigningResponse::new(signatures);
     Ok(SignWithFactorSourceOrSourcesOutcome::signed(response))
 }

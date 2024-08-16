@@ -16,6 +16,32 @@ impl IsTestInteractor for TestSigningSerialInteractor {
     }
 }
 
+pub fn do_do_sign(
+    per_transaction: Vec<BatchKeySigningRequest>,
+) -> IndexMap<FactorSourceID, IndexSet<HDSignature>> {
+    per_transaction
+        .into_iter()
+        .map(|r| {
+            let key = r.factor_source_id;
+
+            let value = r
+                .signature_inputs()
+                .iter()
+                .map(|x| HDSignature::produced_signing_with_input(x.clone()))
+                .collect::<IndexSet<_>>();
+            (key, value)
+        })
+        .collect::<IndexMap<FactorSourceID, IndexSet<HDSignature>>>()
+}
+
+pub fn do_sign(
+    per_transaction: Vec<BatchKeySigningRequest>,
+) -> Result<SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse>> {
+    let signatures = do_do_sign(per_transaction);
+    let response = BatchSigningResponse::new(signatures);
+    Ok(SignWithFactorSourceOrSourcesOutcome::signed(response))
+}
+
 #[async_trait]
 impl SignWithFactorSerialInteractor for TestSigningSerialInteractor {
     async fn sign(
@@ -30,31 +56,7 @@ impl SignWithFactorSerialInteractor for TestSigningSerialInteractor {
             .simulated_user
             .sign_or_skip(invalid_transactions_if_skipped)
         {
-            SigningUserInput::Sign => do_sign(
-                request
-                    .input
-                    .per_transaction
-                    .into_iter()
-                    .map(|x| {
-                        (
-                            x.factor_source_id,
-                            BatchTXBatchKeySigningRequest::new(
-                                x.factor_source_id,
-                                x.signature_inputs()
-                                    .iter()
-                                    .map(|y| {
-                                        BatchKeySigningRequest::new(
-                                            y.intent_hash.clone(),
-                                            x.factor_source_id,
-                                            IndexSet::from_iter([y.owned_factor_instance.clone()]),
-                                        )
-                                    })
-                                    .collect::<IndexSet<BatchKeySigningRequest>>(),
-                            ),
-                        )
-                    })
-                    .collect::<IndexMap<FactorSourceID, BatchTXBatchKeySigningRequest>>(),
-            ),
+            SigningUserInput::Sign => do_sign(request.input.per_transaction),
             SigningUserInput::Skip => {
                 Ok(SignWithFactorSourceOrSourcesOutcome::skipped_factor_source(
                     request.input.factor_source_id,
