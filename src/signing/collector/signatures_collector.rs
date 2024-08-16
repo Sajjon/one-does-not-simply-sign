@@ -1,5 +1,38 @@
 use crate::prelude::*;
 
+pub struct FactorOutputCollectorDependencies<ParallelInteractor, SerialInteractor> {
+    /// A collection of "interactors" used to sign with factor sources.
+    pub interactors: Arc<dyn InteractorsContext<ParallelInteractor, SerialInteractor>>,
+
+    /// Factor sources grouped by kind, sorted according to "friction order",
+    /// that is, we want to control which FactorSourceKind users sign with
+    /// first, second etc, e.g. typically we prompt user to sign with Ledgers
+    /// first, and if a user might lack access to that Ledger device, then it is
+    /// best to "fail fast", otherwise we might waste the users time, if she has
+    /// e.g. answered security questions and then is asked to use a Ledger
+    /// she might not have handy at the moment - or might not be in front of a
+    /// computer and thus unable to make a connection between the Radix Wallet
+    /// and a Ledger device.
+    pub factors_of_kind: IndexSet<FactorSourcesOfKind>,
+}
+
+pub type SignaturesCollectorDependencies = FactorOutputCollectorDependencies<
+    SignWithFactorParallelInteractor,
+    SignWithFactorSerialInteractor,
+>;
+
+impl SignaturesCollectorDependencies {
+    pub fn new(
+        interactors: Arc<SignatureCollectingInteractors>,
+        factors_of_kind: IndexSet<FactorSourcesOfKind>,
+    ) -> Self {
+        Self {
+            interactors,
+            factors_of_kind,
+        }
+    }
+}
+
 /// A coordinator which gathers signatures from several factor sources of different
 /// kinds, in increasing friction order, for many transactions and for
 /// potentially multiple entities and for many factor instances (derivation paths)
@@ -8,31 +41,38 @@ use crate::prelude::*;
 /// By increasing friction order we mean, the quickest and easiest to use FactorSourceKind
 /// is last; namely `DeviceFactorSource`, and the most tedious FactorSourceKind is
 /// first; namely `LedgerFactorSource`, which user might also lack access to.
-pub type SignaturesCollector =
-    FactorOutputCollector<SignaturesCollectorState, Arc<dyn SignatureCollectingInteractors>>;
+pub type SignaturesCollector = FactorOutputCollector<
+    SignaturesCollectorState,
+    SignWithFactorParallelInteractor,
+    SignWithFactorSerialInteractor,
+>;
 
 pub trait IsFactorOutputCollectorState {
     fn continue_if_necessary(&self) -> Result<bool>;
 }
 
-pub struct FactorOutputCollector<State, Interactors>
+pub struct FactorOutputCollector<State, ParallelInteractor, SerialInteractor>
 where
     State: IsFactorOutputCollectorState,
 {
     /// Stateless immutable values used by the collector to gather signatures
     /// from factor sources.
-    dependencies: FactorOutputCollectorDependencies<Interactors>,
+    dependencies: FactorOutputCollectorDependencies<ParallelInteractor, SerialInteractor>,
 
     /// Mutable internal state of the collector which builds up the list
     /// of signatures from each used factor source.
     state: RefCell<State>,
 }
 
-impl<State, Interactors> FactorOutputCollector<State, Interactors>
+impl<State, ParallelInteractor, SerialInteractor>
+    FactorOutputCollector<State, ParallelInteractor, SerialInteractor>
 where
     State: IsFactorOutputCollectorState,
 {
-    fn with(dependencies: FactorOutputCollectorDependencies<Interactors>, state: State) -> Self {
+    fn with(
+        dependencies: FactorOutputCollectorDependencies<ParallelInteractor, SerialInteractor>,
+        state: State,
+    ) -> Self {
         Self {
             dependencies,
             state: RefCell::new(state),
@@ -52,7 +92,7 @@ impl SignaturesCollector {
     pub fn new(
         all_factor_sources_in_profile: IndexSet<FactorSource>,
         transactions: IndexSet<TransactionIntent>,
-        interactors: Arc<dyn SignatureCollectingInteractors>,
+        interactors: Arc<SignatureCollectingInteractors>,
     ) -> Self {
         let preprocessor = SignaturesCollectorPreprocessor::new(transactions);
         let (petitions, factors) = preprocessor.preprocess(all_factor_sources_in_profile);

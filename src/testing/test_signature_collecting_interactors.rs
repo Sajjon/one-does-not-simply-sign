@@ -10,7 +10,9 @@ impl TestSignatureCollectingInteractors {
     }
 }
 
-impl SignatureCollectingInteractors for TestSignatureCollectingInteractors {
+impl InteractorsContext<SignWithFactorParallelInteractor, SignWithFactorSerialInteractor>
+    for TestSignatureCollectingInteractors
+{
     fn interactor_for(&self, kind: FactorSourceKind) -> SigningInteractor {
         match kind {
             FactorSourceKind::Device => SigningInteractor::parallel(Arc::new(

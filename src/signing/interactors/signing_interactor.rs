@@ -1,9 +1,15 @@
 use crate::prelude::*;
 
 /// A collection of "interactors" which can sign transactions.
-pub trait SignatureCollectingInteractors {
-    fn interactor_for(&self, kind: FactorSourceKind) -> SigningInteractor;
+pub trait InteractorsContext<ParallelInteractor, SerialInteractor> {
+    fn interactor_for(
+        &self,
+        kind: FactorSourceKind,
+    ) -> UseFactorInteractor<ParallelInteractor, SerialInteractor>;
 }
+
+pub type SignatureCollectingInteractors =
+    dyn InteractorsContext<SignWithFactorParallelInteractor, SignWithFactorSerialInteractor>;
 
 /// A collection of factor sources to use to sign, transactions with multiple keys
 /// (derivations paths).
@@ -132,7 +138,7 @@ where
 /// Example of a Parallel Batch Signing Driver is that for DeviceFactorSource.
 
 pub type SignWithFactorParallelInteractor =
-    dyn SignWithFactorBaseInteractor<ParallelBatchSigningRequest>;
+    Arc<dyn SignWithFactorBaseInteractor<ParallelBatchSigningRequest>>;
 
 /// A interactor for a factor source kind which support performing
 /// *Batch* signing *serially*.
@@ -149,20 +155,23 @@ pub type SignWithFactorParallelInteractor =
 /// questions from different security questions factor sources (in fact we
 /// might not even even allow multiple SecurityQuestionsFactorSources to be used).
 pub type SignWithFactorSerialInteractor =
-    dyn SignWithFactorBaseInteractor<SerialBatchSigningRequest>;
+    Arc<dyn SignWithFactorBaseInteractor<SerialBatchSigningRequest>>;
 
 /// An interactor which can sign transactions - either in parallel or serially.
-pub enum SigningInteractor {
-    Parallel(Arc<SignWithFactorParallelInteractor>),
-    Serial(Arc<SignWithFactorSerialInteractor>),
+pub enum UseFactorInteractor<Parallel, Serial> {
+    Parallel(Parallel),
+    Serial(Serial),
 }
 
-impl SigningInteractor {
-    pub fn parallel(interactor: Arc<SignWithFactorParallelInteractor>) -> Self {
+pub type SigningInteractor =
+    UseFactorInteractor<SignWithFactorParallelInteractor, SignWithFactorSerialInteractor>;
+
+impl<Parallel, Serial> UseFactorInteractor<Parallel, Serial> {
+    pub fn parallel(interactor: Parallel) -> Self {
         Self::Parallel(interactor)
     }
 
-    pub fn serial(interactor: Arc<SignWithFactorSerialInteractor>) -> Self {
+    pub fn serial(interactor: Serial) -> Self {
         Self::Serial(interactor)
     }
 }
