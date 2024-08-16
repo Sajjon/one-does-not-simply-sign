@@ -18,13 +18,78 @@ pub struct KeysCollector {
     state: RefCell<KeysCollectorState>,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub struct KeyDerivationOutcome {
-    pub keys: IndexSet<OwnedFactorInstance>,
+pub enum KeySpace {
+    Unsecurified,
+    Securified,
+}
+
+pub trait UsedDerivationIndices {
+    fn next_derivation_index_for(
+        &self,
+        factor_source: &FactorSource,
+        key_kind: KeyKind,
+        entity_kind: EntityKind,
+        key_space: KeySpace,
+    ) -> DerivationIndex;
+
+    fn next_derivation_path(
+        &self,
+        factor_source: &FactorSource,
+        key_kind: KeyKind,
+        entity_kind: EntityKind,
+        key_space: KeySpace,
+    ) -> DerivationPath {
+        let index = self.next_derivation_index_for(factor_source, key_kind, entity_kind, key_space);
+        DerivationPath::new(entity_kind, key_kind, index)
+    }
+
+    fn next_derivation_path_account_tx(&self, factor_source: &FactorSource) -> DerivationPath {
+        self.next_derivation_path(
+            factor_source,
+            KeyKind::T9n,
+            EntityKind::Account,
+            KeySpace::Unsecurified,
+        )
+    }
+}
+
+impl KeysCollector {
+    pub fn new(
+        all_factor_sources_in_profile: IndexSet<FactorSource>,
+        // derivation_paths: IndexMap<FactorSourceID, IndexSet<DerivationPath>>,
+        interactors: Arc<dyn KeysCollectingInteractors>,
+        preprocessor: KeysCollectorPreprocessor,
+    ) -> Self {
+        let (keyrings, factors) = preprocessor.preprocess(all_factor_sources_in_profile);
+
+        let dependencies = KeysCollectorDependencies::new(interactors, factors);
+        let state = KeysCollectorState::new(keyrings);
+
+        Self {
+            dependencies,
+            state: RefCell::new(state),
+        }
+    }
+
+    // pub fn new_account_tx(
+    //     factor_source: FactorSource,
+    //     used_derivation_indices: impl UsedDerivationIndices,
+    // ) -> Self {
+    //     let state = KeysCollectorState::new_account_tx(factor_source, used_derivation_indices);
+    //     Self {
+    //         dependencies: KeysCollectorDependencies::new(),
+    //         state: RefCell::new(state),
+    //     }
+    // }
 }
 
 impl KeysCollector {
     pub async fn collect_keys(self) -> KeyDerivationOutcome {
         todo!()
     }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct KeyDerivationOutcome {
+    pub keys: IndexSet<FactorInstance>,
 }

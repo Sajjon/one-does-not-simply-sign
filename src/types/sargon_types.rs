@@ -127,7 +127,7 @@ impl HasSampleValues for FactorSourceKind {
 pub type DerivationIndex = u32;
 
 #[repr(u8)]
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Copy, PartialEq, Eq, Hash)]
 pub enum KeyKind {
     T9n,
     Rola,
@@ -139,7 +139,7 @@ impl KeyKind {
 }
 
 #[repr(u8)]
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Copy, PartialEq, Eq, Hash)]
 pub enum EntityKind {
     Account,
     Identity,
