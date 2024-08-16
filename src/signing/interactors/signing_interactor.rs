@@ -14,7 +14,7 @@ pub struct ParallelBatchSigningRequest {
 
     /// A collection of transactions which would be invalid if the user skips
     /// signing with this factor source.
-    invalid_transactions_if_skipped: IndexSet<InvalidTransactionIfSkipped>,
+    pub(crate) invalid_transactions_if_skipped: IndexSet<InvalidTransactionIfSkipped>,
 }
 
 impl ParallelBatchSigningRequest {
@@ -27,9 +27,7 @@ impl ParallelBatchSigningRequest {
             invalid_transactions_if_skipped,
         }
     }
-    pub fn invalid_transactions_if_skipped(&self) -> IndexSet<InvalidTransactionIfSkipped> {
-        self.invalid_transactions_if_skipped.clone()
-    }
+
     pub fn factor_source_ids(&self) -> IndexSet<FactorSourceID> {
         self.per_factor_source
             .keys()

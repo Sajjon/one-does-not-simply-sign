@@ -14,32 +14,38 @@ impl IsTestInteractor for TestSigningSerialInteractor {
     fn simulated_user(&self) -> SimulatedUser {
         self.simulated_user.clone()
     }
+
+    type Request = SerialBatchSigningRequest;
+
+    fn do_sign(&self, request: &Self::Request) -> IndexMap<FactorSourceID, IndexSet<HDSignature>> {
+        self.do_do_sign(request.input.per_transaction.clone())
+    }
 }
 
-pub fn do_do_sign(
-    per_transaction: Vec<BatchKeySigningRequest>,
-) -> IndexMap<FactorSourceID, IndexSet<HDSignature>> {
-    per_transaction
-        .into_iter()
-        .map(|r| {
-            let key = r.factor_source_id;
+pub trait SharedRequest {
+    fn factor_source_ids(&self) -> IndexSet<FactorSourceID>;
 
-            let value = r
-                .signature_inputs()
-                .iter()
-                .map(|x| HDSignature::produced_signing_with_input(x.clone()))
-                .collect::<IndexSet<_>>();
-            (key, value)
-        })
-        .collect::<IndexMap<FactorSourceID, IndexSet<HDSignature>>>()
+    fn invalid_transactions_if_skipped(&self) -> IndexSet<InvalidTransactionIfSkipped>;
+}
+impl SharedRequest for SerialBatchSigningRequest {
+    fn factor_source_ids(&self) -> IndexSet<FactorSourceID> {
+        IndexSet::from_iter([self.input.factor_source_id])
+    }
+    fn invalid_transactions_if_skipped(&self) -> IndexSet<InvalidTransactionIfSkipped> {
+        self.invalid_transactions_if_skipped
+            .clone()
+            .into_iter()
+            .collect()
+    }
 }
 
-pub fn do_sign(
-    per_transaction: Vec<BatchKeySigningRequest>,
-) -> Result<SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse>> {
-    let signatures = do_do_sign(per_transaction);
-    let response = BatchSigningResponse::new(signatures);
-    Ok(SignWithFactorSourceOrSourcesOutcome::signed(response))
+impl SharedRequest for ParallelBatchSigningRequest {
+    fn factor_source_ids(&self) -> IndexSet<FactorSourceID> {
+        self.per_factor_source.keys().cloned().collect()
+    }
+    fn invalid_transactions_if_skipped(&self) -> IndexSet<InvalidTransactionIfSkipped> {
+        self.invalid_transactions_if_skipped.clone()
+    }
 }
 
 #[async_trait]
@@ -48,20 +54,6 @@ impl SignWithFactorSerialInteractor for TestSigningSerialInteractor {
         &self,
         request: SerialBatchSigningRequest,
     ) -> Result<SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse>> {
-        if self.should_simulate_failure(IndexSet::from_iter([request.input.factor_source_id])) {
-            return Err(CommonError::Failure);
-        }
-        let invalid_transactions_if_skipped = request.invalid_transactions_if_skipped;
-        match self
-            .simulated_user
-            .sign_or_skip(invalid_transactions_if_skipped)
-        {
-            SigningUserInput::Sign => do_sign(request.input.per_transaction),
-            SigningUserInput::Skip => {
-                Ok(SignWithFactorSourceOrSourcesOutcome::skipped_factor_source(
-                    request.input.factor_source_id,
-                ))
-            }
-        }
+        self.shared_sign(request)
     }
 }
