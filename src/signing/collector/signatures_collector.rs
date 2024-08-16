@@ -86,6 +86,13 @@ where
     pub(crate) fn continue_if_necessary(&self) -> Result<bool> {
         self.state.borrow().continue_if_necessary()
     }
+
+    fn get_interactor(
+        &self,
+        kind: FactorSourceKind,
+    ) -> UseFactorInteractor<ParallelInteractor, SerialInteractor> {
+        self.dependencies.interactors.interactor_for(kind)
+    }
 }
 
 impl SignaturesCollector {
@@ -105,10 +112,6 @@ impl SignaturesCollector {
 }
 
 impl SignaturesCollector {
-    fn get_interactor(&self, kind: FactorSourceKind) -> SigningInteractor {
-        self.dependencies.interactors.interactor_for(kind)
-    }
-
     async fn use_interactor(
         &self,
         interactor: SigningInteractor,
