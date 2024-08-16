@@ -1,8 +1,8 @@
 use crate::prelude::*;
 
-pub struct SignaturesCollectorDependencies {
+pub struct FactorOutputCollectorDependencies<Interactors> {
     /// A collection of "interactors" used to sign with factor sources.
-    pub interactors: Arc<dyn SignatureCollectingInteractors>,
+    pub interactors: Interactors,
 
     /// Factor sources grouped by kind, sorted according to "friction order",
     /// that is, we want to control which FactorSourceKind users sign with
@@ -15,6 +15,9 @@ pub struct SignaturesCollectorDependencies {
     /// and a Ledger device.
     pub factors_of_kind: IndexSet<FactorSourcesOfKind>,
 }
+
+pub type SignaturesCollectorDependencies =
+    FactorOutputCollectorDependencies<Arc<dyn SignatureCollectingInteractors>>;
 
 impl SignaturesCollectorDependencies {
     pub fn new(

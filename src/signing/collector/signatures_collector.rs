@@ -8,20 +8,21 @@ use crate::prelude::*;
 /// By increasing friction order we mean, the quickest and easiest to use FactorSourceKind
 /// is last; namely `DeviceFactorSource`, and the most tedious FactorSourceKind is
 /// first; namely `LedgerFactorSource`, which user might also lack access to.
-pub type SignaturesCollector = FactorOutputCollector<SignaturesCollectorState>;
+pub type SignaturesCollector =
+    FactorOutputCollector<SignaturesCollectorState, Arc<dyn SignatureCollectingInteractors>>;
 
-pub struct FactorOutputCollector<State> {
+pub struct FactorOutputCollector<State, Interactors> {
     /// Stateless immutable values used by the collector to gather signatures
     /// from factor sources.
-    dependencies: SignaturesCollectorDependencies,
+    dependencies: FactorOutputCollectorDependencies<Interactors>,
 
     /// Mutable internal state of the collector which builds up the list
     /// of signatures from each used factor source.
     state: RefCell<State>,
 }
 
-impl<State> FactorOutputCollector<State> {
-    fn with(dependencies: SignaturesCollectorDependencies, state: State) -> Self {
+impl<State, Interactors> FactorOutputCollector<State, Interactors> {
+    fn with(dependencies: FactorOutputCollectorDependencies<Interactors>, state: State) -> Self {
         Self {
             dependencies,
             state: RefCell::new(state),
