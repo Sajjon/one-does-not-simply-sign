@@ -1,5 +1,12 @@
 use crate::prelude::*;
 
+#[async_trait::async_trait]
+pub trait UseFactorParallelInteractor {
+    type Request;
+    type Outcome;
+    async fn use_factor_source(&self, request: Self::Request) -> Result<Self::Outcome>;
+}
+
 /// A interactor for a factor source kind which supports *Batch* usage of
 /// multiple factor sources in parallel.
 ///
@@ -24,4 +31,13 @@ pub trait SignWithFactorParallelInteractor {
         &self,
         request: ParallelBatchSigningRequest,
     ) -> Result<SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse>>;
+}
+
+impl<T: SignWithFactorParallelInteractor> UseFactorParallelInteractor for T {
+    type Request = ParallelBatchSigningRequest;
+    type Outcome = SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse>;
+
+    async fn use_factor_source(&self, request: Self::Request) -> Result<Self::Outcome> {
+        self.sign(request).await
+    }
 }

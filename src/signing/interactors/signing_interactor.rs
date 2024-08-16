@@ -1,12 +1,16 @@
 use crate::prelude::*;
 
 /// An interactor which can sign transactions - either in parallel or serially.
-pub enum SigningInteractor {
-    Parallel(Arc<dyn SignWithFactorParallelInteractor>),
-    Serial(Arc<dyn SignWithFactorSerialInteractor>),
+pub enum InteractorParallelOrSerial<P, S>
+where
+    P: UseFactorParallelInteractor,
+    S: UseFactorParallelInteractor,
+{
+    Parallel(P),
+    Serial(S),
 }
 
-impl SigningInteractor {
+impl InteractorParallelOrSerial {
     pub fn parallel(interactor: Arc<dyn SignWithFactorParallelInteractor>) -> Self {
         Self::Parallel(interactor)
     }

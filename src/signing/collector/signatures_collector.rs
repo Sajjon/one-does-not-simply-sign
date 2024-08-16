@@ -1,9 +1,43 @@
 use crate::prelude::*;
 
-use super::{
-    factor_sources_of_kind::*, signatures_collector_dependencies::*,
-    signatures_collector_preprocessor::*, signatures_collector_state::*,
-};
+/// A coordinator which gathers signatures from several factor sources of different
+/// kinds, in increasing friction order.
+///
+/// By increasing friction order we mean, the quickest and easiest to use FactorSourceKind
+/// is last; namely `DeviceFactorSource`, and the most tedious FactorSourceKind is
+/// first; namely `LedgerFactorSource`, which user might also lack access to.
+pub struct FactorInstancesCollector<Interactors, State> {
+    /// Stateless immutable values used by the collector to gather output
+    /// from factor sources, i.e. signatures of public keys.
+    dependencies: CollectorDependencies<Interactors>,
+
+    /// Mutable internal state of the collector which builds up the list
+    /// of outputs from each used factor source, i.e.  i.e. signatures of public keys.
+    state: RefCell<State>,
+}
+
+impl<I, S> FactorInstancesCollector<I, S> {
+    fn get_interactor(&self, kind: FactorSourceKind) -> InteractorParallelOrSerial {
+        self.dependencies.interactors.interactor_for(kind)
+    }
+}
+
+pub struct CollectorDependencies<Interactor> {
+    /// A collection of "interactors" that can use a factor source to produce
+    /// outputs, i.e. signatures of public keys.
+    pub(super) interactors: Arc<dyn IsFactorSourceInteractorCollection<Interactor>>,
+
+    /// Factor sources grouped by kind, sorted according to "friction order",
+    /// that is, we want to control which FactorSourceKind users sign with
+    /// first, second etc, e.g. typically we prompt user to sign with Ledgers
+    /// first, and if a user might lack access to that Ledger device, then it is
+    /// best to "fail fast", otherwise we might waste the users time, if she has
+    /// e.g. answered security questions and then is asked to use a Ledger
+    /// she might not have handy at the moment - or might not be in front of a
+    /// computer and thus unable to make a connection between the Radix Wallet
+    /// and a Ledger device.
+    pub(super) factors_of_kind: IndexSet<FactorSourcesOfKind>,
+}
 
 /// A coordinator which gathers signatures from several factor sources of different
 /// kinds, in increasing friction order, for many transactions and for
@@ -13,15 +47,8 @@ use super::{
 /// By increasing friction order we mean, the quickest and easiest to use FactorSourceKind
 /// is last; namely `DeviceFactorSource`, and the most tedious FactorSourceKind is
 /// first; namely `LedgerFactorSource`, which user might also lack access to.
-pub struct SignaturesCollector {
-    /// Stateless immutable values used by the collector to gather signatures
-    /// from factor sources.
-    dependencies: SignaturesCollectorDependencies,
-
-    /// Mutable internal state of the collector which builds up the list
-    /// of signatures from each used factor source.
-    state: RefCell<SignaturesCollectorState>,
-}
+pub type SignaturesCollector =
+    FactorInstancesCollector<SignaturesCollectorDependencies, SignaturesCollectorState>;
 
 impl SignaturesCollector {
     pub fn new(
@@ -53,10 +80,6 @@ impl SignaturesCollector {
             .petitions
             .borrow()
             .continue_if_necessary()
-    }
-
-    fn get_interactor(&self, kind: FactorSourceKind) -> SigningInteractor {
-        self.dependencies.interactors.interactor_for(kind)
     }
 
     async fn sign_with_factors_of_kind(

@@ -21,3 +21,12 @@ pub trait SignWithFactorSerialInteractor {
         request: SerialBatchSigningRequest,
     ) -> Result<SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse>>;
 }
+
+impl<T: SignWithFactorSerialInteractor> UseFactorParallelInteractor for T {
+    type Request = SerialBatchSigningRequest;
+    type Outcome = SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse>;
+
+    async fn use_factor_source(&self, request: Self::Request) -> Result<Self::Outcome> {
+        self.sign(request).await
+    }
+}
