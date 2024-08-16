@@ -1,10 +1,5 @@
 use crate::prelude::*;
 
-use super::{
-    factor_sources_of_kind::*, signatures_collector_dependencies::*,
-    signatures_collector_preprocessor::*, signatures_collector_state::*,
-};
-
 /// A coordinator which gathers signatures from several factor sources of different
 /// kinds, in increasing friction order, for many transactions and for
 /// potentially multiple entities and for many factor instances (derivation paths)

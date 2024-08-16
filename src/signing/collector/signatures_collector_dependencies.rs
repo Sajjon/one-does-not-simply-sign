@@ -1,10 +1,8 @@
 use crate::prelude::*;
 
-use super::factor_sources_of_kind::*;
-
-pub(super) struct SignaturesCollectorDependencies {
+pub struct SignaturesCollectorDependencies {
     /// A collection of "interactors" used to sign with factor sources.
-    pub(super) interactors: Arc<dyn SignatureCollectingInteractors>,
+    pub interactors: Arc<dyn SignatureCollectingInteractors>,
 
     /// Factor sources grouped by kind, sorted according to "friction order",
     /// that is, we want to control which FactorSourceKind users sign with
@@ -15,7 +13,7 @@ pub(super) struct SignaturesCollectorDependencies {
     /// she might not have handy at the moment - or might not be in front of a
     /// computer and thus unable to make a connection between the Radix Wallet
     /// and a Ledger device.
-    pub(super) factors_of_kind: IndexSet<FactorSourcesOfKind>,
+    pub factors_of_kind: IndexSet<FactorSourcesOfKind>,
 }
 
 impl SignaturesCollectorDependencies {
