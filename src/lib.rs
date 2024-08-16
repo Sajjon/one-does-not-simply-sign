@@ -1,6 +1,4 @@
-//! Question: Is there any difference between BatchSigningDrivers and
-//! SingleSigningDrivers other than the fact that BatchSigningDerivers can sign
-//! many transactions with many derivations paths at once?
+#![feature(trait_alias)]
 
 mod signing;
 mod testing;

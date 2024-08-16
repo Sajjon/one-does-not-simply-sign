@@ -59,6 +59,32 @@ impl SerialBatchSigningRequest {
     }
 }
 
+pub trait SharedRequest {
+    fn factor_source_ids(&self) -> IndexSet<FactorSourceID>;
+
+    fn invalid_transactions_if_skipped(&self) -> IndexSet<InvalidTransactionIfSkipped>;
+}
+impl SharedRequest for SerialBatchSigningRequest {
+    fn factor_source_ids(&self) -> IndexSet<FactorSourceID> {
+        IndexSet::from_iter([self.input.factor_source_id])
+    }
+    fn invalid_transactions_if_skipped(&self) -> IndexSet<InvalidTransactionIfSkipped> {
+        self.invalid_transactions_if_skipped
+            .clone()
+            .into_iter()
+            .collect()
+    }
+}
+
+impl SharedRequest for ParallelBatchSigningRequest {
+    fn factor_source_ids(&self) -> IndexSet<FactorSourceID> {
+        self.per_factor_source.keys().cloned().collect()
+    }
+    fn invalid_transactions_if_skipped(&self) -> IndexSet<InvalidTransactionIfSkipped> {
+        self.invalid_transactions_if_skipped.clone()
+    }
+}
+
 /// The response of a batch signing request, either a Parallel or Serial signing
 /// request, matters not, because the goal is to have signed all transactions with
 /// enough keys (derivation paths) needed for it to be valid when submitted to the
@@ -73,6 +99,17 @@ impl BatchSigningResponse {
     pub fn new(signatures: IndexMap<FactorSourceID, IndexSet<HDSignature>>) -> Self {
         Self { signatures }
     }
+}
+
+#[async_trait::async_trait]
+pub trait SignWithFactorBaseInteractor<Request>
+where
+    Request: SharedRequest,
+{
+    async fn sign(
+        &self,
+        request: Request,
+    ) -> Result<SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse>>;
 }
 
 /// A interactor for a factor source kind which supports *Batch* usage of
@@ -94,13 +131,8 @@ impl BatchSigningResponse {
 ///
 /// Example of a Parallel Batch Signing Driver is that for DeviceFactorSource.
 
-#[async_trait::async_trait]
-pub trait SignWithFactorParallelInteractor {
-    async fn sign(
-        &self,
-        request: ParallelBatchSigningRequest,
-    ) -> Result<SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse>>;
-}
+pub type SignWithFactorParallelInteractor =
+    dyn SignWithFactorBaseInteractor<ParallelBatchSigningRequest>;
 
 /// A interactor for a factor source kind which support performing
 /// *Batch* signing *serially*.
@@ -116,26 +148,21 @@ pub trait SignWithFactorParallelInteractor {
 /// where it does not make any sense to let user in parallel answer multiple
 /// questions from different security questions factor sources (in fact we
 /// might not even even allow multiple SecurityQuestionsFactorSources to be used).
-#[async_trait]
-pub trait SignWithFactorSerialInteractor {
-    async fn sign(
-        &self,
-        request: SerialBatchSigningRequest,
-    ) -> Result<SignWithFactorSourceOrSourcesOutcome<BatchSigningResponse>>;
-}
+pub type SignWithFactorSerialInteractor =
+    dyn SignWithFactorBaseInteractor<SerialBatchSigningRequest>;
 
 /// An interactor which can sign transactions - either in parallel or serially.
 pub enum SigningInteractor {
-    Parallel(Arc<dyn SignWithFactorParallelInteractor>),
-    Serial(Arc<dyn SignWithFactorSerialInteractor>),
+    Parallel(Arc<SignWithFactorParallelInteractor>),
+    Serial(Arc<SignWithFactorSerialInteractor>),
 }
 
 impl SigningInteractor {
-    pub fn parallel(interactor: Arc<dyn SignWithFactorParallelInteractor>) -> Self {
+    pub fn parallel(interactor: Arc<SignWithFactorParallelInteractor>) -> Self {
         Self::Parallel(interactor)
     }
 
-    pub fn serial(interactor: Arc<dyn SignWithFactorSerialInteractor>) -> Self {
+    pub fn serial(interactor: Arc<SignWithFactorSerialInteractor>) -> Self {
         Self::Serial(interactor)
     }
 }

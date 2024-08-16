@@ -27,8 +27,8 @@ impl IsTestInteractor for TestSigningParallelInteractor {
     }
 }
 
-#[async_trait]
-impl SignWithFactorParallelInteractor for TestSigningParallelInteractor {
+#[async_trait::async_trait]
+impl SignWithFactorBaseInteractor<ParallelBatchSigningRequest> for TestSigningParallelInteractor {
     async fn sign(
         &self,
         request: ParallelBatchSigningRequest,
