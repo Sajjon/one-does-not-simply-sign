@@ -1,10 +1,9 @@
 use crate::prelude::*;
 
-use super::factor_sources_of_kind::FactorSourcesOfKind;
-
 pub struct SignaturesCollectorPreprocessor {
     transactions: IndexSet<TransactionIntent>,
 }
+
 impl SignaturesCollectorPreprocessor {
     pub(super) fn new(transactions: IndexSet<TransactionIntent>) -> Self {
         Self { transactions }

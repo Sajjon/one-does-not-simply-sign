@@ -135,7 +135,7 @@ impl FactorSourceID {
 
 impl FactorInstance {
     pub fn f(idx: u32) -> impl Fn(FactorSourceID) -> Self {
-        move |id: FactorSourceID| Self::new(idx, id)
+        move |id: FactorSourceID| Self::account_tx(idx, id)
     }
 }
 
@@ -153,7 +153,7 @@ impl Entity {
     /// Carla | 2 | Securified { Single Threshold only }
     pub fn a2() -> Self {
         Self::securified(2, "Carla", |idx| {
-            MatrixOfFactorInstances::single_threshold(FactorInstance::new(
+            MatrixOfFactorInstances::single_threshold(FactorInstance::account_tx(
                 idx,
                 FactorSourceID::fs0(),
             ))
@@ -163,7 +163,7 @@ impl Entity {
     /// David | 3 | Securified { Single Override only }
     pub fn a3() -> Self {
         Self::securified(3, "David", |idx| {
-            MatrixOfFactorInstances::single_override(FactorInstance::new(
+            MatrixOfFactorInstances::single_override(FactorInstance::account_tx(
                 idx,
                 FactorSourceID::fs1(),
             ))

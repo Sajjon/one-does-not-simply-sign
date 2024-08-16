@@ -266,7 +266,7 @@ mod signing_tests {
                 MatrixOfFactorInstances::override_only(
                     FactorSource::all()
                         .into_iter()
-                        .map(|f| FactorInstance::new(idx, f.id)),
+                        .map(|f| FactorInstance::account_tx(idx, f.id)),
                 )
             })]),
         ]);

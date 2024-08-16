@@ -335,7 +335,7 @@ mod tests {
             intent_hash,
             OwnedFactorInstance::new(
                 entity.address.clone(),
-                FactorInstance::new(0, FactorSourceID::fs0()),
+                FactorInstance::account_tx(0, FactorSourceID::fs0()),
             ),
         );
         let signature = HDSignature::produced_signing_with_input(sign_input);
@@ -352,7 +352,7 @@ mod tests {
                 sut.intent_hash.clone(),
                 OwnedFactorInstance::new(
                     sut.entity.clone(),
-                    FactorInstance::new(6, FactorSourceID::fs1()),
+                    FactorInstance::account_tx(6, FactorSourceID::fs1()),
                 ),
             ),
         ));

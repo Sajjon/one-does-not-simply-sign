@@ -124,22 +124,122 @@ impl HasSampleValues for FactorSourceKind {
     }
 }
 
+pub type DerivationIndex = u32;
+
+#[repr(u8)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum KeyKind {
+    T9n,
+    Rola,
+}
+impl KeyKind {
+    fn discriminant(&self) -> u8 {
+        core::intrinsics::discriminant_value(self)
+    }
+}
+
+#[repr(u8)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum EntityKind {
+    Account,
+    Identity,
+}
+
+impl EntityKind {
+    fn discriminant(&self) -> u8 {
+        core::intrinsics::discriminant_value(self)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct DerivationPath {
+    entity_kind: EntityKind,
+    key_kind: KeyKind,
+    index: DerivationIndex,
+}
+
+impl DerivationPath {
+    pub fn new(entity_kind: EntityKind, key_kind: KeyKind, index: DerivationIndex) -> Self {
+        Self {
+            entity_kind,
+            key_kind,
+            index,
+        }
+    }
+    pub fn account_tx(index: DerivationIndex) -> Self {
+        Self::new(EntityKind::Account, KeyKind::T9n, index)
+    }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut vec = Vec::new();
+        vec.push(self.entity_kind.discriminant());
+        vec.push(self.key_kind.discriminant());
+        vec.extend(self.index.to_be_bytes());
+        vec
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct PublicKey {
+    /// this emulates the mnemonic
+    factor_source_id: FactorSourceID,
+}
+impl PublicKey {
+    pub fn new(factor_source_id: FactorSourceID) -> Self {
+        Self { factor_source_id }
+    }
+    pub fn to_bytes(&self) -> Vec<u8> {
+        self.factor_source_id.to_bytes()
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct HierarchicalDeterministicPublicKey {
+    /// The expected public key of the private key derived at `derivationPath`
+    pub public_key: PublicKey,
+
+    /// The HD derivation path for the key pair which produces virtual badges (signatures).
+    pub derivation_path: DerivationPath,
+}
+impl HierarchicalDeterministicPublicKey {
+    pub fn new(derivation_path: DerivationPath, public_key: PublicKey) -> Self {
+        Self {
+            derivation_path,
+            public_key,
+        }
+    }
+    pub fn to_bytes(&self) -> Vec<u8> {
+        [self.public_key.to_bytes(), self.derivation_path.to_bytes()].concat()
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
 pub struct FactorInstance {
-    pub index: u32, // actually `DerivationPath`...
+    pub hd_public_key: HierarchicalDeterministicPublicKey,
     pub factor_source_id: FactorSourceID,
 }
 
 impl FactorInstance {
-    pub fn new(index: u32, factor_source_id: FactorSourceID) -> Self {
+    pub fn new(
+        hd_public_key: HierarchicalDeterministicPublicKey,
+        factor_source_id: FactorSourceID,
+    ) -> Self {
         Self {
-            index,
+            hd_public_key,
             factor_source_id,
         }
     }
+
+    pub fn account_tx(index: DerivationIndex, factor_source_id: FactorSourceID) -> Self {
+        let derivation_path = DerivationPath::account_tx(index);
+        let public_key = PublicKey::new(factor_source_id);
+        let hd_public_key = HierarchicalDeterministicPublicKey::new(derivation_path, public_key);
+        Self::new(hd_public_key, factor_source_id)
+    }
+
     pub fn to_bytes(&self) -> Vec<u8> {
         [
-            self.index.to_be_bytes().to_vec(),
+            self.hd_public_key.to_bytes(),
             self.factor_source_id.to_bytes(),
         ]
         .concat()
@@ -148,10 +248,10 @@ impl FactorInstance {
 
 impl HasSampleValues for FactorInstance {
     fn sample() -> Self {
-        Self::new(0, FactorSourceID::sample())
+        Self::account_tx(0, FactorSourceID::sample())
     }
     fn sample_other() -> Self {
-        Self::new(1, FactorSourceID::sample_other())
+        Self::account_tx(1, FactorSourceID::sample_other())
     }
 }
 
@@ -293,7 +393,7 @@ impl Entity {
     ) -> Self {
         Self::new(
             name,
-            EntitySecurityState::Unsecured(FactorInstance::new(index, factor_source_id)),
+            EntitySecurityState::Unsecured(FactorInstance::account_tx(index, factor_source_id)),
         )
     }
 }

@@ -1,8 +1,8 @@
 use crate::prelude::*;
 
 use super::{
-    factor_sources_of_kind::*, signatures_collector_dependencies::*,
-    signatures_collector_preprocessor::*, signatures_collector_state::*,
+    signatures_collector_dependencies::*, signatures_collector_preprocessor::*,
+    signatures_collector_state::*,
 };
 
 /// A coordinator which gathers signatures from several factor sources of different
