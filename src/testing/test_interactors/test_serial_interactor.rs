@@ -10,7 +10,6 @@ impl TestSigningSerialInteractor {
     }
 }
 
-#[async_trait]
 impl IsTestInteractor for TestSigningSerialInteractor {
     fn simulated_user(&self) -> SimulatedUser {
         self.simulated_user.clone()
@@ -31,25 +30,31 @@ impl SignWithFactorSerialInteractor for TestSigningSerialInteractor {
             .simulated_user
             .sign_or_skip(invalid_transactions_if_skipped)
         {
-            SigningUserInput::Sign => {
-                let signatures = request
+            SigningUserInput::Sign => do_sign(
+                request
                     .input
                     .per_transaction
                     .into_iter()
-                    .map(|r| {
-                        let key = r.factor_source_id;
-
-                        let value = r
-                            .signature_inputs()
-                            .iter()
-                            .map(|x| HDSignature::produced_signing_with_input(x.clone()))
-                            .collect::<IndexSet<_>>();
-                        (key, value)
+                    .map(|x| {
+                        (
+                            x.factor_source_id,
+                            BatchTXBatchKeySigningRequest::new(
+                                x.factor_source_id,
+                                x.signature_inputs()
+                                    .iter()
+                                    .map(|y| {
+                                        BatchKeySigningRequest::new(
+                                            y.intent_hash.clone(),
+                                            x.factor_source_id,
+                                            IndexSet::from_iter([y.owned_factor_instance.clone()]),
+                                        )
+                                    })
+                                    .collect::<IndexSet<BatchKeySigningRequest>>(),
+                            ),
+                        )
                     })
-                    .collect::<IndexMap<FactorSourceID, IndexSet<HDSignature>>>();
-                let response = BatchSigningResponse::new(signatures);
-                Ok(SignWithFactorSourceOrSourcesOutcome::signed(response))
-            }
+                    .collect::<IndexMap<FactorSourceID, BatchTXBatchKeySigningRequest>>(),
+            ),
             SigningUserInput::Skip => {
                 Ok(SignWithFactorSourceOrSourcesOutcome::skipped_factor_source(
                     request.input.factor_source_id,

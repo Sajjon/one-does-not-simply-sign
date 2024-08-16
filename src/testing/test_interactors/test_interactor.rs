@@ -1,6 +1,5 @@
 use crate::prelude::*;
 
-#[async_trait::async_trait]
 pub trait IsTestInteractor: Sync {
     fn simulated_user(&self) -> SimulatedUser;
 
