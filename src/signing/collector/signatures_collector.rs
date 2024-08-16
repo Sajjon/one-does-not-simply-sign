@@ -20,6 +20,15 @@ pub struct FactorOutputCollector<State> {
     state: RefCell<State>,
 }
 
+impl<State> FactorOutputCollector<State> {
+    fn with(dependencies: SignaturesCollectorDependencies, state: State) -> Self {
+        Self {
+            dependencies,
+            state: RefCell::new(state),
+        }
+    }
+}
+
 impl SignaturesCollector {
     pub fn new(
         all_factor_sources_in_profile: IndexSet<FactorSource>,
@@ -32,10 +41,7 @@ impl SignaturesCollector {
         let dependencies = SignaturesCollectorDependencies::new(interactors, factors);
         let state = SignaturesCollectorState::new(petitions);
 
-        Self {
-            dependencies,
-            state: RefCell::new(state),
-        }
+        Self::with(dependencies, state)
     }
 }
 
