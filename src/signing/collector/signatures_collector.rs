@@ -11,7 +11,14 @@ use crate::prelude::*;
 pub type SignaturesCollector =
     FactorOutputCollector<SignaturesCollectorState, Arc<dyn SignatureCollectingInteractors>>;
 
-pub struct FactorOutputCollector<State, Interactors> {
+pub trait IsFactorOutputCollectorState {
+    fn continue_if_necessary(&self) -> Result<bool>;
+}
+
+pub struct FactorOutputCollector<State, Interactors>
+where
+    State: IsFactorOutputCollectorState,
+{
     /// Stateless immutable values used by the collector to gather signatures
     /// from factor sources.
     dependencies: FactorOutputCollectorDependencies<Interactors>,
@@ -21,12 +28,23 @@ pub struct FactorOutputCollector<State, Interactors> {
     state: RefCell<State>,
 }
 
-impl<State, Interactors> FactorOutputCollector<State, Interactors> {
+impl<State, Interactors> FactorOutputCollector<State, Interactors>
+where
+    State: IsFactorOutputCollectorState,
+{
     fn with(dependencies: FactorOutputCollectorDependencies<Interactors>, state: State) -> Self {
         Self {
             dependencies,
             state: RefCell::new(state),
         }
+    }
+
+    /// If all transactions already would fail, or if all transactions already are done, then
+    /// no point in continuing.
+    ///
+    /// `Ok(true)` means "continue", `Ok(false)` means "stop, we are done". `Err(_)` means "stop, we have failed".
+    pub(crate) fn continue_if_necessary(&self) -> Result<bool> {
+        self.state.borrow().continue_if_necessary()
     }
 }
 
@@ -47,18 +65,6 @@ impl SignaturesCollector {
 }
 
 impl SignaturesCollector {
-    /// If all transactions already would fail, or if all transactions already are done, then
-    /// no point in continuing.
-    ///
-    /// `Ok(true)` means "continue", `Ok(false)` means "stop, we are done". `Err(_)` means "stop, we have failed".
-    pub(crate) fn continue_if_necessary(&self) -> Result<bool> {
-        self.state
-            .borrow()
-            .petitions
-            .borrow()
-            .continue_if_necessary()
-    }
-
     fn get_interactor(&self, kind: FactorSourceKind) -> SigningInteractor {
         self.dependencies.interactors.interactor_for(kind)
     }
