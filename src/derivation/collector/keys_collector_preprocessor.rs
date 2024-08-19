@@ -2,8 +2,8 @@ use crate::prelude::*;
 
 #[derive(Clone, Debug)]
 pub struct Keyring {
-    factor_source_id: FactorSourceID,
-    paths: IndexSet<DerivationPath>,
+    pub factor_source_id: FactorSourceID,
+    pub paths: IndexSet<DerivationPath>,
     derived: RefCell<IndexSet<FactorInstance>>,
 }
 
@@ -14,6 +14,22 @@ impl Keyring {
             paths,
             derived: RefCell::new(IndexSet::new()),
         }
+    }
+    pub fn factors(&self) -> IndexSet<FactorInstance> {
+        self.derived.borrow().clone()
+    }
+
+    pub(crate) fn process_response(&self, response: IndexSet<FactorInstance>) {
+        assert!(response
+            .iter()
+            .all(|f| f.factor_source_id == self.factor_source_id
+                && !self
+                    .derived
+                    .borrow()
+                    .iter()
+                    .any(|x| x.hd_public_key == f.hd_public_key)));
+
+        self.derived.borrow_mut().extend(response)
     }
 }
 
@@ -39,9 +55,13 @@ impl Keyrings {
     }
 
     pub fn outcome(self) -> KeyDerivationOutcome {
-        KeyDerivationOutcome {
-            keys: IndexSet::new(),
-        }
+        let key_rings = self.keyrings.into_inner();
+        KeyDerivationOutcome::new(
+            key_rings
+                .into_iter()
+                .map(|(k, v)| (k, v.factors()))
+                .collect(),
+        )
     }
 
     pub fn keyring_for(&self, factor_source_id: &FactorSourceID) -> Option<Keyring> {
@@ -50,6 +70,14 @@ impl Keyrings {
             .get(factor_source_id)
             .cloned()
             .inspect(|k| assert_eq!(k.factor_source_id, *factor_source_id))
+    }
+
+    pub(crate) fn process_batch_response(&self, response: BatchDerivationResponse) {
+        for (factor_source_id, factors) in response.per_factor_source.into_iter() {
+            let mut rings = self.keyrings.borrow_mut();
+            let keyring = rings.get_mut(&factor_source_id).unwrap();
+            keyring.process_response(factors)
+        }
     }
 }
 

@@ -10,4 +10,8 @@ impl KeysCollectorState {
             keyrings: RefCell::new(keyrings),
         }
     }
+
+    pub(crate) fn process_batch_response(&self, response: BatchDerivationResponse) {
+        self.keyrings.borrow_mut().process_batch_response(response)
+    }
 }

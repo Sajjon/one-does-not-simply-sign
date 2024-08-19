@@ -39,7 +39,7 @@ mod key_derivation_tests {
     async fn single_first_account_tx_signing() {
         let collector = KeysCollector::new_account_tx(FactorSource::fs0());
         let outcome = collector.collect_keys().await;
-        assert_eq!(outcome.keys.len(), 1);
+        assert_eq!(outcome.all_factors().len(), 1);
     }
 }
 

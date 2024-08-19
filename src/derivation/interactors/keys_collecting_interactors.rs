@@ -25,15 +25,34 @@ impl KeyDerivationInteractor {
 pub struct ParallelBatchKeyDerivationRequest {
     per_factor_source: IndexMap<FactorSourceID, SerialBatchKeyDerivationRequest>,
 }
+impl ParallelBatchKeyDerivationRequest {
+    pub fn new(
+        per_factor_source: IndexMap<FactorSourceID, SerialBatchKeyDerivationRequest>,
+    ) -> Self {
+        Self { per_factor_source }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SerialBatchKeyDerivationRequest {
     factor_source_id: FactorSourceID,
     derivation_paths: IndexSet<DerivationPath>,
 }
+impl SerialBatchKeyDerivationRequest {
+    pub fn new(
+        factor_source_id: FactorSourceID,
+        derivation_paths: IndexSet<DerivationPath>,
+    ) -> Self {
+        Self {
+            factor_source_id,
+            derivation_paths,
+        }
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BatchDerivationResponse {
-    per_factor_source: IndexMap<FactorSourceID, IndexSet<FactorInstance>>,
+    pub per_factor_source: IndexMap<FactorSourceID, IndexSet<FactorInstance>>,
 }
 
 #[async_trait::async_trait]
