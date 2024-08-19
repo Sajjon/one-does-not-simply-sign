@@ -2,12 +2,23 @@ use crate::prelude::*;
 
 pub struct Keyring {
     factor_source_id: FactorSourceID,
-    derivation_paths: IndexSet<DerivationPath>,
+    paths: IndexSet<DerivationPath>,
+    derived: RefCell<IndexSet<FactorInstance>>,
+}
+impl Keyring {
+    pub fn new(factor_source_id: FactorSourceID, paths: IndexSet<DerivationPath>) -> Self {
+        Self {
+            factor_source_id,
+            paths,
+            derived: RefCell::new(IndexSet::new()),
+        }
+    }
 }
 
 pub struct Keyrings {
-    keyrings: IndexMap<FactorSourceID, Keyring>,
+    keyrings: RefCell<IndexMap<FactorSourceID, Keyring>>,
 }
+
 impl Keyrings {
     pub fn new(derivation_paths: IndexMap<FactorSourceID, IndexSet<DerivationPath>>) -> Self {
         let keyrings = derivation_paths
@@ -15,14 +26,13 @@ impl Keyrings {
             .map(|(factor_source_id, derivation_paths)| {
                 (
                     factor_source_id,
-                    Keyring {
-                        factor_source_id,
-                        derivation_paths,
-                    },
+                    Keyring::new(factor_source_id, derivation_paths),
                 )
             })
             .collect::<IndexMap<FactorSourceID, Keyring>>();
-        Self { keyrings }
+        Self {
+            keyrings: RefCell::new(keyrings),
+        }
     }
 }
 

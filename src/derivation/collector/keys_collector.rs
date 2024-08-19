@@ -53,6 +53,22 @@ pub trait UsedDerivationIndices {
     }
 }
 
+pub struct DefaultUsedDerivationIndices {
+    keys: IndexMap<FactorSourceID, Keyrings>,
+}
+
+impl UsedDerivationIndices for DefaultUsedDerivationIndices {
+    fn next_derivation_index_for(
+        &self,
+        factor_source: &FactorSource,
+        key_kind: KeyKind,
+        entity_kind: EntityKind,
+        key_space: KeySpace,
+    ) -> DerivationIndex {
+        todo!()
+    }
+}
+
 impl KeysCollector {
     pub fn new(
         all_factor_sources_in_profile: IndexSet<FactorSource>,
@@ -71,16 +87,12 @@ impl KeysCollector {
         }
     }
 
-    // pub fn new_account_tx(
-    //     factor_source: FactorSource,
-    //     used_derivation_indices: impl UsedDerivationIndices,
-    // ) -> Self {
-    //     let state = KeysCollectorState::new_account_tx(factor_source, used_derivation_indices);
-    //     Self {
-    //         dependencies: KeysCollectorDependencies::new(),
-    //         state: RefCell::new(state),
-    //     }
-    // }
+    pub fn new_account_tx(
+        factor_source: FactorSource,
+        used_derivation_indices: impl UsedDerivationIndices,
+    ) -> Self {
+        todo!()
+    }
 }
 
 impl KeysCollector {
