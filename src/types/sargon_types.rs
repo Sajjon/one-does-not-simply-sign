@@ -254,6 +254,10 @@ impl FactorInstance {
         }
     }
 
+    pub fn path(&self) -> DerivationPath {
+        self.hd_public_key.derivation_path.clone()
+    }
+
     pub fn mocked_with(derivation_path: DerivationPath, factor_source_id: &FactorSourceID) -> Self {
         Self::new(
             HierarchicalDeterministicPublicKey::mocked_with(derivation_path, factor_source_id),

@@ -33,13 +33,19 @@ mod common_tests {
 #[cfg(test)]
 mod key_derivation_tests {
 
+    use super::EntityKind::*;
+    use super::KeyKind::*;
+    use super::NetworkID::*;
     use super::*;
 
     #[actix_rt::test]
     async fn single_first_account_tx_signing() {
         let collector = KeysCollector::new_account_tx(FactorSource::fs0());
         let outcome = collector.collect_keys().await;
-        assert_eq!(outcome.all_factors().len(), 1);
+        let factors = outcome.all_factors();
+        assert_eq!(factors.len(), 1);
+        let factor = factors.first().unwrap();
+        assert_eq!(factor.path(), DerivationPath::new(Mainnet, Account, T9n, 0))
     }
 }
 
