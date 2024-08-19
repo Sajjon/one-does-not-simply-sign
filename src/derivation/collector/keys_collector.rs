@@ -23,16 +23,6 @@ pub enum KeySpace {
     Securified,
 }
 
-pub enum DerivationMode {
-    KeyCollectionForFactorSource { factor_source: FactorSource },
-    VirtualAccount { network_id: NetworkID },
-    VirtualPersona { network_id: NetworkID },
-    ApplySecurityShield {
-        matrix: MatrixOfFactorInstances
-    }
-}
-
-
 pub trait UsedDerivationIndices {
     fn next_derivation_index_for(
         &self,
@@ -63,6 +53,7 @@ pub trait UsedDerivationIndices {
     }
 }
 
+#[derive(Default, Clone, Debug)]
 pub struct DefaultUsedDerivationIndices {
     keys: IndexMap<FactorSourceID, Keyrings>,
 }
@@ -97,26 +88,13 @@ impl KeysCollector {
         }
     }
 
-    pub fn with_derivation_paths(
+    pub fn new(
         all_factor_sources_in_profile: IndexSet<FactorSource>,
         derivation_paths: IndexMap<FactorSourceID, IndexSet<DerivationPath>>,
         interactors: Arc<dyn KeysCollectingInteractors>,
     ) -> Self {
         let preprocessor = KeysCollectorPreprocessor::new(derivation_paths);
         Self::with_preprocessor(all_factor_sources_in_profile, interactors, preprocessor)
-    }
-
-    pub fn new(
-        all_factor_sources_in_profile: IndexSet<FactorSource>,
-        mode: DerivationMode,
-        interactors: Arc<dyn KeysCollectingInteractors>,
-    )
-
-    pub fn new_account_tx(
-        factor_source: FactorSource,
-        used_derivation_indices: impl UsedDerivationIndices,
-    ) -> Self {
-        todo!()
     }
 }
 

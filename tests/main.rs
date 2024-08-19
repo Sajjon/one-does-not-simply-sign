@@ -37,7 +37,9 @@ mod key_derivation_tests {
 
     #[actix_rt::test]
     async fn single_first_account_tx_signing() {
-        let collector = KeysCollector::new([], TestDerivationInteractors, preprocessor)
+        let collector = KeysCollector::new_account_tx(FactorSource::fs0());
+        let outcome = collector.collect_keys().await;
+        assert_eq!(outcome.keys.len(), 1);
     }
 }
 

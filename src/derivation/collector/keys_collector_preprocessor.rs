@@ -1,10 +1,12 @@
 use crate::prelude::*;
 
+#[derive(Clone, Debug)]
 pub struct Keyring {
     factor_source_id: FactorSourceID,
     paths: IndexSet<DerivationPath>,
     derived: RefCell<IndexSet<FactorInstance>>,
 }
+
 impl Keyring {
     pub fn new(factor_source_id: FactorSourceID, paths: IndexSet<DerivationPath>) -> Self {
         Self {
@@ -15,6 +17,7 @@ impl Keyring {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct Keyrings {
     keyrings: RefCell<IndexMap<FactorSourceID, Keyring>>,
 }
