@@ -143,6 +143,11 @@ impl KeyKind {
 pub enum NetworkID {
     Mainnet,
 }
+impl NetworkID {
+    fn discriminant(&self) -> u8 {
+        core::intrinsics::discriminant_value(self)
+    }
+}
 
 #[repr(u8)]
 #[derive(Clone, Debug, Copy, PartialEq, Eq, Hash)]
@@ -159,25 +164,33 @@ impl EntityKind {
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct DerivationPath {
-    entity_kind: EntityKind,
-    key_kind: KeyKind,
-    index: DerivationIndex,
+    pub network_id: NetworkID,
+    pub entity_kind: EntityKind,
+    pub key_kind: KeyKind,
+    pub index: DerivationIndex,
 }
 
 impl DerivationPath {
-    pub fn new(entity_kind: EntityKind, key_kind: KeyKind, index: DerivationIndex) -> Self {
+    pub fn new(
+        network_id: NetworkID,
+        entity_kind: EntityKind,
+        key_kind: KeyKind,
+        index: DerivationIndex,
+    ) -> Self {
         Self {
+            network_id,
             entity_kind,
             key_kind,
             index,
         }
     }
-    pub fn account_tx(index: DerivationIndex) -> Self {
-        Self::new(EntityKind::Account, KeyKind::T9n, index)
+    pub fn account_tx(network_id: NetworkID, index: DerivationIndex) -> Self {
+        Self::new(network_id, EntityKind::Account, KeyKind::T9n, index)
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut vec = Vec::new();
+        vec.push(self.network_id.discriminant());
         vec.push(self.entity_kind.discriminant());
         vec.push(self.key_kind.discriminant());
         vec.extend(self.index.to_be_bytes());
@@ -236,11 +249,19 @@ impl FactorInstance {
         }
     }
 
-    pub fn account_tx(index: DerivationIndex, factor_source_id: FactorSourceID) -> Self {
-        let derivation_path = DerivationPath::account_tx(index);
+    pub fn account_tx(
+        network_id: NetworkID,
+        index: DerivationIndex,
+        factor_source_id: FactorSourceID,
+    ) -> Self {
+        let derivation_path = DerivationPath::account_tx(network_id, index);
         let public_key = PublicKey::new(factor_source_id);
         let hd_public_key = HierarchicalDeterministicPublicKey::new(derivation_path, public_key);
         Self::new(hd_public_key, factor_source_id)
+    }
+
+    pub fn account_mainnet_tx(index: DerivationIndex, factor_source_id: FactorSourceID) -> Self {
+        Self::account_tx(NetworkID::Mainnet, index, factor_source_id)
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
@@ -254,10 +275,10 @@ impl FactorInstance {
 
 impl HasSampleValues for FactorInstance {
     fn sample() -> Self {
-        Self::account_tx(0, FactorSourceID::sample())
+        Self::account_mainnet_tx(0, FactorSourceID::sample())
     }
     fn sample_other() -> Self {
-        Self::account_tx(1, FactorSourceID::sample_other())
+        Self::account_mainnet_tx(1, FactorSourceID::sample_other())
     }
 }
 

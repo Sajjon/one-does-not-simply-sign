@@ -17,7 +17,7 @@ impl Keyring {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Default, Clone, Debug)]
 pub struct Keyrings {
     keyrings: RefCell<IndexMap<FactorSourceID, Keyring>>,
 }
@@ -36,6 +36,14 @@ impl Keyrings {
         Self {
             keyrings: RefCell::new(keyrings),
         }
+    }
+
+    pub fn keyring_for(&self, factor_source_id: &FactorSourceID) -> Option<Keyring> {
+        self.keyrings
+            .borrow()
+            .get(factor_source_id)
+            .cloned()
+            .inspect(|k| assert_eq!(k.factor_source_id, *factor_source_id))
     }
 }
 

@@ -33,7 +33,7 @@ pub trait DeriveKeyWithFactorParallelInteractor {
     ) -> Result<BatchDerivationResponse>;
 }
 
-#[async_trait]
+#[async_trait::async_trait]
 pub trait DeriveKeyWithFactorSerialInteractor {
     async fn derive(
         &self,
