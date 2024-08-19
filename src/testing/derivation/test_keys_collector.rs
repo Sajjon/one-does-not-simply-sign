@@ -4,7 +4,36 @@ pub struct TestDerivationInteractors;
 
 impl KeysCollectingInteractors for TestDerivationInteractors {
     fn interactor_for(&self, kind: FactorSourceKind) -> KeyDerivationInteractor {
-        todo!()
+        match kind {
+            FactorSourceKind::Device => {
+                KeyDerivationInteractor::parallel(Arc::new(TestDerivationParallelInteractor))
+            }
+            _ => KeyDerivationInteractor::serial(Arc::new(TestDerivationSerialInteractor)),
+        }
+    }
+}
+
+pub struct TestDerivationParallelInteractor;
+
+#[async_trait::async_trait]
+impl DeriveKeyWithFactorParallelInteractor for TestDerivationParallelInteractor {
+    async fn derive(
+        &self,
+        request: ParallelBatchKeyDerivationRequest,
+    ) -> Result<BatchDerivationResponse> {
+        Err(CommonError::Failure)
+    }
+}
+
+pub struct TestDerivationSerialInteractor;
+
+#[async_trait::async_trait]
+impl DeriveKeyWithFactorSerialInteractor for TestDerivationSerialInteractor {
+    async fn derive(
+        &self,
+        request: SerialBatchKeyDerivationRequest,
+    ) -> Result<BatchDerivationResponse> {
+        Err(CommonError::Failure)
     }
 }
 
