@@ -29,36 +29,39 @@ pub enum KeySpace {
 pub trait UsedDerivationIndices {
     fn next_derivation_index_with_request(
         &self,
-        request: CreateDerivationPathRequest,
+        request: CreateNextDerivationPathRequest,
     ) -> DerivationIndex;
 
     fn next_derivation_index_for(
         &self,
         factor_source_id: FactorSourceID,
+        network_id: NetworkID,
         key_kind: KeyKind,
         entity_kind: EntityKind,
         key_space: KeySpace,
     ) -> DerivationIndex {
         let request =
-            CreateDerivationPathRequest::new(factor_source_id, key_kind, entity_kind, key_space);
+        CreateNextDerivationPathRequest::new( factor_source_id, network_id, key_kind, entity_kind, key_space);
         self.next_derivation_index_with_request(request)
     }
-
+    
     fn next_derivation_path(
         &self,
         factor_source_id: FactorSourceID,
+        network_id: NetworkID,
         key_kind: KeyKind,
         entity_kind: EntityKind,
         key_space: KeySpace,
     ) -> DerivationPath {
         let index =
-            self.next_derivation_index_for(factor_source_id, key_kind, entity_kind, key_space);
-        DerivationPath::new(entity_kind, key_kind, index)
+            self.next_derivation_index_for(factor_source_id, network_id, key_kind, entity_kind, key_space);
+        DerivationPath::new(network_id, entity_kind, key_kind, index)
     }
 
-    fn next_derivation_path_account_tx(&self, factor_source_id: FactorSourceID) -> DerivationPath {
+    fn next_derivation_path_account_tx(&self, factor_source_id: FactorSourceID, network_id: NetworkID) -> DerivationPath {
         self.next_derivation_path(
             factor_source_id,
+            network_id,
             KeyKind::T9n,
             EntityKind::Account,
             KeySpace::Unsecurified,
@@ -162,7 +165,7 @@ impl CreateNextDerivationPathRequest {
 impl UsedDerivationIndices for DefaultUsedDerivationIndices {
     fn next_derivation_index_with_request(
         &self,
-        request: CreateDerivationPathRequest,
+        request: CreateNextDerivationPathRequest,
     ) -> DerivationIndex {
         if let Some(ref collection) = self
             .collections
