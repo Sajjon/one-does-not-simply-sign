@@ -31,6 +31,17 @@ mod common_tests {
 }
 
 #[cfg(test)]
+mod key_derivation_tests {
+
+    use super::*;
+
+    #[actix_rt::test]
+    async fn single_first_account_tx_signing() {
+        let collector = KeysCollector::new([], TestDerivationInteractors, preprocessor)
+    }
+}
+
+#[cfg(test)]
 mod signing_tests {
 
     use super::*;
