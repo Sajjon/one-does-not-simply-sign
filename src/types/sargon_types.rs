@@ -140,6 +140,12 @@ impl KeyKind {
 
 #[repr(u8)]
 #[derive(Clone, Debug, Copy, PartialEq, Eq, Hash)]
+pub enum NetworkID {
+    Mainnet,
+}
+
+#[repr(u8)]
+#[derive(Clone, Debug, Copy, PartialEq, Eq, Hash)]
 pub enum EntityKind {
     Account,
     Identity,
@@ -399,21 +405,24 @@ impl Entity {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
-pub struct MatrixOfFactorInstances {
-    pub threshold_factors: Vec<FactorInstance>,
+pub struct MatrixOfFactors<F> {
+    pub threshold_factors: Vec<F>,
     pub threshold: u8,
-    pub override_factors: Vec<FactorInstance>,
+    pub override_factors: Vec<F>,
 }
 
-impl MatrixOfFactorInstances {
+impl<F> MatrixOfFactors<F>
+where
+    F: std::hash::Hash + std::cmp::Eq + Clone,
+{
     /// # Panics
     /// Panics if threshold > threshold_factor.len()
     ///
     /// Panics if the same factor is present in both lists
     pub fn new(
-        threshold_factors: impl IntoIterator<Item = FactorInstance>,
+        threshold_factors: impl IntoIterator<Item = F>,
         threshold: u8,
-        override_factors: impl IntoIterator<Item = FactorInstance>,
+        override_factors: impl IntoIterator<Item = F>,
     ) -> Self {
         let threshold_factors = threshold_factors.into_iter().collect_vec();
 
@@ -422,10 +431,8 @@ impl MatrixOfFactorInstances {
         let override_factors = override_factors.into_iter().collect_vec();
 
         assert!(
-            HashSet::<FactorInstance>::from_iter(threshold_factors.clone())
-                .intersection(&HashSet::<FactorInstance>::from_iter(
-                    override_factors.clone()
-                ))
+            HashSet::<F>::from_iter(threshold_factors.clone())
+                .intersection(&HashSet::<F>::from_iter(override_factors.clone()))
                 .collect_vec()
                 .is_empty(),
             "A factor MUST NOT be present in both threshold AND override list."
@@ -438,25 +445,25 @@ impl MatrixOfFactorInstances {
         }
     }
 
-    pub fn override_only(factors: impl IntoIterator<Item = FactorInstance>) -> Self {
+    pub fn override_only(factors: impl IntoIterator<Item = F>) -> Self {
         Self::new([], 0, factors)
     }
 
-    pub fn single_override(factor: FactorInstance) -> Self {
+    pub fn single_override(factor: F) -> Self {
         Self::override_only([factor])
     }
 
-    pub fn threshold_only(
-        factors: impl IntoIterator<Item = FactorInstance>,
-        threshold: u8,
-    ) -> Self {
+    pub fn threshold_only(factors: impl IntoIterator<Item = F>, threshold: u8) -> Self {
         Self::new(factors, threshold, [])
     }
 
-    pub fn single_threshold(factor: FactorInstance) -> Self {
+    pub fn single_threshold(factor: F) -> Self {
         Self::threshold_only([factor], 1)
     }
 }
+
+pub type MatrixOfFactorInstances = MatrixOfFactors<FactorInstance>;
+pub type MatrixOfFactorSources = MatrixOfFactors<FactorSource>;
 
 /// For unsecurified entities we map single factor -> single threshold factor.
 /// Which is used by ROLA.

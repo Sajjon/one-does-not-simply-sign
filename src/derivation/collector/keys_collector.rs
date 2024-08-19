@@ -23,6 +23,16 @@ pub enum KeySpace {
     Securified,
 }
 
+pub enum DerivationMode {
+    KeyCollectionForFactorSource { factor_source: FactorSource },
+    VirtualAccount { network_id: NetworkID },
+    VirtualPersona { network_id: NetworkID },
+    ApplySecurityShield {
+        matrix: MatrixOfFactorInstances
+    }
+}
+
+
 pub trait UsedDerivationIndices {
     fn next_derivation_index_for(
         &self,
@@ -70,12 +80,12 @@ impl UsedDerivationIndices for DefaultUsedDerivationIndices {
 }
 
 impl KeysCollector {
-    pub fn new(
-        all_factor_sources_in_profile: IndexSet<FactorSource>,
-        // derivation_paths: IndexMap<FactorSourceID, IndexSet<DerivationPath>>,
+    fn with_preprocessor(
+        all_factor_sources_in_profile: impl Into<IndexSet<FactorSource>>,
         interactors: Arc<dyn KeysCollectingInteractors>,
         preprocessor: KeysCollectorPreprocessor,
     ) -> Self {
+        let all_factor_sources_in_profile = all_factor_sources_in_profile.into();
         let (keyrings, factors) = preprocessor.preprocess(all_factor_sources_in_profile);
 
         let dependencies = KeysCollectorDependencies::new(interactors, factors);
@@ -86,6 +96,21 @@ impl KeysCollector {
             state: RefCell::new(state),
         }
     }
+
+    pub fn with_derivation_paths(
+        all_factor_sources_in_profile: IndexSet<FactorSource>,
+        derivation_paths: IndexMap<FactorSourceID, IndexSet<DerivationPath>>,
+        interactors: Arc<dyn KeysCollectingInteractors>,
+    ) -> Self {
+        let preprocessor = KeysCollectorPreprocessor::new(derivation_paths);
+        Self::with_preprocessor(all_factor_sources_in_profile, interactors, preprocessor)
+    }
+
+    pub fn new(
+        all_factor_sources_in_profile: IndexSet<FactorSource>,
+        mode: DerivationMode,
+        interactors: Arc<dyn KeysCollectingInteractors>,
+    )
 
     pub fn new_account_tx(
         factor_source: FactorSource,
