@@ -90,10 +90,11 @@ impl KeysCollectorPreprocessor {
 
     pub fn new_account_tx(
         factor_source: FactorSource,
+        network_id: NetworkID,
         used_derivation_indices: impl UsedDerivationIndices,
     ) -> Self {
         let derivation_path =
-            used_derivation_indices.next_derivation_path_account_tx(&factor_source);
+            used_derivation_indices.next_derivation_path_account_tx(factor_source.id, network_id);
         Self::factor_and_path(factor_source, derivation_path)
     }
 }

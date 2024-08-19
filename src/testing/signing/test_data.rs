@@ -135,25 +135,25 @@ impl FactorSourceID {
 
 impl FactorInstance {
     pub fn f(idx: u32) -> impl Fn(FactorSourceID) -> Self {
-        move |id: FactorSourceID| Self::account_tx(idx, id)
+        move |id: FactorSourceID| Self::account_mainnet_tx(idx, id)
     }
 }
 
 impl Entity {
     /// Alice | 0 | Unsecurified { Device }
     pub fn a0() -> Self {
-        Self::unsecurified(0, "Alice", FactorSourceID::fs0())
+        Self::unsecurified_mainnet(0, "Alice", FactorSourceID::fs0())
     }
 
     /// Bob | 1 | Unsecurified { Ledger }
     pub fn a1() -> Self {
-        Self::unsecurified(1, "Bob", FactorSourceID::fs1())
+        Self::unsecurified_mainnet(1, "Bob", FactorSourceID::fs1())
     }
 
     /// Carla | 2 | Securified { Single Threshold only }
     pub fn a2() -> Self {
-        Self::securified(2, "Carla", |idx| {
-            MatrixOfFactorInstances::single_threshold(FactorInstance::account_tx(
+        Self::securified_mainnet(2, "Carla", |idx| {
+            MatrixOfFactorInstances::single_threshold(FactorInstance::account_mainnet_tx(
                 idx,
                 FactorSourceID::fs0(),
             ))
@@ -162,8 +162,8 @@ impl Entity {
 
     /// David | 3 | Securified { Single Override only }
     pub fn a3() -> Self {
-        Self::securified(3, "David", |idx| {
-            MatrixOfFactorInstances::single_override(FactorInstance::account_tx(
+        Self::securified_mainnet(3, "David", |idx| {
+            MatrixOfFactorInstances::single_override(FactorInstance::account_mainnet_tx(
                 idx,
                 FactorSourceID::fs1(),
             ))
@@ -173,7 +173,7 @@ impl Entity {
     /// Emily | 4 | Securified { Threshold factors only #3 }
     pub fn a4() -> Self {
         type F = FactorSourceID;
-        Self::securified(4, "Emily", |idx| {
+        Self::securified_mainnet(4, "Emily", |idx| {
             MatrixOfFactorInstances::threshold_only(
                 [F::fs0(), F::fs3(), F::fs5()].map(FactorInstance::f(idx)),
                 2,
@@ -184,7 +184,7 @@ impl Entity {
     /// Frank | 5 | Securified { Override factors only #2 }
     pub fn a5() -> Self {
         type F = FactorSourceID;
-        Self::securified(5, "Frank", |idx| {
+        Self::securified_mainnet(5, "Frank", |idx| {
             MatrixOfFactorInstances::override_only([F::fs1(), F::fs4()].map(FactorInstance::f(idx)))
         })
     }
@@ -192,7 +192,7 @@ impl Entity {
     /// Grace | 6 | Securified { Threshold #3 and Override factors #2  }
     pub fn a6() -> Self {
         type F = FactorSourceID;
-        Self::securified(6, "Grace", |idx| {
+        Self::securified_mainnet(6, "Grace", |idx| {
             let fi = FactorInstance::f(idx);
             MatrixOfFactorInstances::new(
                 [F::fs0(), F::fs3(), F::fs5()].map(&fi),
@@ -205,7 +205,7 @@ impl Entity {
     /// Ida | 7 | Securified { Threshold only # 5/5 }
     pub fn a7() -> Self {
         type F = FactorSourceID;
-        Self::securified(7, "Ida", |idx| {
+        Self::securified_mainnet(7, "Ida", |idx| {
             let fi = FactorInstance::f(idx);
             MatrixOfFactorInstances::threshold_only(
                 [F::fs2(), F::fs6(), F::fs7(), F::fs8(), F::fs9()].map(&fi),

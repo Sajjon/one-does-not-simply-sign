@@ -49,9 +49,10 @@ impl KeysCollector {
         )
     }
 
+    /// mainnet
     pub fn new_account_tx(factor_source: FactorSource) -> Self {
         let indices = DefaultUsedDerivationIndices::default();
-        let path = indices.next_derivation_path_account_tx(&factor_source);
+        let path = indices.next_derivation_path_account_tx(factor_source.id, NetworkID::Mainnet);
         Self::new_test(
             [factor_source.clone()],
             [(factor_source.id, IndexSet::from_iter([path]))],

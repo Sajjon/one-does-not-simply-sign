@@ -275,11 +275,11 @@ mod signing_tests {
     #[actix_rt::test]
     async fn lazy_sign_minimum_all_known_factors_used_as_override_factors_signed_with_device() {
         let collector = SignaturesCollector::test_lazy_sign_minimum_no_failures([
-            TransactionIntent::new([Entity::securified(0, "all override", |idx| {
+            TransactionIntent::new([Entity::securified_mainnet(0, "all override", |idx| {
                 MatrixOfFactorInstances::override_only(
                     FactorSource::all()
                         .into_iter()
-                        .map(|f| FactorInstance::account_tx(idx, f.id)),
+                        .map(|f| FactorInstance::account_mainnet_tx(idx, f.id)),
                 )
             })]),
         ]);

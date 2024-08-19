@@ -249,7 +249,7 @@ impl FactorInstance {
         }
     }
 
-    pub fn account_tx(
+    pub fn account_tx_on_network(
         network_id: NetworkID,
         index: DerivationIndex,
         factor_source_id: FactorSourceID,
@@ -261,7 +261,7 @@ impl FactorInstance {
     }
 
     pub fn account_mainnet_tx(index: DerivationIndex, factor_source_id: FactorSourceID) -> Self {
-        Self::account_tx(NetworkID::Mainnet, index, factor_source_id)
+        Self::account_tx_on_network(NetworkID::Mainnet, index, factor_source_id)
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
@@ -382,13 +382,15 @@ impl HasSampleValues for Entity {
 }
 
 impl Entity {
+    /// mainnet
     pub(crate) fn sample_unsecurified() -> Self {
-        Self::unsecurified(0, "Alice", FactorSourceID::fs0())
+        Self::unsecurified_mainnet(0, "Alice", FactorSourceID::fs0())
     }
 
+    /// mainnet
     pub(crate) fn sample_securified() -> Self {
         type F = FactorSourceID;
-        Self::securified(6, "Grace", |idx| {
+        Self::securified_mainnet(6, "Grace", |idx| {
             let fi = FactorInstance::f(idx);
             MatrixOfFactorInstances::new(
                 [F::fs0(), F::fs3(), F::fs5()].map(&fi),
@@ -405,7 +407,7 @@ impl Entity {
         }
     }
 
-    pub fn securified(
+    pub fn securified_mainnet(
         index: u32,
         name: impl AsRef<str>,
         make_matrix: fn(u32) -> MatrixOfFactorInstances,
@@ -413,14 +415,17 @@ impl Entity {
         Self::new(name, make_matrix(index))
     }
 
-    pub fn unsecurified(
+    pub fn unsecurified_mainnet(
         index: u32,
         name: impl AsRef<str>,
         factor_source_id: FactorSourceID,
     ) -> Self {
         Self::new(
             name,
-            EntitySecurityState::Unsecured(FactorInstance::account_tx(index, factor_source_id)),
+            EntitySecurityState::Unsecured(FactorInstance::account_mainnet_tx(
+                index,
+                factor_source_id,
+            )),
         )
     }
 }

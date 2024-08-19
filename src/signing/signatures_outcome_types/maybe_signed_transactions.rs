@@ -95,14 +95,14 @@ impl HasSampleValues for MaybeSignedTransactions {
             tx_a.clone(),
             OwnedFactorInstance::new(
                 AccountAddressOrIdentityAddress::sample(),
-                FactorInstance::account_tx(0, FactorSourceID::sample()),
+                FactorInstance::account_mainnet_tx(0, FactorSourceID::sample()),
             ),
         );
         let tx_a_input_y = HDSignatureInput::new(
             tx_a.clone(),
             OwnedFactorInstance::new(
                 AccountAddressOrIdentityAddress::sample(),
-                FactorInstance::account_tx(1, FactorSourceID::sample_other()),
+                FactorInstance::account_mainnet_tx(1, FactorSourceID::sample_other()),
             ),
         );
         let tx_a_sig_x = HDSignature::produced_signing_with_input(tx_a_input_x);
@@ -113,14 +113,14 @@ impl HasSampleValues for MaybeSignedTransactions {
             tx_b.clone(),
             OwnedFactorInstance::new(
                 AccountAddressOrIdentityAddress::sample(),
-                FactorInstance::account_tx(2, FactorSourceID::sample_third()),
+                FactorInstance::account_mainnet_tx(2, FactorSourceID::sample_third()),
             ),
         );
         let tx_b_input_y = HDSignatureInput::new(
             tx_b.clone(),
             OwnedFactorInstance::new(
                 AccountAddressOrIdentityAddress::sample(),
-                FactorInstance::account_tx(3, FactorSourceID::sample_fourth()),
+                FactorInstance::account_mainnet_tx(3, FactorSourceID::sample_fourth()),
             ),
         );
 
@@ -143,21 +143,21 @@ impl HasSampleValues for MaybeSignedTransactions {
             tx_a.clone(),
             OwnedFactorInstance::new(
                 AccountAddressOrIdentityAddress::sample(),
-                FactorInstance::account_tx(10, FactorSourceID::sample()),
+                FactorInstance::account_mainnet_tx(10, FactorSourceID::sample()),
             ),
         );
         let tx_a_input_y = HDSignatureInput::new(
             tx_a.clone(),
             OwnedFactorInstance::new(
                 AccountAddressOrIdentityAddress::sample(),
-                FactorInstance::account_tx(11, FactorSourceID::sample_other()),
+                FactorInstance::account_mainnet_tx(11, FactorSourceID::sample_other()),
             ),
         );
         let tx_a_input_z = HDSignatureInput::new(
             tx_a.clone(),
             OwnedFactorInstance::new(
                 AccountAddressOrIdentityAddress::sample(),
-                FactorInstance::account_tx(12, FactorSourceID::sample_third()),
+                FactorInstance::account_mainnet_tx(12, FactorSourceID::sample_third()),
             ),
         );
         let tx_a_sig_x = HDSignature::produced_signing_with_input(tx_a_input_x);
@@ -203,7 +203,7 @@ mod tests {
             tx.clone(),
             OwnedFactorInstance::new(
                 AccountAddressOrIdentityAddress::sample(),
-                FactorInstance::account_tx(0, FactorSourceID::sample()),
+                FactorInstance::account_mainnet_tx(0, FactorSourceID::sample()),
             ),
         );
         let signature = HDSignature::produced_signing_with_input(input);
@@ -220,7 +220,7 @@ mod tests {
             tx,
             OwnedFactorInstance::new(
                 AccountAddressOrIdentityAddress::sample(),
-                FactorInstance::account_tx(0, FactorSourceID::sample()),
+                FactorInstance::account_mainnet_tx(0, FactorSourceID::sample()),
             ),
         );
         let signature = HDSignature::produced_signing_with_input(input);
