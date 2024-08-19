@@ -1,7 +1,7 @@
 use crate::prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub(crate) struct FactorSourcesOfKind {
+pub struct FactorSourcesOfKind {
     pub(crate) kind: FactorSourceKind,
     factor_sources: Vec<FactorSource>,
 }

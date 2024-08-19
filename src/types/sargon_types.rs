@@ -227,6 +227,11 @@ impl HierarchicalDeterministicPublicKey {
             public_key,
         }
     }
+
+    pub fn mocked_with(derivation_path: DerivationPath, factor_source_id: &FactorSourceID) -> Self {
+        Self::new(derivation_path, PublicKey::new(*factor_source_id))
+    }
+
     pub fn to_bytes(&self) -> Vec<u8> {
         [self.public_key.to_bytes(), self.derivation_path.to_bytes()].concat()
     }
@@ -247,6 +252,13 @@ impl FactorInstance {
             hd_public_key,
             factor_source_id,
         }
+    }
+
+    pub fn mocked_with(derivation_path: DerivationPath, factor_source_id: &FactorSourceID) -> Self {
+        Self::new(
+            HierarchicalDeterministicPublicKey::mocked_with(derivation_path, factor_source_id),
+            *factor_source_id,
+        )
     }
 
     pub fn account_tx_on_network(

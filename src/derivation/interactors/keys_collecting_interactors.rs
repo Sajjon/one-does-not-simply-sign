@@ -23,7 +23,7 @@ impl KeyDerivationInteractor {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParallelBatchKeyDerivationRequest {
-    per_factor_source: IndexMap<FactorSourceID, SerialBatchKeyDerivationRequest>,
+    pub per_factor_source: IndexMap<FactorSourceID, SerialBatchKeyDerivationRequest>,
 }
 impl ParallelBatchKeyDerivationRequest {
     pub fn new(
@@ -35,8 +35,8 @@ impl ParallelBatchKeyDerivationRequest {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SerialBatchKeyDerivationRequest {
-    factor_source_id: FactorSourceID,
-    derivation_paths: IndexSet<DerivationPath>,
+    pub factor_source_id: FactorSourceID,
+    pub derivation_paths: IndexSet<DerivationPath>,
 }
 impl SerialBatchKeyDerivationRequest {
     pub fn new(
@@ -53,6 +53,11 @@ impl SerialBatchKeyDerivationRequest {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BatchDerivationResponse {
     pub per_factor_source: IndexMap<FactorSourceID, IndexSet<FactorInstance>>,
+}
+impl BatchDerivationResponse {
+    pub fn new(per_factor_source: IndexMap<FactorSourceID, IndexSet<FactorInstance>>) -> Self {
+        Self { per_factor_source }
+    }
 }
 
 #[async_trait::async_trait]

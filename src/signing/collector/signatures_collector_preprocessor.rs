@@ -4,7 +4,7 @@ pub struct SignaturesCollectorPreprocessor {
     transactions: IndexSet<TransactionIntent>,
 }
 
-pub fn sort_group_factors(
+pub(crate) fn sort_group_factors(
     used_factor_sources: HashSet<FactorSource>,
 ) -> IndexSet<FactorSourcesOfKind> {
     let factors_of_kind = used_factor_sources

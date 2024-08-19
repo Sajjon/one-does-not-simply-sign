@@ -15,13 +15,31 @@ impl KeysCollectingInteractors for TestDerivationInteractors {
 
 pub struct TestDerivationParallelInteractor;
 
+fn derive_serially(
+    request: SerialBatchKeyDerivationRequest,
+) -> (FactorSourceID, IndexSet<FactorInstance>) {
+    let factor_source_id = &request.factor_source_id;
+    let instances = request
+        .derivation_paths
+        .into_iter()
+        .map(|p| FactorInstance::mocked_with(p, factor_source_id))
+        .collect::<IndexSet<_>>();
+
+    (*factor_source_id, instances)
+}
+
 #[async_trait::async_trait]
 impl DeriveKeyWithFactorParallelInteractor for TestDerivationParallelInteractor {
     async fn derive(
         &self,
         request: ParallelBatchKeyDerivationRequest,
     ) -> Result<BatchDerivationResponse> {
-        Err(CommonError::Failure)
+        let pairs = request
+            .per_factor_source
+            .into_iter()
+            .map(|(_, v)| derive_serially(v))
+            .collect::<IndexMap<_, _>>();
+        Ok(BatchDerivationResponse::new(pairs))
     }
 }
 
@@ -33,7 +51,8 @@ impl DeriveKeyWithFactorSerialInteractor for TestDerivationSerialInteractor {
         &self,
         request: SerialBatchKeyDerivationRequest,
     ) -> Result<BatchDerivationResponse> {
-        Err(CommonError::Failure)
+        let pair = derive_serially(request);
+        Ok(BatchDerivationResponse::new(IndexMap::from_iter([pair])))
     }
 }
 
