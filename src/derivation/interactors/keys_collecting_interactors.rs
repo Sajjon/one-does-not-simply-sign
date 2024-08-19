@@ -21,9 +21,20 @@ impl KeyDerivationInteractor {
     }
 }
 
-pub struct ParallelBatchKeyDerivationRequest;
-pub struct SerialBatchKeyDerivationRequest;
-pub struct BatchDerivationResponse;
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ParallelBatchKeyDerivationRequest {
+    per_factor_source: IndexMap<FactorSourceID, SerialBatchKeyDerivationRequest>,
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SerialBatchKeyDerivationRequest {
+    factor_source_id: FactorSourceID,
+    derivation_paths: IndexSet<DerivationPath>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BatchDerivationResponse {
+    per_factor_source: IndexMap<FactorSourceID, IndexSet<FactorInstance>>,
+}
 
 #[async_trait::async_trait]
 pub trait DeriveKeyWithFactorParallelInteractor {

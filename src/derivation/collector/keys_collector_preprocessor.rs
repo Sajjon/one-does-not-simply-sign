@@ -38,6 +38,12 @@ impl Keyrings {
         }
     }
 
+    pub fn outcome(self) -> KeyDerivationOutcome {
+        KeyDerivationOutcome {
+            keys: IndexSet::new(),
+        }
+    }
+
     pub fn keyring_for(&self, factor_source_id: &FactorSourceID) -> Option<Keyring> {
         self.keyrings
             .borrow()

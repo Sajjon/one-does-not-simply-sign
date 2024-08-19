@@ -12,7 +12,7 @@ impl KeysCollectingClient {
     pub async fn use_factor_sources(
         &self,
         factor_sources: IndexSet<FactorSource>,
-        collector: &SignaturesCollector,
+        collector: &KeysCollector,
     ) -> Result<()> {
         match &self.interactor {
             KeyDerivationInteractor::Parallel(interactor) => {
@@ -20,10 +20,9 @@ impl KeysCollectingClient {
                 let request = collector.request_for_parallel_interactor(
                     factor_sources.into_iter().map(|f| f.id).collect(),
                 );
-                let response = interactor.sign(request).await?;
+                let response = interactor.derive(request).await?;
                 collector.process_batch_response(response);
             }
-
 
             KeyDerivationInteractor::Serial(interactor) => {
                 for factor_source in factor_sources {
@@ -31,14 +30,10 @@ impl KeysCollectingClient {
                     let request = collector.request_for_serial_interactor(&factor_source.id);
 
                     // Produce the results from the interactor
-                    let response = interactor.sign(request).await?;
+                    let response = interactor.derive(request).await?;
 
                     // Report the results back to the collector
                     collector.process_batch_response(response);
-
-                    if !collector.continue_if_necessary()? {
-                        break;
-                    }
                 }
             }
         }

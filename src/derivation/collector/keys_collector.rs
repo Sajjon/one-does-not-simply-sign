@@ -267,16 +267,37 @@ impl KeysCollector {
 }
 
 impl KeysCollector {
+    fn get_interactor(&self, kind: FactorSourceKind) -> KeyDerivationInteractor {
+        self.dependencies.interactors.interactor_for(kind)
+    }
+}
+
+impl KeysCollector {
+    pub(crate) fn request_for_parallel_interactor(
+        &self,
+        factor_sources_ids: IndexSet<FactorSourceID>,
+    ) -> ParallelBatchKeyDerivationRequest {
+        todo!()
+    }
+
+    pub(crate) fn request_for_serial_interactor(
+        &self,
+        factor_source_id: &FactorSourceID,
+    ) -> SerialBatchKeyDerivationRequest {
+        todo!()
+    }
+
+    pub(crate) fn process_batch_response(&self, response: BatchDerivationResponse) {}
+}
+
+impl KeysCollector {
     pub async fn collect_keys(self) -> KeyDerivationOutcome {
         for factors_of_kind in self.dependencies.factors_of_kind.iter() {
-            let interactor = self
-                .dependencies
-                .interactors
-                .borrow()
-                .interactor_for(factors_of_kind.kind);
-            let request = 
-            interactor.derive_keys(factors_of_kind).await;
+            let interactor = self.get_interactor(factors_of_kind.kind);
+            let client = KeysCollectingClient::new(interactor);
+            client.use_factor_sources(factors_of_kind.factor_sources(), &self);
         }
+        self.state.into_inner().keyrings.into_inner().outcome()
     }
 }
 
