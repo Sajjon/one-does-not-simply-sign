@@ -5,7 +5,7 @@ pub trait KeysCollectingInteractors {
     fn interactor_for(&self, kind: FactorSourceKind) -> KeyDerivationInteractor;
 }
 
-/// An interactor which can derove keys - either in parallel or serially.
+/// An interactor which can derive keys - either in parallel or serially.
 pub enum KeyDerivationInteractor {
     Parallel(Arc<dyn DeriveKeyWithFactorParallelInteractor>),
     Serial(Arc<dyn DeriveKeyWithFactorSerialInteractor>),

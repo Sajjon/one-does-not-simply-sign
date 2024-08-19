@@ -1,4 +1,4 @@
-use std::ops::Range;
+use std::{borrow::Borrow, ops::Range};
 
 use crate::prelude::*;
 
@@ -268,7 +268,15 @@ impl KeysCollector {
 
 impl KeysCollector {
     pub async fn collect_keys(self) -> KeyDerivationOutcome {
-        todo!()
+        for factors_of_kind in self.dependencies.factors_of_kind.iter() {
+            let interactor = self
+                .dependencies
+                .interactors
+                .borrow()
+                .interactor_for(factors_of_kind.kind);
+            let request = 
+            interactor.derive_keys(factors_of_kind).await;
+        }
     }
 }
 
