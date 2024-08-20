@@ -142,6 +142,7 @@ impl KeyKind {
 #[derive(Clone, Debug, Copy, PartialEq, Eq, Hash)]
 pub enum NetworkID {
     Mainnet,
+    Stokenet,
 }
 impl NetworkID {
     fn discriminant(&self) -> u8 {

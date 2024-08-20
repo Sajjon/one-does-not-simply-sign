@@ -69,12 +69,22 @@ impl KeysCollector {
     }
 
     /// mainnet
-    pub fn new_account_tx(factor_source: FactorSource) -> Self {
+    pub fn new_account_tx_on(factor_source: FactorSource, network_id: NetworkID) -> Self {
         let indices = DefaultUsedDerivationIndices::default();
-        let path = indices.next_derivation_path_account_tx(factor_source.id, NetworkID::Mainnet);
+        let path = indices.next_derivation_path_account_tx(factor_source.id, network_id);
         Self::new_test(
             [factor_source.clone()],
             [(factor_source.id, IndexSet::from_iter([path]))],
         )
+    }
+
+    /// mainnet
+    pub fn new_account_tx_mainnet(factor_source: FactorSource) -> Self {
+        Self::new_account_tx_on(factor_source, NetworkID::Mainnet)
+    }
+
+    /// stokenet
+    pub fn new_account_tx_stokenet(factor_source: FactorSource) -> Self {
+        Self::new_account_tx_on(factor_source, NetworkID::Stokenet)
     }
 }

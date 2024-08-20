@@ -39,13 +39,30 @@ mod key_derivation_tests {
     use super::*;
 
     #[actix_rt::test]
-    async fn single_first_account_tx_signing() {
-        let collector = KeysCollector::new_account_tx(FactorSource::fs0());
+    async fn single_first_account_tx_mainnet_signing() {
+        let factor_source = FactorSource::fs0();
+        let collector = KeysCollector::new_account_tx_mainnet(factor_source.clone());
         let outcome = collector.collect_keys().await;
         let factors = outcome.all_factors();
         assert_eq!(factors.len(), 1);
         let factor = factors.first().unwrap();
-        assert_eq!(factor.path(), DerivationPath::new(Mainnet, Account, T9n, 0))
+        assert_eq!(factor.path(), DerivationPath::new(Mainnet, Account, T9n, 0));
+        assert_eq!(factor.factor_source_id, factor_source.id);
+    }
+
+    #[actix_rt::test]
+    async fn single_first_account_tx_stokenet_signing() {
+        let factor_source = FactorSource::fs1();
+        let collector = KeysCollector::new_account_tx_stokenet(factor_source.clone());
+        let outcome = collector.collect_keys().await;
+        let factors = outcome.all_factors();
+        assert_eq!(factors.len(), 1);
+        let factor = factors.first().unwrap();
+        assert_eq!(
+            factor.path(),
+            DerivationPath::new(Stokenet, Account, T9n, 0)
+        );
+        assert_eq!(factor.factor_source_id, factor_source.id);
     }
 }
 
