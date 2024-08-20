@@ -33,22 +33,26 @@ mod common_tests {
 #[cfg(test)]
 mod key_derivation_tests {
 
-    // use super::EntityKind::*;
+    use super::EntityKind::*;
     use super::KeyKind::*;
     use super::NetworkID::*;
     use super::*;
 
-    mod unsecurified {
+    mod single_key {
         use super::*;
 
-        async fn test(factor_source: &FactorSource, network_id: NetworkID, key_kind: KeyKind) {
-            let entity_kind = EntityKind::Account;
-            let key_space = KeySpace::Unsecurified;
-            struct Expected {
-                index: DerivationIndex,
-            }
-            let expected = Expected { index: 0 };
+        struct Expected {
+            index: DerivationIndex,
+        }
 
+        async fn do_test(
+            key_space: KeySpace,
+            factor_source: &FactorSource,
+            network_id: NetworkID,
+            entity_kind: EntityKind,
+            key_kind: KeyKind,
+            expected: Expected,
+        ) {
             let collector =
                 KeysCollector::with(factor_source, network_id, key_kind, entity_kind, key_space);
 
@@ -63,33 +67,122 @@ mod key_derivation_tests {
             assert_eq!(factor.factor_source_id, factor_source.id);
         }
 
-        mod account {
+        mod securified {
             use super::*;
 
-            async fn each_factor(network_id: NetworkID, key_kind: KeyKind) {
-                for factor_source in FactorSource::all().iter() {
-                    test(factor_source, network_id, key_kind).await
+            async fn test(
+                factor_source: &FactorSource,
+                network_id: NetworkID,
+                entity_kind: EntityKind,
+                key_kind: KeyKind,
+            ) {
+                do_test(
+                    KeySpace::Securified,
+                    factor_source,
+                    network_id,
+                    entity_kind,
+                    key_kind,
+                    Expected {
+                        index: KeySpace::SPLIT,
+                    },
+                )
+                .await
+            }
+
+            mod account {
+                use super::*;
+
+                async fn each_factor(network_id: NetworkID, key_kind: KeyKind) {
+                    for factor_source in FactorSource::all().iter() {
+                        test(factor_source, network_id, Account, key_kind).await
+                    }
+                }
+
+                #[actix_rt::test]
+                async fn single_first_account_mainnet_t9n() {
+                    each_factor(Mainnet, T9n).await
+                }
+            }
+        }
+
+        mod unsecurified {
+            use super::*;
+
+            async fn test(
+                factor_source: &FactorSource,
+                network_id: NetworkID,
+                entity_kind: EntityKind,
+                key_kind: KeyKind,
+            ) {
+                do_test(
+                    KeySpace::Unsecurified,
+                    factor_source,
+                    network_id,
+                    entity_kind,
+                    key_kind,
+                    Expected { index: 0 },
+                )
+                .await
+            }
+
+            mod account {
+                use super::*;
+
+                async fn each_factor(network_id: NetworkID, key_kind: KeyKind) {
+                    for factor_source in FactorSource::all().iter() {
+                        test(factor_source, network_id, Account, key_kind).await
+                    }
+                }
+
+                #[actix_rt::test]
+                async fn single_first_account_mainnet_t9n() {
+                    each_factor(Mainnet, T9n).await
+                }
+
+                #[actix_rt::test]
+                async fn single_first_account_stokenet_t9n() {
+                    each_factor(Mainnet, T9n).await
+                }
+
+                #[actix_rt::test]
+                async fn single_first_account_mainnet_rola() {
+                    each_factor(Mainnet, Rola).await
+                }
+
+                #[actix_rt::test]
+                async fn single_first_account_stokenet_rola() {
+                    each_factor(Stokenet, Rola).await
                 }
             }
 
-            #[actix_rt::test]
-            async fn single_first_account_mainnet_t9n() {
-                each_factor(Mainnet, T9n).await
-            }
+            mod persona {
+                use super::*;
 
-            #[actix_rt::test]
-            async fn single_first_account_stokenet_t9n() {
-                each_factor(Mainnet, T9n).await
-            }
+                async fn each_factor(network_id: NetworkID, key_kind: KeyKind) {
+                    for factor_source in FactorSource::all().iter() {
+                        test(factor_source, network_id, Identity, key_kind).await
+                    }
+                }
 
-            #[actix_rt::test]
-            async fn single_first_account_mainnet_rola() {
-                each_factor(Mainnet, Rola).await
-            }
+                #[actix_rt::test]
+                async fn single_first_persona_mainnet_t9n() {
+                    each_factor(Mainnet, T9n).await
+                }
 
-            #[actix_rt::test]
-            async fn single_first_account_stokenet_rola() {
-                each_factor(Stokenet, Rola).await
+                #[actix_rt::test]
+                async fn single_first_persona_stokenet_t9n() {
+                    each_factor(Mainnet, T9n).await
+                }
+
+                #[actix_rt::test]
+                async fn single_first_persona_mainnet_rola() {
+                    each_factor(Mainnet, Rola).await
+                }
+
+                #[actix_rt::test]
+                async fn single_first_persona_stokenet_rola() {
+                    each_factor(Stokenet, Rola).await
+                }
             }
         }
     }
