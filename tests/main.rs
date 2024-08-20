@@ -33,36 +33,60 @@ mod common_tests {
 #[cfg(test)]
 mod key_derivation_tests {
 
-    use super::EntityKind::*;
+    // use super::EntityKind::*;
     use super::KeyKind::*;
     use super::NetworkID::*;
     use super::*;
 
-    #[actix_rt::test]
-    async fn single_first_account_tx_mainnet_signing() {
-        let factor_source = FactorSource::fs0();
-        let collector = KeysCollector::new_account_tx_mainnet(factor_source.clone());
-        let outcome = collector.collect_keys().await;
-        let factors = outcome.all_factors();
-        assert_eq!(factors.len(), 1);
-        let factor = factors.first().unwrap();
-        assert_eq!(factor.path(), DerivationPath::new(Mainnet, Account, T9n, 0));
-        assert_eq!(factor.factor_source_id, factor_source.id);
-    }
+    mod unsecurified {
+        use super::*;
 
-    #[actix_rt::test]
-    async fn single_first_account_tx_stokenet_signing() {
-        let factor_source = FactorSource::fs1();
-        let collector = KeysCollector::new_account_tx_stokenet(factor_source.clone());
-        let outcome = collector.collect_keys().await;
-        let factors = outcome.all_factors();
-        assert_eq!(factors.len(), 1);
-        let factor = factors.first().unwrap();
-        assert_eq!(
-            factor.path(),
-            DerivationPath::new(Stokenet, Account, T9n, 0)
-        );
-        assert_eq!(factor.factor_source_id, factor_source.id);
+        async fn test(factor_source: &FactorSource, network_id: NetworkID, key_kind: KeyKind) {
+            let entity_kind = EntityKind::Account;
+            let key_space = KeySpace::Unsecurified;
+            struct Expected {
+                index: DerivationIndex,
+            }
+            let expected = Expected { index: 0 };
+
+            let collector =
+                KeysCollector::with(factor_source, network_id, key_kind, entity_kind, key_space);
+
+            let outcome = collector.collect_keys().await;
+            let factors = outcome.all_factors();
+            assert_eq!(factors.len(), 1);
+            let factor = factors.first().unwrap();
+            assert_eq!(
+                factor.path(),
+                DerivationPath::new(network_id, entity_kind, key_kind, expected.index)
+            );
+            assert_eq!(factor.factor_source_id, factor_source.id);
+        }
+        async fn each_factor(network_id: NetworkID, key_kind: KeyKind) {
+            for factor_source in FactorSource::all().iter() {
+                test(factor_source, network_id, key_kind).await
+            }
+        }
+
+        #[actix_rt::test]
+        async fn single_first_account_mainnet_t9n() {
+            each_factor(Mainnet, T9n).await
+        }
+
+        #[actix_rt::test]
+        async fn single_first_account_stokenet_t9n() {
+            each_factor(Mainnet, T9n).await
+        }
+
+        #[actix_rt::test]
+        async fn single_first_account_mainnet_rola() {
+            each_factor(Mainnet, Rola).await
+        }
+
+        #[actix_rt::test]
+        async fn single_first_account_stokenet_rola() {
+            each_factor(Stokenet, Rola).await
+        }
     }
 }
 

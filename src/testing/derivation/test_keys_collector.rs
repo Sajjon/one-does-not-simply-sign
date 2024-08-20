@@ -68,14 +68,47 @@ impl KeysCollector {
         )
     }
 
-    /// mainnet
-    pub fn new_account_tx_on(factor_source: FactorSource, network_id: NetworkID) -> Self {
+    pub fn with(
+        factor_source: &FactorSource,
+        network_id: NetworkID,
+        key_kind: KeyKind,
+        entity_kind: EntityKind,
+        key_space: KeySpace,
+    ) -> Self {
         let indices = DefaultUsedDerivationIndices::default();
-        let path = indices.next_derivation_path_account_tx(factor_source.id, network_id);
+        let path = indices.next_derivation_path(
+            factor_source.clone().id,
+            network_id,
+            key_kind,
+            entity_kind,
+            key_space,
+        );
         Self::new_test(
             [factor_source.clone()],
             [(factor_source.id, IndexSet::from_iter([path]))],
         )
+    }
+
+    pub fn new_account_on_network_of_kind(
+        factor_source: FactorSource,
+        network_id: NetworkID,
+        key_kind: KeyKind,
+    ) -> Self {
+        Self::with(
+            &factor_source,
+            network_id,
+            key_kind,
+            EntityKind::Account,
+            KeySpace::Unsecurified,
+        )
+    }
+
+    pub fn new_account_tx_on(factor_source: FactorSource, network_id: NetworkID) -> Self {
+        Self::new_account_on_network_of_kind(factor_source, network_id, KeyKind::T9n)
+    }
+
+    pub fn new_account_rola_on(factor_source: FactorSource, network_id: NetworkID) -> Self {
+        Self::new_account_on_network_of_kind(factor_source, network_id, KeyKind::Rola)
     }
 
     /// mainnet
@@ -86,5 +119,13 @@ impl KeysCollector {
     /// stokenet
     pub fn new_account_tx_stokenet(factor_source: FactorSource) -> Self {
         Self::new_account_tx_on(factor_source, NetworkID::Stokenet)
+    }
+
+    pub fn new_account_rola_mainnet(factor_source: FactorSource) -> Self {
+        Self::new_account_rola_on(factor_source, NetworkID::Mainnet)
+    }
+
+    pub fn new_account_rola_stokenet(factor_source: FactorSource) -> Self {
+        Self::new_account_rola_on(factor_source, NetworkID::Stokenet)
     }
 }
