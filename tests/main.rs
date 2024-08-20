@@ -38,6 +38,34 @@ mod key_derivation_tests {
     use super::NetworkID::*;
     use super::*;
 
+    mod multi_key {
+        use super::*;
+
+        #[actix_rt::test]
+        async fn multi_keys_same_factor_source_different_indices() {
+            let factor_source = fs_at(0);
+            let paths = [0, 1, 2]
+                .into_iter()
+                .map(|i| DerivationPath::new(Mainnet, Account, T9n, i))
+                .collect::<IndexSet<_>>();
+            let collector = KeysCollector::new_test([(factor_source.id, paths.clone())]);
+            let outcome = collector.collect_keys().await;
+            assert_eq!(
+                outcome
+                    .all_factors()
+                    .into_iter()
+                    .map(|f| f.path())
+                    .collect::<IndexSet<_>>(),
+                paths
+            );
+
+            assert!(outcome
+                .all_factors()
+                .into_iter()
+                .all(|f| f.factor_source_id == factor_source.id));
+        }
+    }
+
     mod single_key {
         use super::*;
 

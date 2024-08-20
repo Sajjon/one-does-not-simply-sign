@@ -57,7 +57,7 @@ impl DeriveKeyWithFactorSerialInteractor for TestDerivationSerialInteractor {
 }
 
 impl KeysCollector {
-    pub fn new_test(
+    pub fn new_test_with_factor_sources(
         all_factor_sources_in_profile: impl IntoIterator<Item = FactorSource>,
         derivation_paths: impl IntoIterator<Item = (FactorSourceID, IndexSet<DerivationPath>)>,
     ) -> Self {
@@ -66,6 +66,12 @@ impl KeysCollector {
             derivation_paths.into_iter().collect(),
             Arc::new(TestDerivationInteractors),
         )
+    }
+
+    pub fn new_test(
+        derivation_paths: impl IntoIterator<Item = (FactorSourceID, IndexSet<DerivationPath>)>,
+    ) -> Self {
+        Self::new_test_with_factor_sources(FactorSource::all(), derivation_paths)
     }
 
     pub fn with(
@@ -83,7 +89,7 @@ impl KeysCollector {
             entity_kind,
             key_space,
         );
-        Self::new_test(
+        Self::new_test_with_factor_sources(
             [factor_source.clone()],
             [(factor_source.id, IndexSet::from_iter([path]))],
         )
