@@ -2,6 +2,18 @@ use crate::prelude::*;
 
 pub struct TestDerivationInteractors;
 
+#[derive(Default, Clone, Debug)]
+pub struct StatelessDummyIndices;
+
+impl UsedDerivationIndices for StatelessDummyIndices {
+    fn next_derivation_index_with_request(
+        &self,
+        request: CreateNextDerivationPathRequest,
+    ) -> DerivationIndex {
+        request.key_space.range().start
+    }
+}
+
 impl KeysCollectingInteractors for TestDerivationInteractors {
     fn interactor_for(&self, kind: FactorSourceKind) -> KeyDerivationInteractor {
         match kind {
@@ -81,7 +93,7 @@ impl KeysCollector {
         entity_kind: EntityKind,
         key_space: KeySpace,
     ) -> Self {
-        let indices = DefaultUsedDerivationIndices::default();
+        let indices = StatelessDummyIndices;
         let path = indices.next_derivation_path(
             factor_source.clone().id,
             network_id,
