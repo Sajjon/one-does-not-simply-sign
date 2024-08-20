@@ -64,6 +64,41 @@ mod key_derivation_tests {
                 .into_iter()
                 .all(|f| f.factor_source_id == factor_source.id));
         }
+
+        #[actix_rt::test]
+        async fn multi_keys_multi_factor_sources_single_index_per() {
+            let path = DerivationPath::account_tx(Mainnet, 0);
+            let paths = IndexSet::from_iter([path]);
+            let factor_sources = FactorSource::all();
+
+            let collector = KeysCollector::new_test(
+                factor_sources
+                    .iter()
+                    .map(|f| (f.id, paths.clone()))
+                    .collect_vec(),
+            );
+            let outcome = collector.collect_keys().await;
+            assert_eq!(
+                outcome
+                    .all_factors()
+                    .into_iter()
+                    .map(|f| f.path())
+                    .collect::<IndexSet<_>>(),
+                paths
+            );
+
+            assert_eq!(
+                outcome
+                    .all_factors()
+                    .into_iter()
+                    .map(|f| f.factor_source_id.clone())
+                    .collect::<HashSet::<_>>(),
+                factor_sources
+                    .into_iter()
+                    .map(|f| f.id)
+                    .collect::<HashSet::<_>>()
+            );
+        }
     }
 
     mod single_key {
