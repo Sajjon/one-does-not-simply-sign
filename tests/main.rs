@@ -1,4 +1,4 @@
-use signing::prelude::*;
+use use_factors::prelude::*;
 
 #[cfg(test)]
 mod common_tests {
@@ -62,30 +62,35 @@ mod key_derivation_tests {
             );
             assert_eq!(factor.factor_source_id, factor_source.id);
         }
-        async fn each_factor(network_id: NetworkID, key_kind: KeyKind) {
-            for factor_source in FactorSource::all().iter() {
-                test(factor_source, network_id, key_kind).await
+
+        mod account {
+            use super::*;
+
+            async fn each_factor(network_id: NetworkID, key_kind: KeyKind) {
+                for factor_source in FactorSource::all().iter() {
+                    test(factor_source, network_id, key_kind).await
+                }
             }
-        }
 
-        #[actix_rt::test]
-        async fn single_first_account_mainnet_t9n() {
-            each_factor(Mainnet, T9n).await
-        }
+            #[actix_rt::test]
+            async fn single_first_account_mainnet_t9n() {
+                each_factor(Mainnet, T9n).await
+            }
 
-        #[actix_rt::test]
-        async fn single_first_account_stokenet_t9n() {
-            each_factor(Mainnet, T9n).await
-        }
+            #[actix_rt::test]
+            async fn single_first_account_stokenet_t9n() {
+                each_factor(Mainnet, T9n).await
+            }
 
-        #[actix_rt::test]
-        async fn single_first_account_mainnet_rola() {
-            each_factor(Mainnet, Rola).await
-        }
+            #[actix_rt::test]
+            async fn single_first_account_mainnet_rola() {
+                each_factor(Mainnet, Rola).await
+            }
 
-        #[actix_rt::test]
-        async fn single_first_account_stokenet_rola() {
-            each_factor(Stokenet, Rola).await
+            #[actix_rt::test]
+            async fn single_first_account_stokenet_rola() {
+                each_factor(Stokenet, Rola).await
+            }
         }
     }
 }
