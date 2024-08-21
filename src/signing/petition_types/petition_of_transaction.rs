@@ -6,7 +6,7 @@ pub(crate) struct PetitionTransaction {
     /// Hash of transaction to sign
     pub intent_hash: IntentHash,
 
-    pub for_entities: RefCell<HashMap<AccountAddressOrIdentityAddress, PetitionEntity>>,
+    pub for_entities: RefCell<HashMap<AddressOfAccountOrPersona, PetitionEntity>>,
 }
 
 impl PetitionTransaction {
@@ -103,7 +103,7 @@ impl PetitionTransaction {
 
     pub(crate) fn new(
         intent_hash: IntentHash,
-        for_entities: HashMap<AccountAddressOrIdentityAddress, PetitionEntity>,
+        for_entities: HashMap<AddressOfAccountOrPersona, PetitionEntity>,
     ) -> Self {
         Self {
             intent_hash,

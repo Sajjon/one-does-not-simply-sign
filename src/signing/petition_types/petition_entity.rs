@@ -6,7 +6,7 @@ use crate::prelude::*;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PetitionEntity {
     /// The owner of these factors
-    pub entity: AccountAddressOrIdentityAddress,
+    pub entity: AddressOfAccountOrPersona,
 
     /// Index and hash of transaction
     pub intent_hash: IntentHash,
@@ -21,7 +21,7 @@ pub struct PetitionEntity {
 impl PetitionEntity {
     pub fn new(
         intent_hash: IntentHash,
-        entity: AccountAddressOrIdentityAddress,
+        entity: AddressOfAccountOrPersona,
         threshold_factors: impl Into<Option<PetitionFactors>>,
         override_factors: impl Into<Option<PetitionFactors>>,
     ) -> Self {
@@ -40,7 +40,7 @@ impl PetitionEntity {
 
     pub fn new_securified(
         intent_hash: IntentHash,
-        entity: AccountAddressOrIdentityAddress,
+        entity: AddressOfAccountOrPersona,
         matrix: MatrixOfFactorInstances,
     ) -> Self {
         Self::new(
@@ -53,7 +53,7 @@ impl PetitionEntity {
 
     pub fn new_unsecurified(
         intent_hash: IntentHash,
-        entity: AccountAddressOrIdentityAddress,
+        entity: AddressOfAccountOrPersona,
         instance: FactorInstance,
     ) -> Self {
         Self::new(
@@ -262,7 +262,7 @@ impl PetitionEntity {
 }
 
 impl PetitionEntity {
-    fn from_entity(entity: Entity, intent_hash: IntentHash) -> Self {
+    fn from_entity(entity: AccountOrPersona, intent_hash: IntentHash) -> Self {
         match entity.security_state {
             EntitySecurityState::Securified(matrix) => {
                 Self::new_securified(intent_hash, entity.address, matrix)
@@ -275,10 +275,13 @@ impl PetitionEntity {
 }
 impl HasSampleValues for PetitionEntity {
     fn sample() -> Self {
-        Self::from_entity(Entity::sample_securified(), IntentHash::sample())
+        Self::from_entity(AccountOrPersona::sample_securified(), IntentHash::sample())
     }
     fn sample_other() -> Self {
-        Self::from_entity(Entity::sample_unsecurified(), IntentHash::sample_other())
+        Self::from_entity(
+            AccountOrPersona::sample_unsecurified(),
+            IntentHash::sample_other(),
+        )
     }
 }
 
@@ -292,7 +295,7 @@ mod tests {
     fn invalid_empty_factors() {
         Sut::new(
             IntentHash::sample(),
-            AccountAddressOrIdentityAddress::sample(),
+            AddressOfAccountOrPersona::sample(),
             None,
             None,
         );
@@ -308,7 +311,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "A factor MUST NOT be present in both threshold AND override list.")]
     fn factor_should_not_be_used_in_both_lists() {
-        Entity::securified_mainnet(0, "Jane Doe", |idx| {
+        AccountOrPersona::securified_mainnet(0, "Jane Doe", |idx| {
             let fi = FactorInstance::f(idx);
             MatrixOfFactorInstances::new(
                 [FactorSourceID::fs0()].map(&fi),
@@ -322,7 +325,7 @@ mod tests {
     #[should_panic]
     fn cannot_add_same_signature_twice() {
         let intent_hash = IntentHash::sample();
-        let entity = Entity::securified_mainnet(0, "Jane Doe", |idx| {
+        let entity = AccountOrPersona::securified_mainnet(0, "Jane Doe", |idx| {
             let fi = FactorInstance::f(idx);
             MatrixOfFactorInstances::new(
                 [FactorSourceID::fs0()].map(&fi),

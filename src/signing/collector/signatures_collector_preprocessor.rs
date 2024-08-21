@@ -65,11 +65,11 @@ impl SignaturesCollectorPreprocessor {
 
         for transaction in transactions.into_iter() {
             let mut petitions_for_entities =
-                HashMap::<AccountAddressOrIdentityAddress, PetitionEntity>::new();
+                HashMap::<AddressOfAccountOrPersona, PetitionEntity>::new();
 
             for entity in transaction.clone().entities_requiring_auth {
-                let address = entity.address;
-                match entity.security_state {
+                let address = entity.address();
+                match entity.security_state() {
                     EntitySecurityState::Securified(sec) => {
                         let primary_role_matrix = sec;
 

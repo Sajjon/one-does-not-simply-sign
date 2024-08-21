@@ -8,7 +8,7 @@ pub type OwnedFactorInstance = Owned<FactorInstance>;
 impl OwnedFactorInstance {
     /// Constructs a new `OwnedFactorInstance`.
     pub fn owned_factor_instance(
-        owner: AccountAddressOrIdentityAddress,
+        owner: AddressOfAccountOrPersona,
         factor_instance: FactorInstance,
     ) -> Self {
         Self::new(owner, factor_instance)

@@ -118,10 +118,7 @@ mod tests {
         let factor_instance = FactorInstance::account_mainnet_tx(0, FactorSourceID::fs0());
         let sign_input = HDSignatureInput::new(
             intent_hash,
-            OwnedFactorInstance::new(
-                AccountAddressOrIdentityAddress::sample(),
-                factor_instance.clone(),
-            ),
+            OwnedFactorInstance::new(AddressOfAccountOrPersona::sample(), factor_instance.clone()),
         );
         let signature = HDSignature::produced_signing_with_input(sign_input);
 
@@ -142,10 +139,7 @@ mod tests {
 
         let sign_input = HDSignatureInput::new(
             intent_hash,
-            OwnedFactorInstance::new(
-                AccountAddressOrIdentityAddress::sample(),
-                factor_instance.clone(),
-            ),
+            OwnedFactorInstance::new(AddressOfAccountOrPersona::sample(), factor_instance.clone()),
         );
 
         let signature = HDSignature::produced_signing_with_input(sign_input);

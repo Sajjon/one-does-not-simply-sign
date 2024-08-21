@@ -359,45 +359,58 @@ impl From<MatrixOfFactorInstances> for EntitySecurityState {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, std::hash::Hash)]
-pub struct AccountAddress;
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, std::hash::Hash)]
-pub struct IdentityAddress;
-
-#[derive(Clone, PartialEq, Eq, std::hash::Hash, derive_more::Debug)]
-#[debug("{name}")]
-pub struct AccountAddressOrIdentityAddress {
+#[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
+pub struct AccountAddress {
     pub name: String,
-    id: Uuid,
 }
-impl AccountAddressOrIdentityAddress {
-    fn with_details(name: impl AsRef<str>, id: Uuid) -> Self {
-        Self {
-            name: name.as_ref().to_owned(),
-            id,
-        }
-    }
-    pub fn new(name: impl AsRef<str>) -> Self {
-        Self::with_details(name, Uuid::new_v4())
-    }
+
+#[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
+pub struct IdentityAddress {
+    pub name: String,
 }
-impl HasSampleValues for AccountAddressOrIdentityAddress {
+
+#[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
+pub enum AddressOfAccountOrPersona {
+    Account(AccountAddress),
+    Identity(IdentityAddress),
+}
+
+impl HasSampleValues for AddressOfAccountOrPersona {
     fn sample() -> Self {
-        Self::with_details("Alice", Uuid::from_bytes([0xac; 16]))
+        Self::Account(AccountAddress::sample())
     }
     fn sample_other() -> Self {
-        Self::with_details("Bob", Uuid::from_bytes([0xc0; 16]))
+        Self::Identity(IdentityAddress::sample())
     }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
-pub struct Entity {
-    pub address: AccountAddressOrIdentityAddress,
-    pub security_state: EntitySecurityState,
+pub enum AccountOrPersona {
+    AccountEntity(Account),
+    PersonaEntity(Persona),
 }
 
-impl HasSampleValues for Entity {
+#[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
+pub struct AbstractEntity<A> {
+    pub address: A,
+    pub security_state: EntitySecurityState,
+}
+pub type Account = AbstractEntity<AccountAddress>;
+pub type Persona = AbstractEntity<IdentityAddress>;
+
+impl From<AccountAddress> for AddressOfAccountOrPersona {
+    fn from(value: AccountAddress) -> Self {
+        Self::Account(value)
+    }
+}
+
+impl From<IdentityAddress> for AddressOfAccountOrPersona {
+    fn from(value: IdentityAddress) -> Self {
+        Self::Identity(value)
+    }
+}
+
+impl HasSampleValues for Account {
     fn sample() -> Self {
         Self::sample_unsecurified()
     }
@@ -406,7 +419,7 @@ impl HasSampleValues for Entity {
     }
 }
 
-impl Entity {
+impl Account {
     /// mainnet
     pub(crate) fn sample_unsecurified() -> Self {
         Self::unsecurified_mainnet(0, "Alice", FactorSourceID::fs0())
@@ -427,7 +440,7 @@ impl Entity {
 
     fn new(name: impl AsRef<str>, security_state: impl Into<EntitySecurityState>) -> Self {
         Self {
-            address: AccountAddressOrIdentityAddress::new(name),
+            address: AccountAddress::new(name),
             security_state: security_state.into(),
         }
     }
@@ -562,11 +575,11 @@ impl HasSampleValues for IntentHash {
 #[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
 pub struct TransactionIntent {
     pub intent_hash: IntentHash,
-    pub entities_requiring_auth: Vec<Entity>, // should be a set but Sets are not `Hash`.
+    pub entities_requiring_auth: Vec<AccountOrPersona>, // should be a set but Sets are not `Hash`.
 }
 
 impl TransactionIntent {
-    pub fn new(entities_requiring_auth: impl IntoIterator<Item = Entity>) -> Self {
+    pub fn new(entities_requiring_auth: impl IntoIterator<Item = AccountOrPersona>) -> Self {
         Self {
             intent_hash: IntentHash::generate(),
             entities_requiring_auth: entities_requiring_auth.into_iter().collect_vec(),
