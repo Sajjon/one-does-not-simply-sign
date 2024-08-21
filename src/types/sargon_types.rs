@@ -152,12 +152,12 @@ impl NetworkID {
 
 #[repr(u8)]
 #[derive(Clone, Debug, Copy, PartialEq, Eq, Hash)]
-pub enum EntityKind {
+pub enum CAP26EntityKind {
     Account,
     Identity,
 }
 
-impl EntityKind {
+impl CAP26EntityKind {
     fn discriminant(&self) -> u8 {
         core::intrinsics::discriminant_value(self)
     }
@@ -166,7 +166,7 @@ impl EntityKind {
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct DerivationPath {
     pub network_id: NetworkID,
-    pub entity_kind: EntityKind,
+    pub entity_kind: CAP26EntityKind,
     pub key_kind: CAP26KeyKind,
     pub index: DerivationIndex,
 }
@@ -174,7 +174,7 @@ pub struct DerivationPath {
 impl DerivationPath {
     pub fn new(
         network_id: NetworkID,
-        entity_kind: EntityKind,
+        entity_kind: CAP26EntityKind,
         key_kind: CAP26KeyKind,
         index: DerivationIndex,
     ) -> Self {
@@ -186,7 +186,12 @@ impl DerivationPath {
         }
     }
     pub fn account_tx(network_id: NetworkID, index: DerivationIndex) -> Self {
-        Self::new(network_id, EntityKind::Account, CAP26KeyKind::T9n, index)
+        Self::new(
+            network_id,
+            CAP26EntityKind::Account,
+            CAP26KeyKind::T9n,
+            index,
+        )
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {

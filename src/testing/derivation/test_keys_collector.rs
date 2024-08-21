@@ -154,7 +154,7 @@ impl KeysCollector {
         factor_source: &FactorSource,
         network_id: NetworkID,
         key_kind: CAP26KeyKind,
-        entity_kind: EntityKind,
+        entity_kind: CAP26EntityKind,
         key_space: KeySpace,
     ) -> Self {
         let indices = StatelessDummyIndices;

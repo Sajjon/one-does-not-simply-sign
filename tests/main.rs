@@ -33,8 +33,8 @@ mod common_tests {
 #[cfg(test)]
 mod key_derivation_tests {
 
+    use super::CAP26EntityKind::*;
     use super::CAP26KeyKind::*;
-    use super::EntityKind::*;
     use super::NetworkID::*;
     use super::*;
 
@@ -360,7 +360,7 @@ mod key_derivation_tests {
             key_space: KeySpace,
             factor_source: &FactorSource,
             network_id: NetworkID,
-            entity_kind: EntityKind,
+            entity_kind: CAP26EntityKind,
             key_kind: CAP26KeyKind,
             expected: Expected,
         ) {
@@ -384,7 +384,7 @@ mod key_derivation_tests {
             async fn test(
                 factor_source: &FactorSource,
                 network_id: NetworkID,
-                entity_kind: EntityKind,
+                entity_kind: CAP26EntityKind,
                 key_kind: CAP26KeyKind,
             ) {
                 do_test(
@@ -422,7 +422,7 @@ mod key_derivation_tests {
             async fn test(
                 factor_source: &FactorSource,
                 network_id: NetworkID,
-                entity_kind: EntityKind,
+                entity_kind: CAP26EntityKind,
                 key_kind: CAP26KeyKind,
             ) {
                 do_test(

@@ -9,7 +9,7 @@ pub struct CreateNextDerivationPathRequest {
     pub factor_source_id: FactorSourceID,
     pub network_id: NetworkID,
     pub key_kind: CAP26KeyKind,
-    pub entity_kind: EntityKind,
+    pub entity_kind: CAP26EntityKind,
     pub key_space: KeySpace,
 }
 
@@ -18,7 +18,7 @@ impl CreateNextDerivationPathRequest {
         factor_source_id: FactorSourceID,
         network_id: NetworkID,
         key_kind: CAP26KeyKind,
-        entity_kind: EntityKind,
+        entity_kind: CAP26EntityKind,
         key_space: KeySpace,
     ) -> Self {
         Self {
@@ -42,7 +42,7 @@ pub trait UsedDerivationIndices {
         factor_source_id: FactorSourceID,
         network_id: NetworkID,
         key_kind: CAP26KeyKind,
-        entity_kind: EntityKind,
+        entity_kind: CAP26EntityKind,
         key_space: KeySpace,
     ) -> DerivationIndex {
         let request = CreateNextDerivationPathRequest::new(
@@ -60,7 +60,7 @@ pub trait UsedDerivationIndices {
         factor_source_id: FactorSourceID,
         network_id: NetworkID,
         key_kind: CAP26KeyKind,
-        entity_kind: EntityKind,
+        entity_kind: CAP26EntityKind,
         key_space: KeySpace,
     ) -> DerivationPath {
         let index = self.next_derivation_index_for(
