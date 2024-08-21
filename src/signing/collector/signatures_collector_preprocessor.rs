@@ -1,7 +1,7 @@
 use crate::prelude::*;
 
 pub struct SignaturesCollectorPreprocessor {
-    transactions: IndexSet<TransactionIntent>,
+    transactions: IndexSet<TXToSign>,
 }
 
 pub fn sort_group_factors(
@@ -26,7 +26,7 @@ pub fn sort_group_factors(
 }
 
 impl SignaturesCollectorPreprocessor {
-    pub(super) fn new(transactions: IndexSet<TransactionIntent>) -> Self {
+    pub(super) fn new(transactions: IndexSet<TXToSign>) -> Self {
         Self { transactions }
     }
 

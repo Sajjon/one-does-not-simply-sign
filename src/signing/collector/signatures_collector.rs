@@ -24,9 +24,9 @@ pub struct SignaturesCollector {
 }
 
 impl SignaturesCollector {
-    pub fn new(
+    fn with(
         all_factor_sources_in_profile: IndexSet<FactorSource>,
-        transactions: IndexSet<TransactionIntent>,
+        transactions: IndexSet<TXToSign>,
         interactors: Arc<dyn SignatureCollectingInteractors>,
     ) -> Self {
         let preprocessor = SignaturesCollectorPreprocessor::new(transactions);
@@ -39,6 +39,18 @@ impl SignaturesCollector {
             dependencies,
             state: RefCell::new(state),
         }
+    }
+
+    pub fn new<F>(
+        all_factor_sources_in_profile: IndexSet<FactorSource>,
+        transactions: IndexSet<TransactionIntent>,
+        interactors: Arc<dyn SignatureCollectingInteractors>,
+        extract_signers: F,
+    ) -> Self
+    where
+        F: Fn(TransactionIntent) -> TXToSign,
+    {
+        todo!()
     }
 }
 

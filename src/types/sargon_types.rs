@@ -611,24 +611,20 @@ impl HasSampleValues for IntentHash {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct TransactionIntent {
-    pub intent_hash: IntentHash,
-    pub entities_requiring_auth: Vec<AccountOrPersona>, // should be a set but Sets are not `Hash`.
-}
+    /// In Sargon we are gonna do:
+    /// ```[no_compile]
+    /// fn map(transaction_manifest: TransactionManifest, profile: Profile) -> Result<TXToSign> {
+    /// let summary: ManifestSummary = transaction_intent.manifest.summary();
+    /// let mut addresses_of_entities_requiring_auth: IndexSet<AddressOfAccountOrPersona> = IndexSet::new();
+    /// addresses_of_entities_requiring_auth.extend(summary.addresses_of_accounts_requiring_auth.into_iter().map(AddressOfAccountOrPersona::from).collect());
+    /// addresses_of_entities_requiring_auth.extend(summary.addresses_of_personas_requiring_auth.into_iter().map(AddressOfAccountOrPersona::from).collect());
+    /// let entities
+    /// }
 
-impl TransactionIntent {
-    pub fn new(
-        entities_requiring_auth: impl IntoIterator<Item = impl Into<AccountOrPersona>>,
-    ) -> Self {
-        Self {
-            intent_hash: IntentHash::generate(),
-            entities_requiring_auth: entities_requiring_auth
-                .into_iter()
-                .map(|i| i.into())
-                .collect_vec(),
-        }
-    }
+    /// ```
+    pub(crate) tx_to_sign: TXToSign,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
