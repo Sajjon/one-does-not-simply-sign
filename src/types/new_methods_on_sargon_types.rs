@@ -3,8 +3,8 @@ use crate::prelude::*;
 impl AccountOrPersona {
     pub fn address(&self) -> AddressOfAccountOrPersona {
         match self {
-            Self::AccountEntity(a) => a.address.into(),
-            Self::PersonaEntity(p) => p.address.into(),
+            Self::AccountEntity(a) => a.address().clone(),
+            Self::PersonaEntity(p) => p.address().clone(),
         }
     }
 

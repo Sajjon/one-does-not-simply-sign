@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use crate::prelude::*;
 
 #[derive(Clone, Copy, PartialEq, Eq, std::hash::Hash, derive_more::Debug)]
@@ -360,14 +362,35 @@ impl From<MatrixOfFactorInstances> for EntitySecurityState {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
-pub struct AccountAddress {
+pub struct AbstractAddress<T> {
+    phantom: PhantomData<T>,
     pub name: String,
+}
+impl<T> AbstractAddress<T> {
+    pub fn new(name: impl AsRef<str>) -> Self {
+        Self {
+            phantom: PhantomData,
+            name: name.as_ref().to_owned(),
+        }
+    }
+}
+impl<T> HasSampleValues for AbstractAddress<T> {
+    fn sample() -> Self {
+        Self::new("Alice")
+    }
+    fn sample_other() -> Self {
+        Self::new("Bob")
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
-pub struct IdentityAddress {
-    pub name: String,
-}
+pub struct AccountAddressTag;
+
+#[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
+pub struct IdentityAddressTag;
+
+pub type AccountAddress = AbstractAddress<AccountAddressTag>;
+pub type IdentityAddress = AbstractAddress<IdentityAddressTag>;
 
 #[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
 pub enum AddressOfAccountOrPersona {
@@ -391,12 +414,30 @@ pub enum AccountOrPersona {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
-pub struct AbstractEntity<A> {
-    pub address: A,
+pub struct AbstractEntity<A: Clone + Into<AddressOfAccountOrPersona>> {
+    address: A,
     pub security_state: EntitySecurityState,
 }
 pub type Account = AbstractEntity<AccountAddress>;
 pub type Persona = AbstractEntity<IdentityAddress>;
+
+impl<T: Clone + Into<AddressOfAccountOrPersona>> AbstractEntity<T> {
+    pub fn address(&self) -> AddressOfAccountOrPersona {
+        self.address.clone().into()
+    }
+}
+
+impl From<Account> for AccountOrPersona {
+    fn from(value: Account) -> Self {
+        Self::AccountEntity(value)
+    }
+}
+
+impl From<Persona> for AccountOrPersona {
+    fn from(value: Persona) -> Self {
+        Self::PersonaEntity(value)
+    }
+}
 
 impl From<AccountAddress> for AddressOfAccountOrPersona {
     fn from(value: AccountAddress) -> Self {
@@ -579,10 +620,15 @@ pub struct TransactionIntent {
 }
 
 impl TransactionIntent {
-    pub fn new(entities_requiring_auth: impl IntoIterator<Item = AccountOrPersona>) -> Self {
+    pub fn new(
+        entities_requiring_auth: impl IntoIterator<Item = impl Into<AccountOrPersona>>,
+    ) -> Self {
         Self {
             intent_hash: IntentHash::generate(),
-            entities_requiring_auth: entities_requiring_auth.into_iter().collect_vec(),
+            entities_requiring_auth: entities_requiring_auth
+                .into_iter()
+                .map(|i| i.into())
+                .collect_vec(),
         }
     }
 }

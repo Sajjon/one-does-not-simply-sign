@@ -262,26 +262,26 @@ impl PetitionEntity {
 }
 
 impl PetitionEntity {
-    fn from_entity(entity: AccountOrPersona, intent_hash: IntentHash) -> Self {
-        match entity.security_state {
+    fn from_entity(entity: impl Into<AccountOrPersona>, intent_hash: IntentHash) -> Self {
+        let entity = entity.into();
+        match entity.security_state() {
             EntitySecurityState::Securified(matrix) => {
-                Self::new_securified(intent_hash, entity.address, matrix)
+                Self::new_securified(intent_hash, entity.address(), matrix)
             }
             EntitySecurityState::Unsecured(factor) => {
-                Self::new_unsecurified(intent_hash, entity.address, factor)
+                Self::new_unsecurified(intent_hash, entity.address(), factor)
             }
         }
     }
 }
+
 impl HasSampleValues for PetitionEntity {
     fn sample() -> Self {
-        Self::from_entity(AccountOrPersona::sample_securified(), IntentHash::sample())
+        Self::from_entity(Account::sample_securified(), IntentHash::sample())
     }
+
     fn sample_other() -> Self {
-        Self::from_entity(
-            AccountOrPersona::sample_unsecurified(),
-            IntentHash::sample_other(),
-        )
+        Self::from_entity(Account::sample_unsecurified(), IntentHash::sample_other())
     }
 }
 
@@ -311,7 +311,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "A factor MUST NOT be present in both threshold AND override list.")]
     fn factor_should_not_be_used_in_both_lists() {
-        AccountOrPersona::securified_mainnet(0, "Jane Doe", |idx| {
+        Account::securified_mainnet(0, "Jane Doe", |idx| {
             let fi = FactorInstance::f(idx);
             MatrixOfFactorInstances::new(
                 [FactorSourceID::fs0()].map(&fi),
@@ -325,7 +325,7 @@ mod tests {
     #[should_panic]
     fn cannot_add_same_signature_twice() {
         let intent_hash = IntentHash::sample();
-        let entity = AccountOrPersona::securified_mainnet(0, "Jane Doe", |idx| {
+        let entity = Account::securified_mainnet(0, "Jane Doe", |idx| {
             let fi = FactorInstance::f(idx);
             MatrixOfFactorInstances::new(
                 [FactorSourceID::fs0()].map(&fi),
@@ -337,7 +337,7 @@ mod tests {
         let sign_input = HDSignatureInput::new(
             intent_hash,
             OwnedFactorInstance::new(
-                entity.address.clone(),
+                entity.address(),
                 FactorInstance::account_mainnet_tx(0, FactorSourceID::fs0()),
             ),
         );

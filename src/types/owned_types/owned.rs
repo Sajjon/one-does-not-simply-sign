@@ -21,9 +21,6 @@ impl<T: HasSampleValues> HasSampleValues for Owned<T> {
         Self::new(AddressOfAccountOrPersona::sample(), T::sample())
     }
     fn sample_other() -> Self {
-        Self::new(
-            AddressOfAccountOrPersona::sample_other(),
-            T::sample_other(),
-        )
+        Self::new(AddressOfAccountOrPersona::sample_other(), T::sample_other())
     }
 }

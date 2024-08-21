@@ -139,7 +139,7 @@ impl FactorInstance {
     }
 }
 
-impl AccountOrPersona {
+impl Account {
     /// Alice | 0 | Unsecurified { Device }
     pub fn a0() -> Self {
         Self::unsecurified_mainnet(0, "Alice", FactorSourceID::fs0())
