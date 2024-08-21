@@ -38,6 +38,25 @@ mod key_derivation_tests {
     use super::NetworkID::*;
     use super::*;
 
+    #[actix_rt::test]
+    async fn failure() {
+        let factor_source = fs_at(0);
+        let paths = [0, 1, 2]
+            .into_iter()
+            .map(|i| DerivationPath::new(Mainnet, Account, T9n, i))
+            .collect::<IndexSet<_>>();
+        let collector = KeysCollector::new(
+            FactorSource::all(),
+            [(factor_source.id, paths.clone())]
+                .into_iter()
+                .collect::<IndexMap<FactorSourceID, IndexSet<DerivationPath>>>(),
+            Arc::new(TestDerivationInteractors::fail()),
+        );
+        let outcome = collector.collect_keys().await;
+        println!("{:?}", outcome);
+        assert!(outcome.all_factors().is_empty())
+    }
+
     mod multi_key {
         use super::*;
 

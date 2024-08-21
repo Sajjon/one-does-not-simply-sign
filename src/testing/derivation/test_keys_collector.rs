@@ -1,35 +1,72 @@
 use crate::prelude::*;
 
-pub struct TestDerivationInteractors;
+pub struct TestDerivationInteractors {
+    pub parallel: Arc<dyn DeriveKeyWithFactorParallelInteractor + Send + Sync>,
+    pub serial: Arc<dyn DeriveKeyWithFactorSerialInteractor + Send + Sync>,
+}
+impl TestDerivationInteractors {
+    pub fn new(
+        parallel: impl DeriveKeyWithFactorParallelInteractor + Send + Sync + 'static,
+        serial: impl DeriveKeyWithFactorSerialInteractor + Send + Sync + 'static,
+    ) -> Self {
+        Self {
+            parallel: Arc::new(parallel),
+            serial: Arc::new(serial),
+        }
+    }
+}
 
-#[derive(Default, Clone, Debug)]
-pub struct StatelessDummyIndices;
-
-impl UsedDerivationIndices for StatelessDummyIndices {
-    fn next_derivation_index_with_request(
-        &self,
-        request: CreateNextDerivationPathRequest,
-    ) -> DerivationIndex {
-        request.key_space.range().start
+impl TestDerivationInteractors {
+    pub fn fail() -> Self {
+        Self::new(
+            TestDerivationParallelInteractor::fail(),
+            TestDerivationSerialInteractor::fail(),
+        )
+    }
+}
+impl Default for TestDerivationInteractors {
+    fn default() -> Self {
+        Self::new(
+            TestDerivationParallelInteractor::default(),
+            TestDerivationSerialInteractor::default(),
+        )
     }
 }
 
 impl KeysCollectingInteractors for TestDerivationInteractors {
     fn interactor_for(&self, kind: FactorSourceKind) -> KeyDerivationInteractor {
         match kind {
-            FactorSourceKind::Device => {
-                KeyDerivationInteractor::parallel(Arc::new(TestDerivationParallelInteractor))
-            }
-            _ => KeyDerivationInteractor::serial(Arc::new(TestDerivationSerialInteractor)),
+            FactorSourceKind::Device => KeyDerivationInteractor::parallel(self.parallel.clone()),
+            _ => KeyDerivationInteractor::serial(self.serial.clone()),
         }
     }
 }
 
-pub struct TestDerivationParallelInteractor;
+pub struct TestDerivationParallelInteractor {
+    handle: fn(SerialBatchKeyDerivationRequest) -> Result<IndexSet<FactorInstance>>,
+}
+impl TestDerivationParallelInteractor {
+    pub fn new(
+        handle: fn(SerialBatchKeyDerivationRequest) -> Result<IndexSet<FactorInstance>>,
+    ) -> Self {
+        Self { handle }
+    }
+    pub fn fail() -> Self {
+        Self::new(|_| Err(CommonError::Failure))
+    }
+    fn derive(&self, request: SerialBatchKeyDerivationRequest) -> Result<IndexSet<FactorInstance>> {
+        (self.handle)(request)
+    }
+}
+impl Default for TestDerivationParallelInteractor {
+    fn default() -> Self {
+        Self::new(do_derive_serially)
+    }
+}
 
-fn derive_serially(
+fn do_derive_serially(
     request: SerialBatchKeyDerivationRequest,
-) -> (FactorSourceID, IndexSet<FactorInstance>) {
+) -> Result<IndexSet<FactorInstance>> {
     let factor_source_id = &request.factor_source_id;
     let instances = request
         .derivation_paths
@@ -37,7 +74,7 @@ fn derive_serially(
         .map(|p| FactorInstance::mocked_with(p, factor_source_id))
         .collect::<IndexSet<_>>();
 
-    (*factor_source_id, instances)
+    Ok(instances)
 }
 
 #[async_trait::async_trait]
@@ -46,16 +83,40 @@ impl DeriveKeyWithFactorParallelInteractor for TestDerivationParallelInteractor 
         &self,
         request: ParallelBatchKeyDerivationRequest,
     ) -> Result<BatchDerivationResponse> {
-        let pairs = request
+        let pairs_result: Result<IndexMap<FactorSourceID, IndexSet<FactorInstance>>> = request
             .per_factor_source
             .into_iter()
-            .map(|(_, v)| derive_serially(v))
-            .collect::<IndexMap<_, _>>();
+            .map(|(k, r)| {
+                let instances = self.derive(r);
+                instances.map(|i| (k, i))
+            })
+            .collect();
+        let pairs = pairs_result?;
         Ok(BatchDerivationResponse::new(pairs))
     }
 }
 
-pub struct TestDerivationSerialInteractor;
+pub struct TestDerivationSerialInteractor {
+    handle: fn(SerialBatchKeyDerivationRequest) -> Result<IndexSet<FactorInstance>>,
+}
+impl TestDerivationSerialInteractor {
+    pub fn new(
+        handle: fn(SerialBatchKeyDerivationRequest) -> Result<IndexSet<FactorInstance>>,
+    ) -> Self {
+        Self { handle }
+    }
+    pub fn fail() -> Self {
+        Self::new(|_| Err(CommonError::Failure))
+    }
+    fn derive(&self, request: SerialBatchKeyDerivationRequest) -> Result<IndexSet<FactorInstance>> {
+        (self.handle)(request)
+    }
+}
+impl Default for TestDerivationSerialInteractor {
+    fn default() -> Self {
+        Self::new(do_derive_serially)
+    }
+}
 
 #[async_trait::async_trait]
 impl DeriveKeyWithFactorSerialInteractor for TestDerivationSerialInteractor {
@@ -63,8 +124,11 @@ impl DeriveKeyWithFactorSerialInteractor for TestDerivationSerialInteractor {
         &self,
         request: SerialBatchKeyDerivationRequest,
     ) -> Result<BatchDerivationResponse> {
-        let pair = derive_serially(request);
-        Ok(BatchDerivationResponse::new(IndexMap::from_iter([pair])))
+        let instances = self.derive(request.clone())?;
+        Ok(BatchDerivationResponse::new(IndexMap::from_iter([(
+            request.factor_source_id,
+            instances,
+        )])))
     }
 }
 
@@ -76,7 +140,7 @@ impl KeysCollector {
         Self::new(
             all_factor_sources_in_profile.into_iter().collect(),
             derivation_paths.into_iter().collect(),
-            Arc::new(TestDerivationInteractors),
+            Arc::new(TestDerivationInteractors::default()),
         )
     }
 
