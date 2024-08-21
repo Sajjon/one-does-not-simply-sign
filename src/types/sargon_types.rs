@@ -251,22 +251,22 @@ impl HierarchicalDeterministicPublicKey {
 #[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
 pub struct HierarchicalDeterministicFactorInstance {
     pub factor_source_id: FactorSourceID,
-    pub hd_public_key: HierarchicalDeterministicPublicKey,
+    pub public_key: HierarchicalDeterministicPublicKey,
 }
 
 impl HierarchicalDeterministicFactorInstance {
     pub fn new(
-        hd_public_key: HierarchicalDeterministicPublicKey,
+        public_key: HierarchicalDeterministicPublicKey,
         factor_source_id: FactorSourceID,
     ) -> Self {
         Self {
-            hd_public_key,
+            public_key,
             factor_source_id,
         }
     }
 
-    pub fn path(&self) -> DerivationPath {
-        self.hd_public_key.derivation_path.clone()
+    pub fn derivation_path(&self) -> DerivationPath {
+        self.public_key.derivation_path.clone()
     }
 
     pub fn mocked_with(derivation_path: DerivationPath, factor_source_id: &FactorSourceID) -> Self {
@@ -292,11 +292,7 @@ impl HierarchicalDeterministicFactorInstance {
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
-        [
-            self.hd_public_key.to_bytes(),
-            self.factor_source_id.to_bytes(),
-        ]
-        .concat()
+        [self.public_key.to_bytes(), self.factor_source_id.to_bytes()].concat()
     }
 }
 

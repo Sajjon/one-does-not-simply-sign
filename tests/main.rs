@@ -74,7 +74,7 @@ mod key_derivation_tests {
                 outcome
                     .all_factors()
                     .into_iter()
-                    .map(|f| f.path())
+                    .map(|f| f.derivation_path())
                     .collect::<IndexSet<_>>(),
                 paths
             );
@@ -102,7 +102,7 @@ mod key_derivation_tests {
                 outcome
                     .all_factors()
                     .into_iter()
-                    .map(|f| f.path())
+                    .map(|f| f.derivation_path())
                     .collect::<IndexSet<_>>(),
                 paths
             );
@@ -141,7 +141,7 @@ mod key_derivation_tests {
                 outcome
                     .all_factors()
                     .into_iter()
-                    .map(|f| f.path())
+                    .map(|f| f.derivation_path())
                     .collect::<IndexSet<_>>(),
                 paths
             );
@@ -329,7 +329,7 @@ mod key_derivation_tests {
                 outcome
                     .all_factors()
                     .into_iter()
-                    .map(|f| f.path())
+                    .map(|f| f.derivation_path())
                     .collect::<IndexSet<_>>(),
                 paths
             );
@@ -373,7 +373,7 @@ mod key_derivation_tests {
             assert_eq!(factors.len(), 1);
             let factor = factors.first().unwrap();
             assert_eq!(
-                factor.path(),
+                factor.derivation_path(),
                 DerivationPath::new(network_id, entity_kind, key_kind, expected.index)
             );
             assert_eq!(factor.factor_source_id, factor_source.factor_source_id());

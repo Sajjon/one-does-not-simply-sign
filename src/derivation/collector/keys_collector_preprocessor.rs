@@ -30,7 +30,7 @@ impl Keyring {
                     .derived
                     .borrow()
                     .iter()
-                    .any(|x| x.hd_public_key == f.hd_public_key)));
+                    .any(|x| x.public_key == f.public_key)));
 
         self.derived.borrow_mut().extend(response)
     }
