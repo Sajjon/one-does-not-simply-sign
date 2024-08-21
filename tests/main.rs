@@ -138,6 +138,196 @@ mod key_derivation_tests {
                     .collect::<HashSet::<_>>()
             );
         }
+
+        #[actix_rt::test]
+        async fn multi_keys_multi_factor_sources_multi_paths_complex() {
+            let mut paths = IndexSet::new();
+
+            paths.extend(
+                [0, 1, 2]
+                    .into_iter()
+                    .map(|i| DerivationPath::new(Mainnet, Account, T9n, i)),
+            );
+
+            paths.extend(
+                [0, 1, 2]
+                    .into_iter()
+                    .map(|i| DerivationPath::new(Stokenet, Account, T9n, i)),
+            );
+
+            paths.extend(
+                [0, 1, 2]
+                    .into_iter()
+                    .map(|i| DerivationPath::new(Mainnet, Identity, T9n, i)),
+            );
+
+            paths.extend(
+                [0, 1, 2]
+                    .into_iter()
+                    .map(|i| DerivationPath::new(Stokenet, Identity, T9n, i)),
+            );
+
+            paths.extend(
+                [0, 1, 2]
+                    .into_iter()
+                    .map(|i| DerivationPath::new(Mainnet, Account, Rola, i)),
+            );
+
+            paths.extend(
+                [0, 1, 2]
+                    .into_iter()
+                    .map(|i| DerivationPath::new(Stokenet, Account, Rola, i)),
+            );
+
+            paths.extend(
+                [0, 1, 2]
+                    .into_iter()
+                    .map(|i| DerivationPath::new(Mainnet, Identity, Rola, i)),
+            );
+
+            paths.extend(
+                [0, 1, 2]
+                    .into_iter()
+                    .map(|i| DerivationPath::new(Stokenet, Identity, Rola, i)),
+            );
+
+            paths.extend(
+                [
+                    0,
+                    1,
+                    2,
+                    KeySpace::SPLIT + 0,
+                    KeySpace::SPLIT + 1,
+                    KeySpace::SPLIT + 2,
+                ]
+                .into_iter()
+                .map(|i| DerivationPath::new(Mainnet, Account, T9n, i)),
+            );
+
+            paths.extend(
+                [
+                    0,
+                    1,
+                    2,
+                    KeySpace::SPLIT + 0,
+                    KeySpace::SPLIT + 1,
+                    KeySpace::SPLIT + 2,
+                ]
+                .into_iter()
+                .map(|i| DerivationPath::new(Stokenet, Account, T9n, i)),
+            );
+
+            paths.extend(
+                [
+                    0,
+                    1,
+                    2,
+                    KeySpace::SPLIT + 0,
+                    KeySpace::SPLIT + 1,
+                    KeySpace::SPLIT + 2,
+                ]
+                .into_iter()
+                .map(|i| DerivationPath::new(Mainnet, Identity, T9n, i)),
+            );
+
+            paths.extend(
+                [
+                    0,
+                    1,
+                    2,
+                    KeySpace::SPLIT + 0,
+                    KeySpace::SPLIT + 1,
+                    KeySpace::SPLIT + 2,
+                ]
+                .into_iter()
+                .map(|i| DerivationPath::new(Stokenet, Identity, T9n, i)),
+            );
+
+            paths.extend(
+                [
+                    0,
+                    1,
+                    2,
+                    KeySpace::SPLIT + 0,
+                    KeySpace::SPLIT + 1,
+                    KeySpace::SPLIT + 2,
+                ]
+                .into_iter()
+                .map(|i| DerivationPath::new(Mainnet, Account, Rola, i)),
+            );
+
+            paths.extend(
+                [
+                    0,
+                    1,
+                    2,
+                    KeySpace::SPLIT + 0,
+                    KeySpace::SPLIT + 1,
+                    KeySpace::SPLIT + 2,
+                ]
+                .into_iter()
+                .map(|i| DerivationPath::new(Stokenet, Account, Rola, i)),
+            );
+
+            paths.extend(
+                [
+                    0,
+                    1,
+                    2,
+                    KeySpace::SPLIT + 0,
+                    KeySpace::SPLIT + 1,
+                    KeySpace::SPLIT + 2,
+                ]
+                .into_iter()
+                .map(|i| DerivationPath::new(Mainnet, Identity, Rola, i)),
+            );
+
+            paths.extend(
+                [
+                    0,
+                    1,
+                    2,
+                    KeySpace::SPLIT + 0,
+                    KeySpace::SPLIT + 1,
+                    KeySpace::SPLIT + 2,
+                ]
+                .into_iter()
+                .map(|i| DerivationPath::new(Stokenet, Identity, Rola, i)),
+            );
+
+            let factor_sources = FactorSource::all();
+
+            let collector = KeysCollector::new_test(
+                factor_sources
+                    .iter()
+                    .map(|f| (f.id, paths.clone()))
+                    .collect_vec(),
+            );
+            let outcome = collector.collect_keys().await;
+
+            assert_eq!(
+                outcome
+                    .all_factors()
+                    .into_iter()
+                    .map(|f| f.path())
+                    .collect::<IndexSet<_>>(),
+                paths
+            );
+
+            assert!(outcome.all_factors().len() > 200);
+
+            assert_eq!(
+                outcome
+                    .all_factors()
+                    .into_iter()
+                    .map(|f| f.factor_source_id.clone())
+                    .collect::<HashSet::<_>>(),
+                factor_sources
+                    .into_iter()
+                    .map(|f| f.id)
+                    .collect::<HashSet::<_>>()
+            );
+        }
     }
 
     mod single_key {
