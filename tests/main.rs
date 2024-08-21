@@ -1,7 +1,7 @@
-use signing::prelude::*;
+use use_factors::prelude::*;
 
 #[cfg(test)]
-mod tests {
+mod common_tests {
 
     use super::*;
 
@@ -28,6 +28,481 @@ mod tests {
             Entity::a6().security_state.all_factor_instances()
         );
     }
+}
+
+#[cfg(test)]
+mod key_derivation_tests {
+
+    use super::EntityKind::*;
+    use super::KeyKind::*;
+    use super::NetworkID::*;
+    use super::*;
+
+    #[actix_rt::test]
+    async fn failure() {
+        let factor_source = fs_at(0);
+        let paths = [0, 1, 2]
+            .into_iter()
+            .map(|i| DerivationPath::new(Mainnet, Account, T9n, i))
+            .collect::<IndexSet<_>>();
+        let collector = KeysCollector::new(
+            FactorSource::all(),
+            [(factor_source.id, paths.clone())]
+                .into_iter()
+                .collect::<IndexMap<FactorSourceID, IndexSet<DerivationPath>>>(),
+            Arc::new(TestDerivationInteractors::fail()),
+        );
+        let outcome = collector.collect_keys().await;
+        println!("{:?}", outcome);
+        assert!(outcome.all_factors().is_empty())
+    }
+
+    mod multi_key {
+        use super::*;
+
+        #[actix_rt::test]
+        async fn multi_keys_same_factor_source_different_indices() {
+            let factor_source = fs_at(0);
+            let paths = [0, 1, 2]
+                .into_iter()
+                .map(|i| DerivationPath::new(Mainnet, Account, T9n, i))
+                .collect::<IndexSet<_>>();
+            let collector = KeysCollector::new_test([(factor_source.id, paths.clone())]);
+            let outcome = collector.collect_keys().await;
+            assert_eq!(
+                outcome
+                    .all_factors()
+                    .into_iter()
+                    .map(|f| f.path())
+                    .collect::<IndexSet<_>>(),
+                paths
+            );
+
+            assert!(outcome
+                .all_factors()
+                .into_iter()
+                .all(|f| f.factor_source_id == factor_source.id));
+        }
+
+        #[actix_rt::test]
+        async fn multi_keys_multi_factor_sources_single_index_per() {
+            let path = DerivationPath::account_tx(Mainnet, 0);
+            let paths = IndexSet::from_iter([path]);
+            let factor_sources = FactorSource::all();
+
+            let collector = KeysCollector::new_test(
+                factor_sources
+                    .iter()
+                    .map(|f| (f.id, paths.clone()))
+                    .collect_vec(),
+            );
+            let outcome = collector.collect_keys().await;
+            assert_eq!(
+                outcome
+                    .all_factors()
+                    .into_iter()
+                    .map(|f| f.path())
+                    .collect::<IndexSet<_>>(),
+                paths
+            );
+
+            assert_eq!(
+                outcome
+                    .all_factors()
+                    .into_iter()
+                    .map(|f| f.factor_source_id)
+                    .collect::<HashSet::<_>>(),
+                factor_sources
+                    .into_iter()
+                    .map(|f| f.id)
+                    .collect::<HashSet::<_>>()
+            );
+        }
+
+        #[actix_rt::test]
+        async fn multi_keys_multi_factor_sources_multi_paths() {
+            let paths = [0, 1, 2]
+                .into_iter()
+                .map(|i| DerivationPath::new(Mainnet, Account, T9n, i))
+                .collect::<IndexSet<_>>();
+
+            let factor_sources = FactorSource::all();
+
+            let collector = KeysCollector::new_test(
+                factor_sources
+                    .iter()
+                    .map(|f| (f.id, paths.clone()))
+                    .collect_vec(),
+            );
+            let outcome = collector.collect_keys().await;
+
+            assert_eq!(
+                outcome
+                    .all_factors()
+                    .into_iter()
+                    .map(|f| f.path())
+                    .collect::<IndexSet<_>>(),
+                paths
+            );
+
+            assert_eq!(
+                outcome
+                    .all_factors()
+                    .into_iter()
+                    .map(|f| f.factor_source_id)
+                    .collect::<HashSet::<_>>(),
+                factor_sources
+                    .into_iter()
+                    .map(|f| f.id)
+                    .collect::<HashSet::<_>>()
+            );
+        }
+
+        #[actix_rt::test]
+        async fn multi_keys_multi_factor_sources_multi_paths_complex() {
+            let mut paths = IndexSet::new();
+
+            paths.extend(
+                [0, 1, 2]
+                    .into_iter()
+                    .map(|i| DerivationPath::new(Mainnet, Account, T9n, i)),
+            );
+
+            paths.extend(
+                [0, 1, 2]
+                    .into_iter()
+                    .map(|i| DerivationPath::new(Stokenet, Account, T9n, i)),
+            );
+
+            paths.extend(
+                [0, 1, 2]
+                    .into_iter()
+                    .map(|i| DerivationPath::new(Mainnet, Identity, T9n, i)),
+            );
+
+            paths.extend(
+                [0, 1, 2]
+                    .into_iter()
+                    .map(|i| DerivationPath::new(Stokenet, Identity, T9n, i)),
+            );
+
+            paths.extend(
+                [0, 1, 2]
+                    .into_iter()
+                    .map(|i| DerivationPath::new(Mainnet, Account, Rola, i)),
+            );
+
+            paths.extend(
+                [0, 1, 2]
+                    .into_iter()
+                    .map(|i| DerivationPath::new(Stokenet, Account, Rola, i)),
+            );
+
+            paths.extend(
+                [0, 1, 2]
+                    .into_iter()
+                    .map(|i| DerivationPath::new(Mainnet, Identity, Rola, i)),
+            );
+
+            paths.extend(
+                [0, 1, 2]
+                    .into_iter()
+                    .map(|i| DerivationPath::new(Stokenet, Identity, Rola, i)),
+            );
+
+            paths.extend(
+                [
+                    0,
+                    1,
+                    2,
+                    KeySpace::SPLIT,
+                    KeySpace::SPLIT + 1,
+                    KeySpace::SPLIT + 2,
+                ]
+                .into_iter()
+                .map(|i| DerivationPath::new(Mainnet, Account, T9n, i)),
+            );
+
+            paths.extend(
+                [
+                    0,
+                    1,
+                    2,
+                    KeySpace::SPLIT,
+                    KeySpace::SPLIT + 1,
+                    KeySpace::SPLIT + 2,
+                ]
+                .into_iter()
+                .map(|i| DerivationPath::new(Stokenet, Account, T9n, i)),
+            );
+
+            paths.extend(
+                [
+                    0,
+                    1,
+                    2,
+                    KeySpace::SPLIT,
+                    KeySpace::SPLIT + 1,
+                    KeySpace::SPLIT + 2,
+                ]
+                .into_iter()
+                .map(|i| DerivationPath::new(Mainnet, Identity, T9n, i)),
+            );
+
+            paths.extend(
+                [
+                    0,
+                    1,
+                    2,
+                    KeySpace::SPLIT,
+                    KeySpace::SPLIT + 1,
+                    KeySpace::SPLIT + 2,
+                ]
+                .into_iter()
+                .map(|i| DerivationPath::new(Stokenet, Identity, T9n, i)),
+            );
+
+            paths.extend(
+                [
+                    0,
+                    1,
+                    2,
+                    KeySpace::SPLIT,
+                    KeySpace::SPLIT + 1,
+                    KeySpace::SPLIT + 2,
+                ]
+                .into_iter()
+                .map(|i| DerivationPath::new(Mainnet, Account, Rola, i)),
+            );
+
+            paths.extend(
+                [
+                    0,
+                    1,
+                    2,
+                    KeySpace::SPLIT,
+                    KeySpace::SPLIT + 1,
+                    KeySpace::SPLIT + 2,
+                ]
+                .into_iter()
+                .map(|i| DerivationPath::new(Stokenet, Account, Rola, i)),
+            );
+
+            paths.extend(
+                [
+                    0,
+                    1,
+                    2,
+                    KeySpace::SPLIT,
+                    KeySpace::SPLIT + 1,
+                    KeySpace::SPLIT + 2,
+                ]
+                .into_iter()
+                .map(|i| DerivationPath::new(Mainnet, Identity, Rola, i)),
+            );
+
+            paths.extend(
+                [
+                    0,
+                    1,
+                    2,
+                    KeySpace::SPLIT,
+                    KeySpace::SPLIT + 1,
+                    KeySpace::SPLIT + 2,
+                ]
+                .into_iter()
+                .map(|i| DerivationPath::new(Stokenet, Identity, Rola, i)),
+            );
+
+            let factor_sources = FactorSource::all();
+
+            let collector = KeysCollector::new_test(
+                factor_sources
+                    .iter()
+                    .map(|f| (f.id, paths.clone()))
+                    .collect_vec(),
+            );
+            let outcome = collector.collect_keys().await;
+
+            assert_eq!(
+                outcome
+                    .all_factors()
+                    .into_iter()
+                    .map(|f| f.path())
+                    .collect::<IndexSet<_>>(),
+                paths
+            );
+
+            assert!(outcome.all_factors().len() > 200);
+
+            assert_eq!(
+                outcome
+                    .all_factors()
+                    .into_iter()
+                    .map(|f| f.factor_source_id)
+                    .collect::<HashSet::<_>>(),
+                factor_sources
+                    .into_iter()
+                    .map(|f| f.id)
+                    .collect::<HashSet::<_>>()
+            );
+        }
+    }
+
+    mod single_key {
+        use super::*;
+
+        struct Expected {
+            index: DerivationIndex,
+        }
+
+        async fn do_test(
+            key_space: KeySpace,
+            factor_source: &FactorSource,
+            network_id: NetworkID,
+            entity_kind: EntityKind,
+            key_kind: KeyKind,
+            expected: Expected,
+        ) {
+            let collector =
+                KeysCollector::with(factor_source, network_id, key_kind, entity_kind, key_space);
+
+            let outcome = collector.collect_keys().await;
+            let factors = outcome.all_factors();
+            assert_eq!(factors.len(), 1);
+            let factor = factors.first().unwrap();
+            assert_eq!(
+                factor.path(),
+                DerivationPath::new(network_id, entity_kind, key_kind, expected.index)
+            );
+            assert_eq!(factor.factor_source_id, factor_source.id);
+        }
+
+        mod securified {
+            use super::*;
+
+            async fn test(
+                factor_source: &FactorSource,
+                network_id: NetworkID,
+                entity_kind: EntityKind,
+                key_kind: KeyKind,
+            ) {
+                do_test(
+                    KeySpace::Securified,
+                    factor_source,
+                    network_id,
+                    entity_kind,
+                    key_kind,
+                    Expected {
+                        index: KeySpace::SPLIT,
+                    },
+                )
+                .await
+            }
+
+            mod account {
+                use super::*;
+
+                async fn each_factor(network_id: NetworkID, key_kind: KeyKind) {
+                    for factor_source in FactorSource::all().iter() {
+                        test(factor_source, network_id, Account, key_kind).await
+                    }
+                }
+
+                #[actix_rt::test]
+                async fn single_first_account_mainnet_t9n() {
+                    each_factor(Mainnet, T9n).await
+                }
+            }
+        }
+
+        mod unsecurified {
+            use super::*;
+
+            async fn test(
+                factor_source: &FactorSource,
+                network_id: NetworkID,
+                entity_kind: EntityKind,
+                key_kind: KeyKind,
+            ) {
+                do_test(
+                    KeySpace::Unsecurified,
+                    factor_source,
+                    network_id,
+                    entity_kind,
+                    key_kind,
+                    Expected { index: 0 },
+                )
+                .await
+            }
+
+            mod account {
+                use super::*;
+
+                async fn each_factor(network_id: NetworkID, key_kind: KeyKind) {
+                    for factor_source in FactorSource::all().iter() {
+                        test(factor_source, network_id, Account, key_kind).await
+                    }
+                }
+
+                #[actix_rt::test]
+                async fn single_first_account_mainnet_t9n() {
+                    each_factor(Mainnet, T9n).await
+                }
+
+                #[actix_rt::test]
+                async fn single_first_account_stokenet_t9n() {
+                    each_factor(Mainnet, T9n).await
+                }
+
+                #[actix_rt::test]
+                async fn single_first_account_mainnet_rola() {
+                    each_factor(Mainnet, Rola).await
+                }
+
+                #[actix_rt::test]
+                async fn single_first_account_stokenet_rola() {
+                    each_factor(Stokenet, Rola).await
+                }
+            }
+
+            mod persona {
+                use super::*;
+
+                async fn each_factor(network_id: NetworkID, key_kind: KeyKind) {
+                    for factor_source in FactorSource::all().iter() {
+                        test(factor_source, network_id, Identity, key_kind).await
+                    }
+                }
+
+                #[actix_rt::test]
+                async fn single_first_persona_mainnet_t9n() {
+                    each_factor(Mainnet, T9n).await
+                }
+
+                #[actix_rt::test]
+                async fn single_first_persona_stokenet_t9n() {
+                    each_factor(Mainnet, T9n).await
+                }
+
+                #[actix_rt::test]
+                async fn single_first_persona_mainnet_rola() {
+                    each_factor(Mainnet, Rola).await
+                }
+
+                #[actix_rt::test]
+                async fn single_first_persona_stokenet_rola() {
+                    each_factor(Stokenet, Rola).await
+                }
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod signing_tests {
+
+    use super::*;
 
     #[actix_rt::test]
     async fn prudent_user_single_tx_a0() {
@@ -256,11 +731,11 @@ mod tests {
     #[actix_rt::test]
     async fn lazy_sign_minimum_all_known_factors_used_as_override_factors_signed_with_device() {
         let collector = SignaturesCollector::test_lazy_sign_minimum_no_failures([
-            TransactionIntent::new([Entity::securified(0, "all override", |idx| {
+            TransactionIntent::new([Entity::securified_mainnet(0, "all override", |idx| {
                 MatrixOfFactorInstances::override_only(
                     FactorSource::all()
                         .into_iter()
-                        .map(|f| FactorInstance::new(idx, f.id)),
+                        .map(|f| FactorInstance::account_mainnet_tx(idx, f.id)),
                 )
             })]),
         ]);

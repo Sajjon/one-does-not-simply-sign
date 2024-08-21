@@ -308,7 +308,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "A factor MUST NOT be present in both threshold AND override list.")]
     fn factor_should_not_be_used_in_both_lists() {
-        Entity::securified(0, "Jane Doe", |idx| {
+        Entity::securified_mainnet(0, "Jane Doe", |idx| {
             let fi = FactorInstance::f(idx);
             MatrixOfFactorInstances::new(
                 [FactorSourceID::fs0()].map(&fi),
@@ -322,7 +322,7 @@ mod tests {
     #[should_panic]
     fn cannot_add_same_signature_twice() {
         let intent_hash = IntentHash::sample();
-        let entity = Entity::securified(0, "Jane Doe", |idx| {
+        let entity = Entity::securified_mainnet(0, "Jane Doe", |idx| {
             let fi = FactorInstance::f(idx);
             MatrixOfFactorInstances::new(
                 [FactorSourceID::fs0()].map(&fi),
@@ -335,7 +335,7 @@ mod tests {
             intent_hash,
             OwnedFactorInstance::new(
                 entity.address.clone(),
-                FactorInstance::new(0, FactorSourceID::fs0()),
+                FactorInstance::account_mainnet_tx(0, FactorSourceID::fs0()),
             ),
         );
         let signature = HDSignature::produced_signing_with_input(sign_input);
@@ -352,7 +352,7 @@ mod tests {
                 sut.intent_hash.clone(),
                 OwnedFactorInstance::new(
                     sut.entity.clone(),
-                    FactorInstance::new(6, FactorSourceID::fs1()),
+                    FactorInstance::account_mainnet_tx(6, FactorSourceID::fs1()),
                 ),
             ),
         ));

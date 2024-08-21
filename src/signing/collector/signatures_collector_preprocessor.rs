@@ -1,10 +1,30 @@
 use crate::prelude::*;
 
-use super::factor_sources_of_kind::FactorSourcesOfKind;
-
 pub struct SignaturesCollectorPreprocessor {
     transactions: IndexSet<TransactionIntent>,
 }
+
+pub fn sort_group_factors(
+    used_factor_sources: HashSet<FactorSource>,
+) -> IndexSet<FactorSourcesOfKind> {
+    let factors_of_kind = used_factor_sources
+        .into_iter()
+        .into_grouping_map_by(|x| x.kind())
+        .collect::<IndexSet<FactorSource>>();
+
+    let mut factors_of_kind = factors_of_kind
+        .into_iter()
+        .map(|(k, v)| (k, v.into_iter().sorted().collect::<IndexSet<_>>()))
+        .collect::<IndexMap<FactorSourceKind, IndexSet<FactorSource>>>();
+
+    factors_of_kind.sort_keys();
+
+    factors_of_kind
+        .into_iter()
+        .map(|(k, v)| FactorSourcesOfKind::new(k, v).unwrap())
+        .collect::<IndexSet<_>>()
+}
+
 impl SignaturesCollectorPreprocessor {
     pub(super) fn new(transactions: IndexSet<TransactionIntent>) -> Self {
         Self { transactions }
@@ -89,21 +109,7 @@ impl SignaturesCollectorPreprocessor {
             petitions_for_all_transactions.insert(transaction.intent_hash, petition_of_tx);
         }
 
-        let factors_of_kind = used_factor_sources
-            .into_iter()
-            .into_grouping_map_by(|x| x.kind())
-            .collect::<IndexSet<FactorSource>>();
-
-        let mut factors_of_kind = factors_of_kind
-            .into_iter()
-            .map(|(k, v)| (k, v.into_iter().sorted().collect::<IndexSet<_>>()))
-            .collect::<IndexMap<FactorSourceKind, IndexSet<FactorSource>>>();
-
-        factors_of_kind.sort_keys();
-        let factors_of_kind = factors_of_kind
-            .into_iter()
-            .map(|(k, v)| FactorSourcesOfKind::new(k, v).unwrap())
-            .collect::<IndexSet<_>>();
+        let factors_of_kind = sort_group_factors(used_factor_sources);
 
         let petitions = Petitions::new(factor_to_payloads, petitions_for_all_transactions);
 

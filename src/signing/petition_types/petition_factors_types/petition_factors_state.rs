@@ -115,7 +115,7 @@ mod tests {
 
         let intent_hash = IntentHash::sample();
 
-        let factor_instance = FactorInstance::new(0, FactorSourceID::fs0());
+        let factor_instance = FactorInstance::account_mainnet_tx(0, FactorSourceID::fs0());
         let sign_input = HDSignatureInput::new(
             intent_hash,
             OwnedFactorInstance::new(
@@ -136,7 +136,7 @@ mod tests {
         let sut = Sut::new();
 
         let intent_hash = IntentHash::sample();
-        let factor_instance = FactorInstance::new(0, FactorSourceID::fs0());
+        let factor_instance = FactorInstance::account_mainnet_tx(0, FactorSourceID::fs0());
 
         sut.did_skip(&factor_instance, false);
 

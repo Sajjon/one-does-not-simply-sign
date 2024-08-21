@@ -1,10 +1,10 @@
 use crate::prelude::*;
 
-/// The outcome of a Signatures Building Coordinator - it is a tuple of
-/// collection of signatures, one collection for transactions which would be
-/// successful if submitted to the network (from a signatures point of view) and
-/// one collection of transactions which would fail if submitted to the network,
-/// since not enough signatures have been gathered.
+/// The outcome of a SignaturesCollector, containing a collection for transactions
+/// which would be successful if submitted to the network (from a signatures point of view)
+/// and a collection of transactions which would fail if submitted to the network,
+/// since not enough signatures have been gathered. And a collection of factor sources
+/// which were skipped.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct SignaturesOutcome {
     /// A potentially empty collection of transactions which which would be

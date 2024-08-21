@@ -124,22 +124,166 @@ impl HasSampleValues for FactorSourceKind {
     }
 }
 
+pub type DerivationIndex = u32;
+
+#[repr(u8)]
+#[derive(Clone, Debug, Copy, PartialEq, Eq, Hash)]
+pub enum KeyKind {
+    T9n,
+    Rola,
+}
+impl KeyKind {
+    fn discriminant(&self) -> u8 {
+        core::intrinsics::discriminant_value(self)
+    }
+}
+
+#[repr(u8)]
+#[derive(Clone, Debug, Copy, PartialEq, Eq, Hash)]
+pub enum NetworkID {
+    Mainnet,
+    Stokenet,
+}
+impl NetworkID {
+    fn discriminant(&self) -> u8 {
+        core::intrinsics::discriminant_value(self)
+    }
+}
+
+#[repr(u8)]
+#[derive(Clone, Debug, Copy, PartialEq, Eq, Hash)]
+pub enum EntityKind {
+    Account,
+    Identity,
+}
+
+impl EntityKind {
+    fn discriminant(&self) -> u8 {
+        core::intrinsics::discriminant_value(self)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct DerivationPath {
+    pub network_id: NetworkID,
+    pub entity_kind: EntityKind,
+    pub key_kind: KeyKind,
+    pub index: DerivationIndex,
+}
+
+impl DerivationPath {
+    pub fn new(
+        network_id: NetworkID,
+        entity_kind: EntityKind,
+        key_kind: KeyKind,
+        index: DerivationIndex,
+    ) -> Self {
+        Self {
+            network_id,
+            entity_kind,
+            key_kind,
+            index,
+        }
+    }
+    pub fn account_tx(network_id: NetworkID, index: DerivationIndex) -> Self {
+        Self::new(network_id, EntityKind::Account, KeyKind::T9n, index)
+    }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut vec = Vec::new();
+        vec.push(self.network_id.discriminant());
+        vec.push(self.entity_kind.discriminant());
+        vec.push(self.key_kind.discriminant());
+        vec.extend(self.index.to_be_bytes());
+        vec
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct PublicKey {
+    /// this emulates the mnemonic
+    factor_source_id: FactorSourceID,
+}
+impl PublicKey {
+    pub fn new(factor_source_id: FactorSourceID) -> Self {
+        Self { factor_source_id }
+    }
+    pub fn to_bytes(&self) -> Vec<u8> {
+        self.factor_source_id.to_bytes()
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct HierarchicalDeterministicPublicKey {
+    /// The expected public key of the private key derived at `derivationPath`
+    pub public_key: PublicKey,
+
+    /// The HD derivation path for the key pair which produces virtual badges (signatures).
+    pub derivation_path: DerivationPath,
+}
+impl HierarchicalDeterministicPublicKey {
+    pub fn new(derivation_path: DerivationPath, public_key: PublicKey) -> Self {
+        Self {
+            derivation_path,
+            public_key,
+        }
+    }
+
+    pub fn mocked_with(derivation_path: DerivationPath, factor_source_id: &FactorSourceID) -> Self {
+        Self::new(derivation_path, PublicKey::new(*factor_source_id))
+    }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        [self.public_key.to_bytes(), self.derivation_path.to_bytes()].concat()
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
 pub struct FactorInstance {
-    pub index: u32, // actually `DerivationPath`...
+    pub hd_public_key: HierarchicalDeterministicPublicKey,
     pub factor_source_id: FactorSourceID,
 }
 
 impl FactorInstance {
-    pub fn new(index: u32, factor_source_id: FactorSourceID) -> Self {
+    pub fn new(
+        hd_public_key: HierarchicalDeterministicPublicKey,
+        factor_source_id: FactorSourceID,
+    ) -> Self {
         Self {
-            index,
+            hd_public_key,
             factor_source_id,
         }
     }
+
+    pub fn path(&self) -> DerivationPath {
+        self.hd_public_key.derivation_path.clone()
+    }
+
+    pub fn mocked_with(derivation_path: DerivationPath, factor_source_id: &FactorSourceID) -> Self {
+        Self::new(
+            HierarchicalDeterministicPublicKey::mocked_with(derivation_path, factor_source_id),
+            *factor_source_id,
+        )
+    }
+
+    pub fn account_tx_on_network(
+        network_id: NetworkID,
+        index: DerivationIndex,
+        factor_source_id: FactorSourceID,
+    ) -> Self {
+        let derivation_path = DerivationPath::account_tx(network_id, index);
+        let public_key = PublicKey::new(factor_source_id);
+        let hd_public_key = HierarchicalDeterministicPublicKey::new(derivation_path, public_key);
+        Self::new(hd_public_key, factor_source_id)
+    }
+
+    pub fn account_mainnet_tx(index: DerivationIndex, factor_source_id: FactorSourceID) -> Self {
+        Self::account_tx_on_network(NetworkID::Mainnet, index, factor_source_id)
+    }
+
     pub fn to_bytes(&self) -> Vec<u8> {
         [
-            self.index.to_be_bytes().to_vec(),
+            self.hd_public_key.to_bytes(),
             self.factor_source_id.to_bytes(),
         ]
         .concat()
@@ -148,10 +292,10 @@ impl FactorInstance {
 
 impl HasSampleValues for FactorInstance {
     fn sample() -> Self {
-        Self::new(0, FactorSourceID::sample())
+        Self::account_mainnet_tx(0, FactorSourceID::sample())
     }
     fn sample_other() -> Self {
-        Self::new(1, FactorSourceID::sample_other())
+        Self::account_mainnet_tx(1, FactorSourceID::sample_other())
     }
 }
 
@@ -255,13 +399,15 @@ impl HasSampleValues for Entity {
 }
 
 impl Entity {
+    /// mainnet
     pub(crate) fn sample_unsecurified() -> Self {
-        Self::unsecurified(0, "Alice", FactorSourceID::fs0())
+        Self::unsecurified_mainnet(0, "Alice", FactorSourceID::fs0())
     }
 
+    /// mainnet
     pub(crate) fn sample_securified() -> Self {
         type F = FactorSourceID;
-        Self::securified(6, "Grace", |idx| {
+        Self::securified_mainnet(6, "Grace", |idx| {
             let fi = FactorInstance::f(idx);
             MatrixOfFactorInstances::new(
                 [F::fs0(), F::fs3(), F::fs5()].map(&fi),
@@ -278,7 +424,7 @@ impl Entity {
         }
     }
 
-    pub fn securified(
+    pub fn securified_mainnet(
         index: u32,
         name: impl AsRef<str>,
         make_matrix: fn(u32) -> MatrixOfFactorInstances,
@@ -286,34 +432,40 @@ impl Entity {
         Self::new(name, make_matrix(index))
     }
 
-    pub fn unsecurified(
+    pub fn unsecurified_mainnet(
         index: u32,
         name: impl AsRef<str>,
         factor_source_id: FactorSourceID,
     ) -> Self {
         Self::new(
             name,
-            EntitySecurityState::Unsecured(FactorInstance::new(index, factor_source_id)),
+            EntitySecurityState::Unsecured(FactorInstance::account_mainnet_tx(
+                index,
+                factor_source_id,
+            )),
         )
     }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
-pub struct MatrixOfFactorInstances {
-    pub threshold_factors: Vec<FactorInstance>,
+pub struct MatrixOfFactors<F> {
+    pub threshold_factors: Vec<F>,
     pub threshold: u8,
-    pub override_factors: Vec<FactorInstance>,
+    pub override_factors: Vec<F>,
 }
 
-impl MatrixOfFactorInstances {
+impl<F> MatrixOfFactors<F>
+where
+    F: std::hash::Hash + std::cmp::Eq + Clone,
+{
     /// # Panics
     /// Panics if threshold > threshold_factor.len()
     ///
     /// Panics if the same factor is present in both lists
     pub fn new(
-        threshold_factors: impl IntoIterator<Item = FactorInstance>,
+        threshold_factors: impl IntoIterator<Item = F>,
         threshold: u8,
-        override_factors: impl IntoIterator<Item = FactorInstance>,
+        override_factors: impl IntoIterator<Item = F>,
     ) -> Self {
         let threshold_factors = threshold_factors.into_iter().collect_vec();
 
@@ -322,10 +474,8 @@ impl MatrixOfFactorInstances {
         let override_factors = override_factors.into_iter().collect_vec();
 
         assert!(
-            HashSet::<FactorInstance>::from_iter(threshold_factors.clone())
-                .intersection(&HashSet::<FactorInstance>::from_iter(
-                    override_factors.clone()
-                ))
+            HashSet::<F>::from_iter(threshold_factors.clone())
+                .intersection(&HashSet::<F>::from_iter(override_factors.clone()))
                 .collect_vec()
                 .is_empty(),
             "A factor MUST NOT be present in both threshold AND override list."
@@ -338,25 +488,25 @@ impl MatrixOfFactorInstances {
         }
     }
 
-    pub fn override_only(factors: impl IntoIterator<Item = FactorInstance>) -> Self {
+    pub fn override_only(factors: impl IntoIterator<Item = F>) -> Self {
         Self::new([], 0, factors)
     }
 
-    pub fn single_override(factor: FactorInstance) -> Self {
+    pub fn single_override(factor: F) -> Self {
         Self::override_only([factor])
     }
 
-    pub fn threshold_only(
-        factors: impl IntoIterator<Item = FactorInstance>,
-        threshold: u8,
-    ) -> Self {
+    pub fn threshold_only(factors: impl IntoIterator<Item = F>, threshold: u8) -> Self {
         Self::new(factors, threshold, [])
     }
 
-    pub fn single_threshold(factor: FactorInstance) -> Self {
+    pub fn single_threshold(factor: F) -> Self {
         Self::threshold_only([factor], 1)
     }
 }
+
+pub type MatrixOfFactorInstances = MatrixOfFactors<FactorInstance>;
+pub type MatrixOfFactorSources = MatrixOfFactors<FactorSource>;
 
 /// For unsecurified entities we map single factor -> single threshold factor.
 /// Which is used by ROLA.

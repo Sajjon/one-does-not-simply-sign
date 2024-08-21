@@ -1,13 +1,13 @@
 use crate::prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub(super) struct FactorSourcesOfKind {
-    pub(super) kind: FactorSourceKind,
+pub struct FactorSourcesOfKind {
+    pub(crate) kind: FactorSourceKind,
     factor_sources: Vec<FactorSource>,
 }
 
 impl FactorSourcesOfKind {
-    pub(super) fn new(
+    pub(crate) fn new(
         kind: FactorSourceKind,
         factor_sources: impl IntoIterator<Item = FactorSource>,
     ) -> Result<Self> {
@@ -24,11 +24,11 @@ impl FactorSourcesOfKind {
         })
     }
 
-    pub(super) fn factor_sources(&self) -> IndexSet<FactorSource> {
+    pub(crate) fn factor_sources(&self) -> IndexSet<FactorSource> {
         self.factor_sources.clone().into_iter().collect()
     }
 
-    pub(super) fn factor_source_ids(&self) -> Vec<FactorSourceID> {
+    pub(crate) fn factor_source_ids(&self) -> Vec<FactorSourceID> {
         self.factor_sources.iter().map(|f| f.id).collect()
     }
 }

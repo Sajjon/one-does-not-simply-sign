@@ -1,21 +1,14 @@
-//! Question: Is there any difference between BatchSigningDrivers and
-//! SingleSigningDrivers other than the fact that BatchSigningDerivers can sign
-//! many transactions with many derivations paths at once?
+#![allow(internal_features)]
+#![feature(core_intrinsics)]
 
-mod collector;
-mod interactors;
-mod owned_types;
-mod petition_types;
-mod signatures_outcome_types;
+mod derivation;
+mod signing;
 mod testing;
 mod types;
 
 pub mod prelude {
-    pub use crate::collector::*;
-    pub use crate::interactors::*;
-    pub use crate::owned_types::*;
-    pub use crate::petition_types::*;
-    pub use crate::signatures_outcome_types::*;
+    pub use crate::derivation::*;
+    pub use crate::signing::*;
     pub use crate::testing::*;
     pub use crate::types::*;
 
