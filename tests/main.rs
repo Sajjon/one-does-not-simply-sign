@@ -99,6 +99,45 @@ mod key_derivation_tests {
                     .collect::<HashSet::<_>>()
             );
         }
+
+        #[actix_rt::test]
+        async fn multi_keys_multi_factor_sources_multi_paths() {
+            let paths = [0, 1, 2]
+                .into_iter()
+                .map(|i| DerivationPath::new(Mainnet, Account, T9n, i))
+                .collect::<IndexSet<_>>();
+
+            let factor_sources = FactorSource::all();
+
+            let collector = KeysCollector::new_test(
+                factor_sources
+                    .iter()
+                    .map(|f| (f.id, paths.clone()))
+                    .collect_vec(),
+            );
+            let outcome = collector.collect_keys().await;
+
+            assert_eq!(
+                outcome
+                    .all_factors()
+                    .into_iter()
+                    .map(|f| f.path())
+                    .collect::<IndexSet<_>>(),
+                paths
+            );
+
+            assert_eq!(
+                outcome
+                    .all_factors()
+                    .into_iter()
+                    .map(|f| f.factor_source_id.clone())
+                    .collect::<HashSet::<_>>(),
+                factor_sources
+                    .into_iter()
+                    .map(|f| f.id)
+                    .collect::<HashSet::<_>>()
+            );
+        }
     }
 
     mod single_key {
