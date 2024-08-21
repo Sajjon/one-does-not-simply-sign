@@ -33,8 +33,8 @@ mod common_tests {
 #[cfg(test)]
 mod key_derivation_tests {
 
+    use super::CAP26KeyKind::*;
     use super::EntityKind::*;
-    use super::KeyKind::*;
     use super::NetworkID::*;
     use super::*;
 
@@ -361,7 +361,7 @@ mod key_derivation_tests {
             factor_source: &FactorSource,
             network_id: NetworkID,
             entity_kind: EntityKind,
-            key_kind: KeyKind,
+            key_kind: CAP26KeyKind,
             expected: Expected,
         ) {
             let collector =
@@ -385,7 +385,7 @@ mod key_derivation_tests {
                 factor_source: &FactorSource,
                 network_id: NetworkID,
                 entity_kind: EntityKind,
-                key_kind: KeyKind,
+                key_kind: CAP26KeyKind,
             ) {
                 do_test(
                     KeySpace::Securified,
@@ -403,7 +403,7 @@ mod key_derivation_tests {
             mod account {
                 use super::*;
 
-                async fn each_factor(network_id: NetworkID, key_kind: KeyKind) {
+                async fn each_factor(network_id: NetworkID, key_kind: CAP26KeyKind) {
                     for factor_source in FactorSource::all().iter() {
                         test(factor_source, network_id, Account, key_kind).await
                     }
@@ -423,7 +423,7 @@ mod key_derivation_tests {
                 factor_source: &FactorSource,
                 network_id: NetworkID,
                 entity_kind: EntityKind,
-                key_kind: KeyKind,
+                key_kind: CAP26KeyKind,
             ) {
                 do_test(
                     KeySpace::Unsecurified,
@@ -439,7 +439,7 @@ mod key_derivation_tests {
             mod account {
                 use super::*;
 
-                async fn each_factor(network_id: NetworkID, key_kind: KeyKind) {
+                async fn each_factor(network_id: NetworkID, key_kind: CAP26KeyKind) {
                     for factor_source in FactorSource::all().iter() {
                         test(factor_source, network_id, Account, key_kind).await
                     }
@@ -469,7 +469,7 @@ mod key_derivation_tests {
             mod persona {
                 use super::*;
 
-                async fn each_factor(network_id: NetworkID, key_kind: KeyKind) {
+                async fn each_factor(network_id: NetworkID, key_kind: CAP26KeyKind) {
                     for factor_source in FactorSource::all().iter() {
                         test(factor_source, network_id, Identity, key_kind).await
                     }

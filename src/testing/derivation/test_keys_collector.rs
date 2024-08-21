@@ -153,7 +153,7 @@ impl KeysCollector {
     pub fn with(
         factor_source: &FactorSource,
         network_id: NetworkID,
-        key_kind: KeyKind,
+        key_kind: CAP26KeyKind,
         entity_kind: EntityKind,
         key_space: KeySpace,
     ) -> Self {

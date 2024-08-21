@@ -128,11 +128,11 @@ pub type DerivationIndex = u32;
 
 #[repr(u8)]
 #[derive(Clone, Debug, Copy, PartialEq, Eq, Hash)]
-pub enum KeyKind {
+pub enum CAP26KeyKind {
     T9n,
     Rola,
 }
-impl KeyKind {
+impl CAP26KeyKind {
     fn discriminant(&self) -> u8 {
         core::intrinsics::discriminant_value(self)
     }
@@ -167,7 +167,7 @@ impl EntityKind {
 pub struct DerivationPath {
     pub network_id: NetworkID,
     pub entity_kind: EntityKind,
-    pub key_kind: KeyKind,
+    pub key_kind: CAP26KeyKind,
     pub index: DerivationIndex,
 }
 
@@ -175,7 +175,7 @@ impl DerivationPath {
     pub fn new(
         network_id: NetworkID,
         entity_kind: EntityKind,
-        key_kind: KeyKind,
+        key_kind: CAP26KeyKind,
         index: DerivationIndex,
     ) -> Self {
         Self {
@@ -186,7 +186,7 @@ impl DerivationPath {
         }
     }
     pub fn account_tx(network_id: NetworkID, index: DerivationIndex) -> Self {
-        Self::new(network_id, EntityKind::Account, KeyKind::T9n, index)
+        Self::new(network_id, EntityKind::Account, CAP26KeyKind::T9n, index)
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {

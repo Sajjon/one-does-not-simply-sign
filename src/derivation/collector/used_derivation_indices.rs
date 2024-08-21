@@ -8,7 +8,7 @@ use crate::prelude::*;
 pub struct CreateNextDerivationPathRequest {
     pub factor_source_id: FactorSourceID,
     pub network_id: NetworkID,
-    pub key_kind: KeyKind,
+    pub key_kind: CAP26KeyKind,
     pub entity_kind: EntityKind,
     pub key_space: KeySpace,
 }
@@ -17,7 +17,7 @@ impl CreateNextDerivationPathRequest {
     pub fn new(
         factor_source_id: FactorSourceID,
         network_id: NetworkID,
-        key_kind: KeyKind,
+        key_kind: CAP26KeyKind,
         entity_kind: EntityKind,
         key_space: KeySpace,
     ) -> Self {
@@ -41,7 +41,7 @@ pub trait UsedDerivationIndices {
         &self,
         factor_source_id: FactorSourceID,
         network_id: NetworkID,
-        key_kind: KeyKind,
+        key_kind: CAP26KeyKind,
         entity_kind: EntityKind,
         key_space: KeySpace,
     ) -> DerivationIndex {
@@ -59,7 +59,7 @@ pub trait UsedDerivationIndices {
         &self,
         factor_source_id: FactorSourceID,
         network_id: NetworkID,
-        key_kind: KeyKind,
+        key_kind: CAP26KeyKind,
         entity_kind: EntityKind,
         key_space: KeySpace,
     ) -> DerivationPath {
