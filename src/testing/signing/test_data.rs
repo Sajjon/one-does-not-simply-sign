@@ -78,7 +78,7 @@ pub fn fs_at(index: usize) -> FactorSource {
 }
 
 pub fn fs_id_at(index: usize) -> FactorSourceID {
-    fs_at(index).id
+    fs_at(index).factor_source_id()
 }
 
 impl FactorSourceID {

@@ -39,7 +39,7 @@ impl SignaturesCollectorPreprocessor {
 
         let all_factor_sources_in_profile = all_factor_sources_in_profile
             .into_iter()
-            .map(|f| (f.id, f))
+            .map(|f| (f.factor_source_id(), f))
             .collect::<HashMap<FactorSourceID, FactorSource>>();
 
         let mut factor_to_payloads = HashMap::<FactorSourceID, IndexSet<IntentHash>>::new();

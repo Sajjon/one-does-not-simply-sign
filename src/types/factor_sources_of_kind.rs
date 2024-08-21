@@ -32,7 +32,10 @@ impl FactorSourcesOfKind {
     }
 
     pub(crate) fn factor_source_ids(&self) -> Vec<FactorSourceID> {
-        self.factor_sources.iter().map(|f| f.id).collect()
+        self.factor_sources
+            .iter()
+            .map(|f| f.factor_source_id())
+            .collect()
     }
 }
 

@@ -47,7 +47,7 @@ mod key_derivation_tests {
             .collect::<IndexSet<_>>();
         let collector = KeysCollector::new(
             FactorSource::all(),
-            [(factor_source.id, paths.clone())]
+            [(factor_source.factor_source_id(), paths.clone())]
                 .into_iter()
                 .collect::<IndexMap<FactorSourceID, IndexSet<DerivationPath>>>(),
             Arc::new(TestDerivationInteractors::fail()),
@@ -67,7 +67,8 @@ mod key_derivation_tests {
                 .into_iter()
                 .map(|i| DerivationPath::new(Mainnet, Account, T9n, i))
                 .collect::<IndexSet<_>>();
-            let collector = KeysCollector::new_test([(factor_source.id, paths.clone())]);
+            let collector =
+                KeysCollector::new_test([(factor_source.factor_source_id(), paths.clone())]);
             let outcome = collector.collect_keys().await;
             assert_eq!(
                 outcome
@@ -81,7 +82,7 @@ mod key_derivation_tests {
             assert!(outcome
                 .all_factors()
                 .into_iter()
-                .all(|f| f.factor_source_id == factor_source.id));
+                .all(|f| f.factor_source_id == factor_source.factor_source_id()));
         }
 
         #[actix_rt::test]
@@ -93,7 +94,7 @@ mod key_derivation_tests {
             let collector = KeysCollector::new_test(
                 factor_sources
                     .iter()
-                    .map(|f| (f.id, paths.clone()))
+                    .map(|f| (f.factor_source_id(), paths.clone()))
                     .collect_vec(),
             );
             let outcome = collector.collect_keys().await;
@@ -114,7 +115,7 @@ mod key_derivation_tests {
                     .collect::<HashSet::<_>>(),
                 factor_sources
                     .into_iter()
-                    .map(|f| f.id)
+                    .map(|f| f.factor_source_id())
                     .collect::<HashSet::<_>>()
             );
         }
@@ -131,7 +132,7 @@ mod key_derivation_tests {
             let collector = KeysCollector::new_test(
                 factor_sources
                     .iter()
-                    .map(|f| (f.id, paths.clone()))
+                    .map(|f| (f.factor_source_id(), paths.clone()))
                     .collect_vec(),
             );
             let outcome = collector.collect_keys().await;
@@ -153,7 +154,7 @@ mod key_derivation_tests {
                     .collect::<HashSet::<_>>(),
                 factor_sources
                     .into_iter()
-                    .map(|f| f.id)
+                    .map(|f| f.factor_source_id())
                     .collect::<HashSet::<_>>()
             );
         }
@@ -319,7 +320,7 @@ mod key_derivation_tests {
             let collector = KeysCollector::new_test(
                 factor_sources
                     .iter()
-                    .map(|f| (f.id, paths.clone()))
+                    .map(|f| (f.factor_source_id(), paths.clone()))
                     .collect_vec(),
             );
             let outcome = collector.collect_keys().await;
@@ -343,7 +344,7 @@ mod key_derivation_tests {
                     .collect::<HashSet::<_>>(),
                 factor_sources
                     .into_iter()
-                    .map(|f| f.id)
+                    .map(|f| f.factor_source_id())
                     .collect::<HashSet::<_>>()
             );
         }
@@ -375,7 +376,7 @@ mod key_derivation_tests {
                 factor.path(),
                 DerivationPath::new(network_id, entity_kind, key_kind, expected.index)
             );
-            assert_eq!(factor.factor_source_id, factor_source.id);
+            assert_eq!(factor.factor_source_id, factor_source.factor_source_id());
         }
 
         mod securified {
@@ -735,7 +736,7 @@ mod signing_tests {
                 MatrixOfFactorInstances::override_only(
                     FactorSource::all()
                         .into_iter()
-                        .map(|f| FactorInstance::account_mainnet_tx(idx, f.id)),
+                        .map(|f| FactorInstance::account_mainnet_tx(idx, f.factor_source_id())),
                 )
             })]),
         ]);

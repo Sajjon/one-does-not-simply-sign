@@ -43,10 +43,13 @@ impl HasSampleValues for FactorSourceID {
 #[debug("{:?}", id)]
 pub struct FactorSource {
     pub last_used: SystemTime,
-    pub id: FactorSourceID,
+    id: FactorSourceID,
 }
 
 impl FactorSource {
+    pub fn factor_source_id(&self) -> FactorSourceID {
+        self.id
+    }
     pub fn factor_source_kind(&self) -> FactorSourceKind {
         self.id.kind
     }
