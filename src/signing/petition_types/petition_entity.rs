@@ -54,7 +54,7 @@ impl PetitionEntity {
     pub fn new_unsecurified(
         intent_hash: IntentHash,
         entity: AddressOfAccountOrPersona,
-        instance: FactorInstance,
+        instance: HierarchicalDeterministicFactorInstance,
     ) -> Self {
         Self::new(
             intent_hash,
@@ -93,7 +93,7 @@ impl PetitionEntity {
             .collect::<IndexSet<_>>()
     }
 
-    pub fn all_skipped_factor_instance(&self) -> IndexSet<FactorInstance> {
+    pub fn all_skipped_factor_instance(&self) -> IndexSet<HierarchicalDeterministicFactorInstance> {
         self.union_of(|f| f.all_skipped())
     }
 
@@ -312,7 +312,7 @@ mod tests {
     #[should_panic(expected = "A factor MUST NOT be present in both threshold AND override list.")]
     fn factor_should_not_be_used_in_both_lists() {
         Account::securified_mainnet(0, "Jane Doe", |idx| {
-            let fi = FactorInstance::f(idx);
+            let fi = HierarchicalDeterministicFactorInstance::f(idx);
             MatrixOfFactorInstances::new(
                 [FactorSourceID::fs0()].map(&fi),
                 1,
@@ -326,7 +326,7 @@ mod tests {
     fn cannot_add_same_signature_twice() {
         let intent_hash = IntentHash::sample();
         let entity = Account::securified_mainnet(0, "Jane Doe", |idx| {
-            let fi = FactorInstance::f(idx);
+            let fi = HierarchicalDeterministicFactorInstance::f(idx);
             MatrixOfFactorInstances::new(
                 [FactorSourceID::fs0()].map(&fi),
                 1,
@@ -338,7 +338,10 @@ mod tests {
             intent_hash,
             OwnedFactorInstance::new(
                 entity.address(),
-                FactorInstance::account_mainnet_tx(0, FactorSourceID::fs0()),
+                HierarchicalDeterministicFactorInstance::account_mainnet_tx(
+                    0,
+                    FactorSourceID::fs0(),
+                ),
             ),
         );
         let signature = HDSignature::produced_signing_with_input(sign_input);
@@ -355,7 +358,10 @@ mod tests {
                 sut.intent_hash.clone(),
                 OwnedFactorInstance::new(
                     sut.entity.clone(),
-                    FactorInstance::account_mainnet_tx(6, FactorSourceID::fs1()),
+                    HierarchicalDeterministicFactorInstance::account_mainnet_tx(
+                        6,
+                        FactorSourceID::fs1(),
+                    ),
                 ),
             ),
         ));

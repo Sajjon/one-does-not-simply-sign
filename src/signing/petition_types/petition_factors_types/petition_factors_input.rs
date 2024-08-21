@@ -4,29 +4,35 @@ use crate::prelude::*;
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct PetitionFactorsInput {
     /// Factors to sign with.
-    pub(super) factors: IndexSet<FactorInstance>,
+    pub(super) factors: IndexSet<HierarchicalDeterministicFactorInstance>,
 
     /// Number of required factors to sign with.
     pub(super) required: i8,
 }
 
 impl PetitionFactorsInput {
-    pub(super) fn new(factors: IndexSet<FactorInstance>, required: i8) -> Self {
+    pub(super) fn new(
+        factors: IndexSet<HierarchicalDeterministicFactorInstance>,
+        required: i8,
+    ) -> Self {
         Self { factors, required }
     }
 
-    pub(super) fn new_threshold(factors: IndexSet<FactorInstance>, threshold: i8) -> Self {
+    pub(super) fn new_threshold(
+        factors: IndexSet<HierarchicalDeterministicFactorInstance>,
+        threshold: i8,
+    ) -> Self {
         Self::new(factors, threshold)
     }
 
-    pub(super) fn new_override(factors: IndexSet<FactorInstance>) -> Self {
+    pub(super) fn new_override(factors: IndexSet<HierarchicalDeterministicFactorInstance>) -> Self {
         Self::new(factors, 1) // we need just one, anyone, factor for threshold.
     }
 
     pub fn reference_factor_source_with_id(
         &self,
         factor_source_id: &FactorSourceID,
-    ) -> Option<&FactorInstance> {
+    ) -> Option<&HierarchicalDeterministicFactorInstance> {
         self.factors
             .iter()
             .find(|f| f.factor_source_id == *factor_source_id)

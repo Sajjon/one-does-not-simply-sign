@@ -249,12 +249,12 @@ impl HierarchicalDeterministicPublicKey {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
-pub struct FactorInstance {
-    pub hd_public_key: HierarchicalDeterministicPublicKey,
+pub struct HierarchicalDeterministicFactorInstance {
     pub factor_source_id: FactorSourceID,
+    pub hd_public_key: HierarchicalDeterministicPublicKey,
 }
 
-impl FactorInstance {
+impl HierarchicalDeterministicFactorInstance {
     pub fn new(
         hd_public_key: HierarchicalDeterministicPublicKey,
         factor_source_id: FactorSourceID,
@@ -300,7 +300,7 @@ impl FactorInstance {
     }
 }
 
-impl HasSampleValues for FactorInstance {
+impl HasSampleValues for HierarchicalDeterministicFactorInstance {
     fn sample() -> Self {
         Self::account_mainnet_tx(0, FactorSourceID::sample())
     }
@@ -338,11 +338,11 @@ impl HasSampleValues for Hash {
 
 #[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
 pub enum EntitySecurityState {
-    Unsecured(FactorInstance),
+    Unsecured(HierarchicalDeterministicFactorInstance),
     Securified(MatrixOfFactorInstances),
 }
 impl EntitySecurityState {
-    pub fn all_factor_instances(&self) -> IndexSet<FactorInstance> {
+    pub fn all_factor_instances(&self) -> IndexSet<HierarchicalDeterministicFactorInstance> {
         match self {
             Self::Securified(matrix) => {
                 let mut set = IndexSet::new();
@@ -470,7 +470,7 @@ impl Account {
     pub(crate) fn sample_securified() -> Self {
         type F = FactorSourceID;
         Self::securified_mainnet(6, "Grace", |idx| {
-            let fi = FactorInstance::f(idx);
+            let fi = HierarchicalDeterministicFactorInstance::f(idx);
             MatrixOfFactorInstances::new(
                 [F::fs0(), F::fs3(), F::fs5()].map(&fi),
                 2,
@@ -501,10 +501,12 @@ impl Account {
     ) -> Self {
         Self::new(
             name,
-            EntitySecurityState::Unsecured(FactorInstance::account_mainnet_tx(
-                index,
-                factor_source_id,
-            )),
+            EntitySecurityState::Unsecured(
+                HierarchicalDeterministicFactorInstance::account_mainnet_tx(
+                    index,
+                    factor_source_id,
+                ),
+            ),
         )
     }
 }
@@ -567,13 +569,13 @@ where
     }
 }
 
-pub type MatrixOfFactorInstances = MatrixOfFactors<FactorInstance>;
+pub type MatrixOfFactorInstances = MatrixOfFactors<HierarchicalDeterministicFactorInstance>;
 pub type MatrixOfFactorSources = MatrixOfFactors<FactorSource>;
 
 /// For unsecurified entities we map single factor -> single threshold factor.
 /// Which is used by ROLA.
-impl From<FactorInstance> for MatrixOfFactorInstances {
-    fn from(value: FactorInstance) -> Self {
+impl From<HierarchicalDeterministicFactorInstance> for MatrixOfFactorInstances {
+    fn from(value: HierarchicalDeterministicFactorInstance) -> Self {
         Self {
             threshold: 1,
             threshold_factors: vec![value],
@@ -648,7 +650,7 @@ impl Signature {
     /// deterministic manner.
     pub fn produced_by(
         intent_hash: IntentHash,
-        factor_instance: impl Into<FactorInstance>,
+        factor_instance: impl Into<HierarchicalDeterministicFactorInstance>,
     ) -> Self {
         let factor_instance = factor_instance.into();
 

@@ -133,7 +133,7 @@ impl FactorSourceID {
     }
 }
 
-impl FactorInstance {
+impl HierarchicalDeterministicFactorInstance {
     pub fn f(idx: u32) -> impl Fn(FactorSourceID) -> Self {
         move |id: FactorSourceID| Self::account_mainnet_tx(idx, id)
     }
@@ -153,20 +153,24 @@ impl Account {
     /// Carla | 2 | Securified { Single Threshold only }
     pub fn a2() -> Self {
         Self::securified_mainnet(2, "Carla", |idx| {
-            MatrixOfFactorInstances::single_threshold(FactorInstance::account_mainnet_tx(
-                idx,
-                FactorSourceID::fs0(),
-            ))
+            MatrixOfFactorInstances::single_threshold(
+                HierarchicalDeterministicFactorInstance::account_mainnet_tx(
+                    idx,
+                    FactorSourceID::fs0(),
+                ),
+            )
         })
     }
 
     /// David | 3 | Securified { Single Override only }
     pub fn a3() -> Self {
         Self::securified_mainnet(3, "David", |idx| {
-            MatrixOfFactorInstances::single_override(FactorInstance::account_mainnet_tx(
-                idx,
-                FactorSourceID::fs1(),
-            ))
+            MatrixOfFactorInstances::single_override(
+                HierarchicalDeterministicFactorInstance::account_mainnet_tx(
+                    idx,
+                    FactorSourceID::fs1(),
+                ),
+            )
         })
     }
 
@@ -175,7 +179,7 @@ impl Account {
         type F = FactorSourceID;
         Self::securified_mainnet(4, "Emily", |idx| {
             MatrixOfFactorInstances::threshold_only(
-                [F::fs0(), F::fs3(), F::fs5()].map(FactorInstance::f(idx)),
+                [F::fs0(), F::fs3(), F::fs5()].map(HierarchicalDeterministicFactorInstance::f(idx)),
                 2,
             )
         })
@@ -185,7 +189,9 @@ impl Account {
     pub fn a5() -> Self {
         type F = FactorSourceID;
         Self::securified_mainnet(5, "Frank", |idx| {
-            MatrixOfFactorInstances::override_only([F::fs1(), F::fs4()].map(FactorInstance::f(idx)))
+            MatrixOfFactorInstances::override_only(
+                [F::fs1(), F::fs4()].map(HierarchicalDeterministicFactorInstance::f(idx)),
+            )
         })
     }
 
@@ -193,7 +199,7 @@ impl Account {
     pub fn a6() -> Self {
         type F = FactorSourceID;
         Self::securified_mainnet(6, "Grace", |idx| {
-            let fi = FactorInstance::f(idx);
+            let fi = HierarchicalDeterministicFactorInstance::f(idx);
             MatrixOfFactorInstances::new(
                 [F::fs0(), F::fs3(), F::fs5()].map(&fi),
                 2,
@@ -206,7 +212,7 @@ impl Account {
     pub fn a7() -> Self {
         type F = FactorSourceID;
         Self::securified_mainnet(7, "Ida", |idx| {
-            let fi = FactorInstance::f(idx);
+            let fi = HierarchicalDeterministicFactorInstance::f(idx);
             MatrixOfFactorInstances::threshold_only(
                 [F::fs2(), F::fs6(), F::fs7(), F::fs8(), F::fs9()].map(&fi),
                 5,

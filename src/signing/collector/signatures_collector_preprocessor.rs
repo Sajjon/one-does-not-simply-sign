@@ -73,7 +73,7 @@ impl SignaturesCollectorPreprocessor {
                     EntitySecurityState::Securified(sec) => {
                         let primary_role_matrix = sec;
 
-                        let mut add = |factors: Vec<FactorInstance>| {
+                        let mut add = |factors: Vec<HierarchicalDeterministicFactorInstance>| {
                             factors.into_iter().for_each(|f| {
                                 let factor_source_id = f.factor_source_id;
                                 use_factor_in_tx(&factor_source_id, &transaction.intent_hash);

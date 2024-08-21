@@ -117,15 +117,21 @@ impl KeysCollector {
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct KeyDerivationOutcome {
-    pub factors_by_source: IndexMap<FactorSourceID, IndexSet<FactorInstance>>,
+    pub factors_by_source:
+        IndexMap<FactorSourceID, IndexSet<HierarchicalDeterministicFactorInstance>>,
 }
 impl KeyDerivationOutcome {
-    pub fn new(factors_by_source: IndexMap<FactorSourceID, IndexSet<FactorInstance>>) -> Self {
+    pub fn new(
+        factors_by_source: IndexMap<
+            FactorSourceID,
+            IndexSet<HierarchicalDeterministicFactorInstance>,
+        >,
+    ) -> Self {
         Self { factors_by_source }
     }
 
     /// ALL factor instances derived by the KeysCollector
-    pub fn all_factors(&self) -> IndexSet<FactorInstance> {
+    pub fn all_factors(&self) -> IndexSet<HierarchicalDeterministicFactorInstance> {
         self.factors_by_source
             .clone()
             .into_iter()

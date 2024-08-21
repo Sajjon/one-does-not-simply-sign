@@ -7,11 +7,14 @@ pub(super) struct PetitionFactorsStateSnapshot {
     signed: IndexSet<HDSignature>,
 
     /// Factors that user skipped.
-    skipped: IndexSet<FactorInstance>,
+    skipped: IndexSet<HierarchicalDeterministicFactorInstance>,
 }
 
 impl PetitionFactorsStateSnapshot {
-    pub(super) fn new(signed: IndexSet<HDSignature>, skipped: IndexSet<FactorInstance>) -> Self {
+    pub(super) fn new(
+        signed: IndexSet<HDSignature>,
+        skipped: IndexSet<HierarchicalDeterministicFactorInstance>,
+    ) -> Self {
         Self { signed, skipped }
     }
     pub(super) fn prompted_count(&self) -> i8 {

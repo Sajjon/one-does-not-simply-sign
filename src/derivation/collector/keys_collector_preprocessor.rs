@@ -4,7 +4,7 @@ use crate::prelude::*;
 pub struct Keyring {
     pub factor_source_id: FactorSourceID,
     pub paths: IndexSet<DerivationPath>,
-    derived: RefCell<IndexSet<FactorInstance>>,
+    derived: RefCell<IndexSet<HierarchicalDeterministicFactorInstance>>,
 }
 
 impl Keyring {
@@ -15,11 +15,14 @@ impl Keyring {
             derived: RefCell::new(IndexSet::new()),
         }
     }
-    pub fn factors(&self) -> IndexSet<FactorInstance> {
+    pub fn factors(&self) -> IndexSet<HierarchicalDeterministicFactorInstance> {
         self.derived.borrow().clone()
     }
 
-    pub(crate) fn process_response(&self, response: IndexSet<FactorInstance>) {
+    pub(crate) fn process_response(
+        &self,
+        response: IndexSet<HierarchicalDeterministicFactorInstance>,
+    ) {
         assert!(response
             .iter()
             .all(|f| f.factor_source_id == self.factor_source_id

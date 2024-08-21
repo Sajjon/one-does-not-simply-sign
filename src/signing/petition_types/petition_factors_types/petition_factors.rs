@@ -20,11 +20,11 @@ impl PetitionFactors {
         }
     }
 
-    pub fn factor_instances(&self) -> IndexSet<FactorInstance> {
+    pub fn factor_instances(&self) -> IndexSet<HierarchicalDeterministicFactorInstance> {
         self.input.factors.clone()
     }
 
-    pub fn all_skipped(&self) -> IndexSet<FactorInstance> {
+    pub fn all_skipped(&self) -> IndexSet<HierarchicalDeterministicFactorInstance> {
         self.state.borrow().all_skipped()
     }
 
@@ -32,7 +32,10 @@ impl PetitionFactors {
         self.state.borrow().all_signatures()
     }
 
-    pub fn new_threshold(factors: Vec<FactorInstance>, threshold: i8) -> Option<Self> {
+    pub fn new_threshold(
+        factors: Vec<HierarchicalDeterministicFactorInstance>,
+        threshold: i8,
+    ) -> Option<Self> {
         if factors.is_empty() {
             return None;
         }
@@ -42,11 +45,11 @@ impl PetitionFactors {
         ))
     }
 
-    pub fn new_unsecurified(factor: FactorInstance) -> Self {
+    pub fn new_unsecurified(factor: HierarchicalDeterministicFactorInstance) -> Self {
         Self::new_threshold(vec![factor], 1).unwrap() // define as 1/1 threshold factor, which is a good definition.
     }
 
-    pub fn new_override(factors: Vec<FactorInstance>) -> Option<Self> {
+    pub fn new_override(factors: Vec<HierarchicalDeterministicFactorInstance>) -> Option<Self> {
         if factors.is_empty() {
             return None;
         }
@@ -71,7 +74,10 @@ impl PetitionFactors {
         self.has_instance_with_id(owned_factor_instance.factor_instance())
     }
 
-    pub fn has_instance_with_id(&self, factor_instance: &FactorInstance) -> bool {
+    pub fn has_instance_with_id(
+        &self,
+        factor_instance: &HierarchicalDeterministicFactorInstance,
+    ) -> bool {
         self.input.factors.iter().any(|f| f == factor_instance)
     }
 
@@ -105,7 +111,7 @@ impl PetitionFactors {
     fn expect_reference_to_factor_source_with_id(
         &self,
         factor_source_id: &FactorSourceID,
-    ) -> &FactorInstance {
+    ) -> &HierarchicalDeterministicFactorInstance {
         self.reference_to_factor_source_with_id(factor_source_id)
             .expect("Programmer error! Factor source not found in factors.")
     }
@@ -113,7 +119,7 @@ impl PetitionFactors {
     fn reference_to_factor_source_with_id(
         &self,
         factor_source_id: &FactorSourceID,
-    ) -> Option<&FactorInstance> {
+    ) -> Option<&HierarchicalDeterministicFactorInstance> {
         self.input.reference_factor_source_with_id(factor_source_id)
     }
 
