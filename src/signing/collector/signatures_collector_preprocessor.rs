@@ -9,7 +9,7 @@ pub fn sort_group_factors(
 ) -> IndexSet<FactorSourcesOfKind> {
     let factors_of_kind = used_factor_sources
         .into_iter()
-        .into_grouping_map_by(|x| x.kind())
+        .into_grouping_map_by(|x| x.factor_source_kind())
         .collect::<IndexSet<FactorSource>>();
 
     let mut factors_of_kind = factors_of_kind

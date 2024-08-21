@@ -15,7 +15,10 @@ impl FactorSourcesOfKind {
         if factor_sources.is_empty() {
             return Err(CommonError::FactorSourcesOfKindEmptyFactors);
         }
-        if factor_sources.iter().any(|f| f.kind() != kind) {
+        if factor_sources
+            .iter()
+            .any(|f| f.factor_source_kind() != kind)
+        {
             return Err(CommonError::InvalidFactorSourceKind);
         }
         Ok(Self {

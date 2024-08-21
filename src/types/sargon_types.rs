@@ -47,7 +47,7 @@ pub struct FactorSource {
 }
 
 impl FactorSource {
-    pub fn kind(&self) -> FactorSourceKind {
+    pub fn factor_source_kind(&self) -> FactorSourceKind {
         self.id.kind
     }
     pub fn new(kind: FactorSourceKind) -> Self {
@@ -83,7 +83,7 @@ impl PartialOrd for FactorSource {
 }
 impl Ord for FactorSource {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        match self.kind().cmp(&other.kind()) {
+        match self.factor_source_kind().cmp(&other.factor_source_kind()) {
             core::cmp::Ordering::Equal => {}
             ord => return ord,
         }
