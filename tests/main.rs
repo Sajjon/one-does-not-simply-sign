@@ -91,7 +91,7 @@ mod key_derivation_tests {
                 outcome
                     .all_factors()
                     .into_iter()
-                    .map(|f| f.factor_source_id.clone())
+                    .map(|f| f.factor_source_id)
                     .collect::<HashSet::<_>>(),
                 factor_sources
                     .into_iter()
@@ -130,7 +130,7 @@ mod key_derivation_tests {
                 outcome
                     .all_factors()
                     .into_iter()
-                    .map(|f| f.factor_source_id.clone())
+                    .map(|f| f.factor_source_id)
                     .collect::<HashSet::<_>>(),
                 factor_sources
                     .into_iter()
@@ -196,7 +196,7 @@ mod key_derivation_tests {
                     0,
                     1,
                     2,
-                    KeySpace::SPLIT + 0,
+                    KeySpace::SPLIT,
                     KeySpace::SPLIT + 1,
                     KeySpace::SPLIT + 2,
                 ]
@@ -209,7 +209,7 @@ mod key_derivation_tests {
                     0,
                     1,
                     2,
-                    KeySpace::SPLIT + 0,
+                    KeySpace::SPLIT,
                     KeySpace::SPLIT + 1,
                     KeySpace::SPLIT + 2,
                 ]
@@ -222,7 +222,7 @@ mod key_derivation_tests {
                     0,
                     1,
                     2,
-                    KeySpace::SPLIT + 0,
+                    KeySpace::SPLIT,
                     KeySpace::SPLIT + 1,
                     KeySpace::SPLIT + 2,
                 ]
@@ -235,7 +235,7 @@ mod key_derivation_tests {
                     0,
                     1,
                     2,
-                    KeySpace::SPLIT + 0,
+                    KeySpace::SPLIT,
                     KeySpace::SPLIT + 1,
                     KeySpace::SPLIT + 2,
                 ]
@@ -248,7 +248,7 @@ mod key_derivation_tests {
                     0,
                     1,
                     2,
-                    KeySpace::SPLIT + 0,
+                    KeySpace::SPLIT,
                     KeySpace::SPLIT + 1,
                     KeySpace::SPLIT + 2,
                 ]
@@ -261,7 +261,7 @@ mod key_derivation_tests {
                     0,
                     1,
                     2,
-                    KeySpace::SPLIT + 0,
+                    KeySpace::SPLIT,
                     KeySpace::SPLIT + 1,
                     KeySpace::SPLIT + 2,
                 ]
@@ -274,7 +274,7 @@ mod key_derivation_tests {
                     0,
                     1,
                     2,
-                    KeySpace::SPLIT + 0,
+                    KeySpace::SPLIT,
                     KeySpace::SPLIT + 1,
                     KeySpace::SPLIT + 2,
                 ]
@@ -287,7 +287,7 @@ mod key_derivation_tests {
                     0,
                     1,
                     2,
-                    KeySpace::SPLIT + 0,
+                    KeySpace::SPLIT,
                     KeySpace::SPLIT + 1,
                     KeySpace::SPLIT + 2,
                 ]
@@ -320,7 +320,7 @@ mod key_derivation_tests {
                 outcome
                     .all_factors()
                     .into_iter()
-                    .map(|f| f.factor_source_id.clone())
+                    .map(|f| f.factor_source_id)
                     .collect::<HashSet::<_>>(),
                 factor_sources
                     .into_iter()

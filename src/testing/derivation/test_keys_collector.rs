@@ -106,44 +106,4 @@ impl KeysCollector {
             [(factor_source.id, IndexSet::from_iter([path]))],
         )
     }
-
-    pub fn new_account_on_network_of_kind(
-        factor_source: FactorSource,
-        network_id: NetworkID,
-        key_kind: KeyKind,
-    ) -> Self {
-        Self::with(
-            &factor_source,
-            network_id,
-            key_kind,
-            EntityKind::Account,
-            KeySpace::Unsecurified,
-        )
-    }
-
-    pub fn new_account_tx_on(factor_source: FactorSource, network_id: NetworkID) -> Self {
-        Self::new_account_on_network_of_kind(factor_source, network_id, KeyKind::T9n)
-    }
-
-    pub fn new_account_rola_on(factor_source: FactorSource, network_id: NetworkID) -> Self {
-        Self::new_account_on_network_of_kind(factor_source, network_id, KeyKind::Rola)
-    }
-
-    /// mainnet
-    pub fn new_account_tx_mainnet(factor_source: FactorSource) -> Self {
-        Self::new_account_tx_on(factor_source, NetworkID::Mainnet)
-    }
-
-    /// stokenet
-    pub fn new_account_tx_stokenet(factor_source: FactorSource) -> Self {
-        Self::new_account_tx_on(factor_source, NetworkID::Stokenet)
-    }
-
-    pub fn new_account_rola_mainnet(factor_source: FactorSource) -> Self {
-        Self::new_account_rola_on(factor_source, NetworkID::Mainnet)
-    }
-
-    pub fn new_account_rola_stokenet(factor_source: FactorSource) -> Self {
-        Self::new_account_rola_on(factor_source, NetworkID::Stokenet)
-    }
 }
