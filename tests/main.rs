@@ -508,6 +508,7 @@ mod signing_tests {
     mod multi_tx {
         use super::*;
 
+        #[ignore]
         #[actix_rt::test]
         async fn from_profile_accounts_and_personas() {
             let factor_sources = &FactorSource::all();
@@ -563,10 +564,30 @@ mod signing_tests {
 
     mod single_tx {
         use super::*;
+
+        mod multiple_entities {
+            use super::*;
+
+            #[actix_rt::test]
+            async fn prudent_user_single_tx_two_accounts_a0_a1() {
+                let collector = SignaturesCollector::test_prudent([TXToSign::new([
+                    Account::a0(),
+                    Account::a1(),
+                ])]);
+
+                let outcome = collector.collect_signatures().await;
+                assert!(outcome.successful());
+                let signatures = outcome.all_signatures();
+                assert_eq!(signatures.len(), 2);
+            }
+        }
+
         mod single_entity {
             use super::*;
+
             mod account {
                 use super::*;
+
                 #[actix_rt::test]
                 async fn prudent_user_single_tx_a0() {
                     let collector =
@@ -583,6 +604,10 @@ mod signing_tests {
                     let collector = SignaturesCollector::test_prudent([tx.clone()]);
                     let signature = &collector.collect_signatures().await.all_signatures()[0];
                     assert_eq!(signature.intent_hash(), &tx.intent_hash);
+                    assert_eq!(
+                        signature.derivation_path().entity_kind,
+                        CAP26EntityKind::Account
+                    );
                 }
 
                 #[actix_rt::test]

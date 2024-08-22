@@ -39,6 +39,13 @@ impl HDSignature {
             .factor_instance()
             .factor_source_id
     }
+
+    pub fn derivation_path(&self) -> DerivationPath {
+        self.input
+            .owned_factor_instance
+            .factor_instance()
+            .derivation_path()
+    }
 }
 
 impl HasSampleValues for HDSignature {

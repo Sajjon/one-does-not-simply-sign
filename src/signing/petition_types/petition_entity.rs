@@ -135,31 +135,6 @@ impl PetitionEntity {
         combine(t, o)
     }
 
-    fn first_kind<F>(&self, r#if: F) -> Option<FactorListKind>
-    where
-        F: Fn(&PetitionFactors) -> bool,
-    {
-        if self
-            .on_list(FactorListKind::Override, &r#if)
-            .unwrap_or(false)
-        {
-            return self
-                .override_factors
-                .as_ref()
-                .map(|r| r.borrow().factor_list_kind);
-        }
-        if self
-            .on_list(FactorListKind::Threshold, &r#if)
-            .unwrap_or(false)
-        {
-            return self
-                .threshold_factors
-                .as_ref()
-                .map(|r| r.borrow().factor_list_kind);
-        }
-        None
-    }
-
     fn both_void<F, R>(&self, r#do: F)
     where
         F: Fn(&PetitionFactors) -> R,
@@ -218,22 +193,22 @@ impl PetitionEntity {
         }
     }
 
-    fn petition(&self, factor_source_id: &FactorSourceID) -> Result<FactorListKind> {
-        self.first_kind(|l| l.references_factor_source_with_id(factor_source_id))
-            .ok_or(CommonError::UnknownFactorSource)
-    }
-
     pub fn status_if_skipped_factor_source(
         &self,
         factor_source_id: &FactorSourceID,
     ) -> PetitionFactorsStatus {
         let simulation = self.clone();
-        simulation.did_skip(factor_source_id, true).unwrap();
+        simulation
+            .did_skip_if_relevant(factor_source_id, true)
+            .unwrap();
         simulation.status()
     }
 
-    pub fn did_skip(&self, factor_source_id: &FactorSourceID, simulated: bool) -> Result<()> {
-        let _ = self.petition(factor_source_id)?;
+    pub fn did_skip_if_relevant(
+        &self,
+        factor_source_id: &FactorSourceID,
+        simulated: bool,
+    ) -> Result<()> {
         self.both_void(|l| l.did_skip_if_relevant(factor_source_id, simulated));
         Ok(())
     }
@@ -376,13 +351,6 @@ mod tests {
         can_skip(FactorSourceID::fs3());
         can_skip(FactorSourceID::fs4());
         can_skip(FactorSourceID::fs5());
-    }
-
-    #[test]
-    #[should_panic]
-    fn invalid_transactions_if_skipped_panics_for_unknown_factors() {
-        let sut = Sut::sample();
-        sut.invalid_transactions_if_skipped(&FactorSourceID::fs9());
     }
 
     #[test]
