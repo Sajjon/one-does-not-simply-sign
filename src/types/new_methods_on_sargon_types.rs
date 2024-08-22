@@ -17,8 +17,11 @@ impl AccountOrPersona {
 }
 
 impl Profile {
-    pub fn persona_by_address(&self, _address: IdentityAddress) -> Result<Persona> {
-        todo!()
+    pub fn persona_by_address(&self, address: IdentityAddress) -> Result<Persona> {
+        self.personas
+            .get(&address)
+            .ok_or(CommonError::UnknownPersona)
+            .cloned()
     }
 }
 

@@ -506,6 +506,37 @@ mod signing_tests {
     use super::*;
 
     #[actix_rt::test]
+    async fn from_profile_accounts_and_personas() {
+        let a0 = &Account::a0();
+        let a1 = &Account::a1();
+        let a2 = &Account::a2();
+
+        let p0 = &Persona::p0();
+        let p1 = &Persona::p1();
+        let p2 = &Persona::p2();
+
+        let t0 = TransactionIntent::address_of([a0, a1], [p0, p1]);
+        let t1 = TransactionIntent::address_of([a0, a1, a2], []);
+        let t2 = TransactionIntent::address_of([], [p0, p1, p2]);
+
+        let profile = Profile::new([a0, a1, a2], [p0, p1, p2]);
+
+        let collector = SignaturesCollector::new(
+            FactorSource::all(),
+            IndexSet::<TransactionIntent>::from_iter([t0, t1, t2]),
+            Arc::new(TestSignatureCollectingInteractors::new(
+                SimulatedUser::prudent_no_fail(),
+            )),
+            &profile,
+        )
+        .unwrap();
+
+        let outcome = collector.collect_signatures().await;
+        assert!(outcome.signatures_of_failed_transactions().is_empty());
+        assert!(outcome.signatures_of_successful_transactions().len() > 10);
+    }
+
+    #[actix_rt::test]
     async fn prudent_user_single_tx_a0() {
         let collector = SignaturesCollector::test_prudent([TXToSign::new([Account::a0()])]);
         let outcome = collector.collect_signatures().await;

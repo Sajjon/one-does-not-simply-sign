@@ -1,4 +1,4 @@
-use std::marker::PhantomData;
+use std::{marker::PhantomData, str::FromStr};
 
 use crate::prelude::*;
 
@@ -362,6 +362,11 @@ pub struct AbstractAddress<T> {
     phantom: PhantomData<T>,
     pub name: String,
 }
+impl<T> From<String> for AbstractAddress<T> {
+    fn from(value: String) -> Self {
+        Self::new(value)
+    }
+}
 impl<T> AbstractAddress<T> {
     pub fn new(name: impl AsRef<str>) -> Self {
         Self {
@@ -418,6 +423,9 @@ pub type Account = AbstractEntity<AccountAddress>;
 pub type Persona = AbstractEntity<IdentityAddress>;
 
 impl<T: Clone + Into<AddressOfAccountOrPersona>> AbstractEntity<T> {
+    pub fn entity_address(&self) -> T {
+        self.address.clone()
+    }
     pub fn address(&self) -> AddressOfAccountOrPersona {
         self.address.clone().into()
     }
@@ -456,7 +464,7 @@ impl HasSampleValues for Account {
     }
 }
 
-impl Account {
+impl<T: Clone + Into<AddressOfAccountOrPersona> + From<String>> AbstractEntity<T> {
     /// mainnet
     pub(crate) fn sample_unsecurified() -> Self {
         Self::unsecurified_mainnet(0, "Alice", FactorSourceID::fs0())
@@ -477,7 +485,7 @@ impl Account {
 
     fn new(name: impl AsRef<str>, security_state: impl Into<EntitySecurityState>) -> Self {
         Self {
-            address: AccountAddress::new(name),
+            address: T::from(name.as_ref().to_owned()),
             security_state: security_state.into(),
         }
     }
@@ -611,24 +619,67 @@ impl HasSampleValues for IntentHash {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Hash)]
 pub struct TransactionManifest {
     addresses_of_accounts_requiring_auth: Vec<AccountAddress>,
     addresses_of_personas_requiring_auth: Vec<IdentityAddress>,
 }
 
 impl TransactionManifest {
-    pub fn summary(&self) -> ManifestSummary {
-        ManifestSummary {
-            addresses_of_accounts_requiring_auth: self.addresses_of_accounts_requiring_auth.clone(),
-            addresses_of_personas_requiring_auth: self.addresses_of_personas_requiring_auth.clone(),
+    pub fn new(
+        addresses_of_accounts_requiring_auth: impl IntoIterator<Item = AccountAddress>,
+        addresses_of_personas_requiring_auth: impl IntoIterator<Item = IdentityAddress>,
+    ) -> Self {
+        Self {
+            addresses_of_accounts_requiring_auth: addresses_of_accounts_requiring_auth
+                .into_iter()
+                .collect_vec(),
+            addresses_of_personas_requiring_auth: addresses_of_personas_requiring_auth
+                .into_iter()
+                .collect_vec(),
         }
+    }
+    pub fn summary(&self) -> ManifestSummary {
+        ManifestSummary::new(
+            self.addresses_of_accounts_requiring_auth.clone(),
+            self.addresses_of_personas_requiring_auth.clone(),
+        )
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Hash)]
 pub struct TransactionIntent {
     pub(crate) manifest: TransactionManifest,
+}
+
+impl TransactionIntent {
+    fn with(manifest: TransactionManifest) -> Self {
+        Self { manifest }
+    }
+    pub fn new(
+        addresses_of_accounts_requiring_auth: impl IntoIterator<Item = AccountAddress>,
+        addresses_of_personas_requiring_auth: impl IntoIterator<Item = IdentityAddress>,
+    ) -> Self {
+        Self::with(TransactionManifest::new(
+            addresses_of_accounts_requiring_auth,
+            addresses_of_personas_requiring_auth,
+        ))
+    }
+    pub fn address_of<'a, 'p>(
+        accounts_requiring_auth: impl IntoIterator<Item = &'a Account>,
+        personas_requiring_auth: impl IntoIterator<Item = &'p Persona>,
+    ) -> Self {
+        Self::new(
+            accounts_requiring_auth
+                .into_iter()
+                .map(|a| a.entity_address())
+                .collect_vec(),
+            personas_requiring_auth
+                .into_iter()
+                .map(|a| a.entity_address())
+                .collect_vec(),
+        )
+    }
 }
 
 pub struct ManifestSummary {
@@ -636,10 +687,43 @@ pub struct ManifestSummary {
     pub addresses_of_personas_requiring_auth: Vec<IdentityAddress>,
 }
 
+impl ManifestSummary {
+    pub fn new(
+        addresses_of_accounts_requiring_auth: impl IntoIterator<Item = AccountAddress>,
+        addresses_of_personas_requiring_auth: impl IntoIterator<Item = IdentityAddress>,
+    ) -> Self {
+        Self {
+            addresses_of_accounts_requiring_auth: addresses_of_accounts_requiring_auth
+                .into_iter()
+                .collect_vec(),
+            addresses_of_personas_requiring_auth: addresses_of_personas_requiring_auth
+                .into_iter()
+                .collect_vec(),
+        }
+    }
+}
+
 pub struct Profile {
     pub accounts: HashMap<AccountAddress, Account>,
+    pub personas: HashMap<IdentityAddress, Persona>,
 }
+
 impl Profile {
+    pub fn new<'a, 'p>(
+        accounts: impl IntoIterator<Item = &'a Account>,
+        personas: impl IntoIterator<Item = &'p Persona>,
+    ) -> Self {
+        Self {
+            accounts: accounts
+                .into_iter()
+                .map(|a| (a.entity_address(), a.clone()))
+                .collect::<HashMap<_, _>>(),
+            personas: personas
+                .into_iter()
+                .map(|p| (p.entity_address(), p.clone()))
+                .collect::<HashMap<_, _>>(),
+        }
+    }
     pub fn account_by_address(&self, address: AccountAddress) -> Result<Account> {
         self.accounts
             .get(&address)
@@ -701,4 +785,7 @@ pub enum CommonError {
 
     #[error("Unknown account")]
     UnknownAccount,
+
+    #[error("Unknown persona")]
+    UnknownPersona,
 }

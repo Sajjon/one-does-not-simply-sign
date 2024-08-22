@@ -220,3 +220,40 @@ impl Account {
         })
     }
 }
+
+impl Persona {
+    /// Satoshi | 0 | Securified { Threshold #3 and Override factors #2  }
+    pub fn p0() -> Self {
+        type F = FactorSourceID;
+        Self::securified_mainnet(0, "Satoshi", |idx| {
+            let fi = HierarchicalDeterministicFactorInstance::f(idx);
+            MatrixOfFactorInstances::new(
+                [F::fs0(), F::fs3(), F::fs5()].map(&fi),
+                2,
+                [F::fs1(), F::fs4()].map(&fi),
+            )
+        })
+    }
+
+    /// Batman | 1 | Securified { Threshold only # 5/5 }
+    pub fn p1() -> Self {
+        type F = FactorSourceID;
+        Self::securified_mainnet(1, "Batman", |idx| {
+            let fi = HierarchicalDeterministicFactorInstance::f(idx);
+            MatrixOfFactorInstances::threshold_only(
+                [F::fs2(), F::fs6(), F::fs7(), F::fs8(), F::fs9()].map(&fi),
+                5,
+            )
+        })
+    }
+
+    /// Ziggy Stardust  | 2 | Securified { Override factors only #2 }
+    pub fn p2() -> Self {
+        type F = FactorSourceID;
+        Self::securified_mainnet(2, "Ziggy Stardust", |idx| {
+            MatrixOfFactorInstances::override_only(
+                [F::fs1(), F::fs4()].map(HierarchicalDeterministicFactorInstance::f(idx)),
+            )
+        })
+    }
+}
