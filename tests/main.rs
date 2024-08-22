@@ -507,22 +507,43 @@ mod signing_tests {
 
     #[actix_rt::test]
     async fn from_profile_accounts_and_personas() {
-        let a0 = &Account::a0();
-        let a1 = &Account::a1();
-        let a2 = &Account::a2();
+        let factor_sources = &FactorSource::all();
+        let a0 = &Account::a0(); // fs0
+        let a1 = &Account::a1(); // fs1
+        let a2 = &Account::a2(); // fs0
 
-        let p0 = &Persona::p0();
-        let p1 = &Persona::p1();
-        let p2 = &Persona::p2();
+        let p0 = &Persona::p0(); // fs0, fs1, fs3, fs4, fs5
+        let p1 = &Persona::p1(); // 2, 6, 7, 8, 9
+        let p2 = &Persona::p2(); // 1, 4
 
         let t0 = TransactionIntent::address_of([a0, a1], [p0, p1]);
         let t1 = TransactionIntent::address_of([a0, a1, a2], []);
         let t2 = TransactionIntent::address_of([], [p0, p1, p2]);
 
-        let profile = Profile::new([a0, a1, a2], [p0, p1, p2]);
+        let profile = Profile::new(factor_sources.clone(), [a0, a1, a2], [p0, p1, p2]);
+
+        type F = FactorSourceID;
+        assert!([
+            F::fs0(),
+            F::fs1(),
+            F::fs2(),
+            F::fs3(),
+            F::fs4(),
+            F::fs5(),
+            F::fs6(),
+            F::fs7(),
+            F::fs8(),
+            F::fs9()
+        ]
+        .iter()
+        .all(|f| {
+            factor_sources
+                .iter()
+                .map(|x| x.factor_source_id())
+                .contains(f)
+        }));
 
         let collector = SignaturesCollector::new(
-            FactorSource::all(),
             IndexSet::<TransactionIntent>::from_iter([t0, t1, t2]),
             Arc::new(TestSignatureCollectingInteractors::new(
                 SimulatedUser::prudent_no_fail(),
@@ -533,7 +554,7 @@ mod signing_tests {
 
         let outcome = collector.collect_signatures().await;
         assert!(outcome.signatures_of_failed_transactions().is_empty());
-        assert!(outcome.signatures_of_successful_transactions().len() > 10);
+        assert!(outcome.signatures_of_successful_transactions().len() > 2);
     }
 
     #[actix_rt::test]

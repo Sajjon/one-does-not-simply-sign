@@ -65,13 +65,12 @@ impl SignaturesCollector {
     }
 
     pub fn new(
-        all_factor_sources_in_profile: IndexSet<FactorSource>,
         transactions: IndexSet<TransactionIntent>,
         interactors: Arc<dyn SignatureCollectingInteractors>,
         profile: &Profile,
     ) -> Result<Self> {
         Self::with_signers_extraction(
-            all_factor_sources_in_profile,
+            profile.factor_sources.clone(),
             transactions,
             interactors,
             |i| TXToSign::extracting_from_intent_and_profile(&i, profile),

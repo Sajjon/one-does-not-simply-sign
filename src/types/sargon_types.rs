@@ -1,4 +1,4 @@
-use std::{marker::PhantomData, str::FromStr};
+use std::marker::PhantomData;
 
 use crate::prelude::*;
 
@@ -704,16 +704,19 @@ impl ManifestSummary {
 }
 
 pub struct Profile {
+    pub factor_sources: IndexSet<FactorSource>,
     pub accounts: HashMap<AccountAddress, Account>,
     pub personas: HashMap<IdentityAddress, Persona>,
 }
 
 impl Profile {
     pub fn new<'a, 'p>(
+        factor_sources: IndexSet<FactorSource>,
         accounts: impl IntoIterator<Item = &'a Account>,
         personas: impl IntoIterator<Item = &'p Persona>,
     ) -> Self {
         Self {
+            factor_sources,
             accounts: accounts
                 .into_iter()
                 .map(|a| (a.entity_address(), a.clone()))
