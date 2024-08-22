@@ -15,3 +15,15 @@ impl AccountOrPersona {
         }
     }
 }
+
+impl Profile {
+    pub fn persona_by_address(&self, _address: IdentityAddress) -> Result<Persona> {
+        todo!()
+    }
+}
+
+impl TransactionIntent {
+    pub fn manifest_summary(&self) -> ManifestSummary {
+        self.manifest.summary()
+    }
+}

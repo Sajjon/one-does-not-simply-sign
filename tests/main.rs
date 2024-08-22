@@ -507,8 +507,7 @@ mod signing_tests {
 
     #[actix_rt::test]
     async fn prudent_user_single_tx_a0() {
-        let collector =
-            SignaturesCollector::test_prudent([TransactionIntent::new([Account::a0()])]);
+        let collector = SignaturesCollector::test_prudent([TXToSign::new([Account::a0()])]);
         let outcome = collector.collect_signatures().await;
         assert!(outcome.successful());
         let signatures = outcome.all_signatures();
@@ -517,7 +516,7 @@ mod signing_tests {
 
     #[actix_rt::test]
     async fn prudent_user_single_tx_a0_assert_correct_intent_hash_is_signed() {
-        let tx = TransactionIntent::new([Account::a0()]);
+        let tx = TXToSign::new([Account::a0()]);
         let collector = SignaturesCollector::test_prudent([tx.clone()]);
         let signature = &collector.collect_signatures().await.all_signatures()[0];
         assert_eq!(signature.intent_hash(), &tx.intent_hash);
@@ -526,7 +525,7 @@ mod signing_tests {
     #[actix_rt::test]
     async fn prudent_user_single_tx_a0_assert_correct_owner_has_signed() {
         let account = Account::a0();
-        let tx = TransactionIntent::new([account.clone()]);
+        let tx = TXToSign::new([account.clone()]);
         let collector = SignaturesCollector::test_prudent([tx.clone()]);
         let signature = &collector.collect_signatures().await.all_signatures()[0];
         assert_eq!(signature.owned_factor_instance().owner, account.address());
@@ -535,7 +534,7 @@ mod signing_tests {
     #[actix_rt::test]
     async fn prudent_user_single_tx_a0_assert_correct_owner_factor_instance_signed() {
         let account = Account::a0();
-        let tx = TransactionIntent::new([account.clone()]);
+        let tx = TXToSign::new([account.clone()]);
         let collector = SignaturesCollector::test_prudent([tx.clone()]);
         let signature = &collector.collect_signatures().await.all_signatures()[0];
 
@@ -551,8 +550,7 @@ mod signing_tests {
 
     #[actix_rt::test]
     async fn prudent_user_single_tx_a1() {
-        let collector =
-            SignaturesCollector::test_prudent([TransactionIntent::new([Account::a1()])]);
+        let collector = SignaturesCollector::test_prudent([TXToSign::new([Account::a1()])]);
         let outcome = collector.collect_signatures().await;
         assert!(outcome.successful());
         let signatures = outcome.all_signatures();
@@ -561,8 +559,7 @@ mod signing_tests {
 
     #[actix_rt::test]
     async fn prudent_user_single_tx_a2() {
-        let collector =
-            SignaturesCollector::test_prudent([TransactionIntent::new([Account::a2()])]);
+        let collector = SignaturesCollector::test_prudent([TXToSign::new([Account::a2()])]);
         let outcome = collector.collect_signatures().await;
         assert!(outcome.successful());
         let signatures = outcome.all_signatures();
@@ -571,8 +568,7 @@ mod signing_tests {
 
     #[actix_rt::test]
     async fn prudent_user_single_tx_a3() {
-        let collector =
-            SignaturesCollector::test_prudent([TransactionIntent::new([Account::a3()])]);
+        let collector = SignaturesCollector::test_prudent([TXToSign::new([Account::a3()])]);
         let outcome = collector.collect_signatures().await;
         assert!(outcome.successful());
         let signatures = outcome.all_signatures();
@@ -581,8 +577,7 @@ mod signing_tests {
 
     #[actix_rt::test]
     async fn prudent_user_single_tx_a4() {
-        let collector =
-            SignaturesCollector::test_prudent([TransactionIntent::new([Account::a4()])]);
+        let collector = SignaturesCollector::test_prudent([TXToSign::new([Account::a4()])]);
         let outcome = collector.collect_signatures().await;
         assert!(outcome.successful());
         let signatures = outcome.all_signatures();
@@ -591,8 +586,7 @@ mod signing_tests {
 
     #[actix_rt::test]
     async fn prudent_user_single_tx_a5() {
-        let collector =
-            SignaturesCollector::test_prudent([TransactionIntent::new([Account::a5()])]);
+        let collector = SignaturesCollector::test_prudent([TXToSign::new([Account::a5()])]);
         let outcome = collector.collect_signatures().await;
         assert!(outcome.successful());
         let signatures = outcome.all_signatures();
@@ -601,8 +595,7 @@ mod signing_tests {
 
     #[actix_rt::test]
     async fn prudent_user_single_tx_a6() {
-        let collector =
-            SignaturesCollector::test_prudent([TransactionIntent::new([Account::a6()])]);
+        let collector = SignaturesCollector::test_prudent([TXToSign::new([Account::a6()])]);
         let outcome = collector.collect_signatures().await;
         assert!(outcome.successful());
         let signatures = outcome.all_signatures();
@@ -611,8 +604,7 @@ mod signing_tests {
 
     #[actix_rt::test]
     async fn prudent_user_single_tx_a7() {
-        let collector =
-            SignaturesCollector::test_prudent([TransactionIntent::new([Account::a7()])]);
+        let collector = SignaturesCollector::test_prudent([TXToSign::new([Account::a7()])]);
         let outcome = collector.collect_signatures().await;
         assert!(outcome.successful());
         let signatures = outcome.all_signatures();
@@ -622,9 +614,9 @@ mod signing_tests {
 
     #[actix_rt::test]
     async fn lazy_sign_minimum_user_single_tx_a0() {
-        let collector = SignaturesCollector::test_lazy_sign_minimum_no_failures([
-            TransactionIntent::new([Account::a0()]),
-        ]);
+        let collector = SignaturesCollector::test_lazy_sign_minimum_no_failures([TXToSign::new([
+            Account::a0(),
+        ])]);
         let outcome = collector.collect_signatures().await;
         assert!(outcome.successful());
         let signatures = outcome.all_signatures();
@@ -633,9 +625,9 @@ mod signing_tests {
 
     #[actix_rt::test]
     async fn lazy_sign_minimum_user_single_tx_a1() {
-        let collector = SignaturesCollector::test_lazy_sign_minimum_no_failures([
-            TransactionIntent::new([Account::a1()]),
-        ]);
+        let collector = SignaturesCollector::test_lazy_sign_minimum_no_failures([TXToSign::new([
+            Account::a1(),
+        ])]);
         let outcome = collector.collect_signatures().await;
         assert!(outcome.successful());
         let signatures = outcome.all_signatures();
@@ -644,9 +636,9 @@ mod signing_tests {
 
     #[actix_rt::test]
     async fn lazy_sign_minimum_user_single_tx_a2() {
-        let collector = SignaturesCollector::test_lazy_sign_minimum_no_failures([
-            TransactionIntent::new([Account::a2()]),
-        ]);
+        let collector = SignaturesCollector::test_lazy_sign_minimum_no_failures([TXToSign::new([
+            Account::a2(),
+        ])]);
         let outcome = collector.collect_signatures().await;
         assert!(outcome.successful());
         let signatures = outcome.all_signatures();
@@ -655,9 +647,9 @@ mod signing_tests {
 
     #[actix_rt::test]
     async fn lazy_sign_minimum_user_a3() {
-        let collector = SignaturesCollector::test_lazy_sign_minimum_no_failures([
-            TransactionIntent::new([Account::a3()]),
-        ]);
+        let collector = SignaturesCollector::test_lazy_sign_minimum_no_failures([TXToSign::new([
+            Account::a3(),
+        ])]);
         let outcome = collector.collect_signatures().await;
         assert!(outcome.successful());
         let signatures = outcome.all_signatures();
@@ -666,9 +658,9 @@ mod signing_tests {
 
     #[actix_rt::test]
     async fn lazy_sign_minimum_user_a4() {
-        let collector = SignaturesCollector::test_lazy_sign_minimum_no_failures([
-            TransactionIntent::new([Account::a4()]),
-        ]);
+        let collector = SignaturesCollector::test_lazy_sign_minimum_no_failures([TXToSign::new([
+            Account::a4(),
+        ])]);
         let outcome = collector.collect_signatures().await;
         assert!(outcome.successful());
         let signatures = outcome.all_signatures();
@@ -677,9 +669,9 @@ mod signing_tests {
 
     #[actix_rt::test]
     async fn lazy_sign_minimum_user_a5() {
-        let collector = SignaturesCollector::test_lazy_sign_minimum_no_failures([
-            TransactionIntent::new([Account::a5()]),
-        ]);
+        let collector = SignaturesCollector::test_lazy_sign_minimum_no_failures([TXToSign::new([
+            Account::a5(),
+        ])]);
         let outcome = collector.collect_signatures().await;
         assert!(outcome.successful());
         let signatures = outcome.all_signatures();
@@ -688,9 +680,9 @@ mod signing_tests {
 
     #[actix_rt::test]
     async fn lazy_sign_minimum_user_a6() {
-        let collector = SignaturesCollector::test_lazy_sign_minimum_no_failures([
-            TransactionIntent::new([Account::a6()]),
-        ]);
+        let collector = SignaturesCollector::test_lazy_sign_minimum_no_failures([TXToSign::new([
+            Account::a6(),
+        ])]);
         let outcome = collector.collect_signatures().await;
         assert!(outcome.successful());
         let signatures = outcome.all_signatures();
@@ -700,9 +692,9 @@ mod signing_tests {
 
     #[actix_rt::test]
     async fn lazy_sign_minimum_user_a7() {
-        let collector = SignaturesCollector::test_lazy_sign_minimum_no_failures([
-            TransactionIntent::new([Account::a7()]),
-        ]);
+        let collector = SignaturesCollector::test_lazy_sign_minimum_no_failures([TXToSign::new([
+            Account::a7(),
+        ])]);
         let outcome = collector.collect_signatures().await;
         assert!(outcome.successful());
         let signatures = outcome.all_signatures();
@@ -713,9 +705,9 @@ mod signing_tests {
     #[actix_rt::test]
     async fn lazy_sign_minimum_user_a5_last_factor_used() {
         let entity = Account::a5();
-        let collector = SignaturesCollector::test_lazy_sign_minimum_no_failures([
-            TransactionIntent::new([entity.clone()]),
-        ]);
+        let collector = SignaturesCollector::test_lazy_sign_minimum_no_failures([TXToSign::new([
+            entity.clone(),
+        ])]);
         let outcome = collector.collect_signatures().await;
         assert!(outcome.successful());
         let signatures = outcome.all_signatures();
@@ -739,16 +731,16 @@ mod signing_tests {
 
     #[actix_rt::test]
     async fn lazy_sign_minimum_all_known_factors_used_as_override_factors_signed_with_device() {
-        let collector = SignaturesCollector::test_lazy_sign_minimum_no_failures([
-            TransactionIntent::new([Account::securified_mainnet(0, "all override", |idx| {
+        let collector = SignaturesCollector::test_lazy_sign_minimum_no_failures([TXToSign::new([
+            Account::securified_mainnet(0, "all override", |idx| {
                 MatrixOfFactorInstances::override_only(FactorSource::all().into_iter().map(|f| {
                     HierarchicalDeterministicFactorInstance::account_mainnet_tx(
                         idx,
                         f.factor_source_id(),
                     )
                 }))
-            })]),
-        ]);
+            }),
+        ])]);
         let outcome = collector.collect_signatures().await;
         assert!(outcome.successful());
         let signatures = outcome.all_signatures();
@@ -767,7 +759,7 @@ mod signing_tests {
     #[actix_rt::test]
     async fn lazy_always_skip_user_single_tx_a0() {
         let collector =
-            SignaturesCollector::test_lazy_always_skip([TransactionIntent::new([Account::a0()])]);
+            SignaturesCollector::test_lazy_always_skip([TXToSign::new([Account::a0()])]);
         let outcome = collector.collect_signatures().await;
         assert!(!outcome.successful());
         let signatures = outcome.all_signatures();
@@ -778,7 +770,7 @@ mod signing_tests {
     async fn fail_get_skipped() {
         let failing = IndexSet::<_>::from_iter([FactorSourceID::fs0()]);
         let collector = SignaturesCollector::test_prudent_with_failures(
-            [TransactionIntent::new([Account::a0()])],
+            [TXToSign::new([Account::a0()])],
             SimulatedFailures::with_simulated_failures(failing.clone()),
         );
         let outcome = collector.collect_signatures().await;
@@ -790,7 +782,7 @@ mod signing_tests {
     #[actix_rt::test]
     async fn lazy_always_skip_user_single_tx_a1() {
         let collector =
-            SignaturesCollector::test_lazy_always_skip([TransactionIntent::new([Account::a1()])]);
+            SignaturesCollector::test_lazy_always_skip([TXToSign::new([Account::a1()])]);
         let outcome = collector.collect_signatures().await;
         assert!(!outcome.successful());
         let signatures = outcome.all_signatures();
@@ -800,7 +792,7 @@ mod signing_tests {
     #[actix_rt::test]
     async fn lazy_always_skip_user_single_tx_a2() {
         let collector =
-            SignaturesCollector::test_lazy_always_skip([TransactionIntent::new([Account::a2()])]);
+            SignaturesCollector::test_lazy_always_skip([TXToSign::new([Account::a2()])]);
         let outcome = collector.collect_signatures().await;
         assert!(!outcome.successful());
         let signatures = outcome.all_signatures();
@@ -810,7 +802,7 @@ mod signing_tests {
     #[actix_rt::test]
     async fn lazy_always_skip_user_a3() {
         let collector =
-            SignaturesCollector::test_lazy_always_skip([TransactionIntent::new([Account::a3()])]);
+            SignaturesCollector::test_lazy_always_skip([TXToSign::new([Account::a3()])]);
         let outcome = collector.collect_signatures().await;
         assert!(!outcome.successful());
         let signatures = outcome.all_signatures();
@@ -820,7 +812,7 @@ mod signing_tests {
     #[actix_rt::test]
     async fn lazy_always_skip_user_a4() {
         let collector =
-            SignaturesCollector::test_lazy_always_skip([TransactionIntent::new([Account::a4()])]);
+            SignaturesCollector::test_lazy_always_skip([TXToSign::new([Account::a4()])]);
         let outcome = collector.collect_signatures().await;
         assert!(!outcome.successful());
         let signatures = outcome.all_signatures();
@@ -830,7 +822,7 @@ mod signing_tests {
     #[actix_rt::test]
     async fn lazy_always_skip_user_a5() {
         let collector =
-            SignaturesCollector::test_lazy_always_skip([TransactionIntent::new([Account::a5()])]);
+            SignaturesCollector::test_lazy_always_skip([TXToSign::new([Account::a5()])]);
         let outcome = collector.collect_signatures().await;
         assert!(!outcome.successful());
         let signatures = outcome.all_signatures();
@@ -840,7 +832,7 @@ mod signing_tests {
     #[actix_rt::test]
     async fn lazy_always_skip_user_a6() {
         let collector =
-            SignaturesCollector::test_lazy_always_skip([TransactionIntent::new([Account::a6()])]);
+            SignaturesCollector::test_lazy_always_skip([TXToSign::new([Account::a6()])]);
         let outcome = collector.collect_signatures().await;
         assert!(!outcome.successful());
         let signatures = outcome.all_signatures();
@@ -850,7 +842,7 @@ mod signing_tests {
     #[actix_rt::test]
     async fn lazy_always_skip_user_a7() {
         let collector =
-            SignaturesCollector::test_lazy_always_skip([TransactionIntent::new([Account::a7()])]);
+            SignaturesCollector::test_lazy_always_skip([TXToSign::new([Account::a7()])]);
         let outcome = collector.collect_signatures().await;
         assert!(!outcome.successful());
         let signatures = outcome.all_signatures();
@@ -860,7 +852,7 @@ mod signing_tests {
     #[actix_rt::test]
     async fn failure() {
         let collector = SignaturesCollector::test_prudent_with_failures(
-            [TransactionIntent::new([Account::a0()])],
+            [TXToSign::new([Account::a0()])],
             SimulatedFailures::with_simulated_failures([FactorSourceID::fs0()]),
         );
         let outcome = collector.collect_signatures().await;
@@ -870,7 +862,7 @@ mod signing_tests {
     #[actix_rt::test]
     async fn building_can_succeed_even_if_one_factor_source_fails_assert_ids_of_successful_tx() {
         let collector = SignaturesCollector::test_prudent_with_failures(
-            [TransactionIntent::new([Account::a4()])],
+            [TXToSign::new([Account::a4()])],
             SimulatedFailures::with_simulated_failures([FactorSourceID::fs3()]),
         );
         let outcome = collector.collect_signatures().await;
@@ -888,7 +880,7 @@ mod signing_tests {
     #[actix_rt::test]
     async fn building_can_succeed_even_if_one_factor_source_fails_assert_ids_of_failed_tx() {
         let collector = SignaturesCollector::test_prudent_with_failures(
-            [TransactionIntent::new([Account::a4()])],
+            [TXToSign::new([Account::a4()])],
             SimulatedFailures::with_simulated_failures([FactorSourceID::fs3()]),
         );
         let outcome = collector.collect_signatures().await;

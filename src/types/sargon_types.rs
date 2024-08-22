@@ -612,19 +612,40 @@ impl HasSampleValues for IntentHash {
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
-pub struct TransactionIntent {
-    /// In Sargon we are gonna do:
-    /// ```[no_compile]
-    /// fn map(transaction_manifest: TransactionManifest, profile: Profile) -> Result<TXToSign> {
-    /// let summary: ManifestSummary = transaction_intent.manifest.summary();
-    /// let mut addresses_of_entities_requiring_auth: IndexSet<AddressOfAccountOrPersona> = IndexSet::new();
-    /// addresses_of_entities_requiring_auth.extend(summary.addresses_of_accounts_requiring_auth.into_iter().map(AddressOfAccountOrPersona::from).collect());
-    /// addresses_of_entities_requiring_auth.extend(summary.addresses_of_personas_requiring_auth.into_iter().map(AddressOfAccountOrPersona::from).collect());
-    /// let entities
-    /// }
+pub struct TransactionManifest {
+    addresses_of_accounts_requiring_auth: Vec<AccountAddress>,
+    addresses_of_personas_requiring_auth: Vec<IdentityAddress>,
+}
 
-    /// ```
-    pub(crate) tx_to_sign: TXToSign,
+impl TransactionManifest {
+    pub fn summary(&self) -> ManifestSummary {
+        ManifestSummary {
+            addresses_of_accounts_requiring_auth: self.addresses_of_accounts_requiring_auth.clone(),
+            addresses_of_personas_requiring_auth: self.addresses_of_personas_requiring_auth.clone(),
+        }
+    }
+}
+
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct TransactionIntent {
+    pub(crate) manifest: TransactionManifest,
+}
+
+pub struct ManifestSummary {
+    pub addresses_of_accounts_requiring_auth: Vec<AccountAddress>,
+    pub addresses_of_personas_requiring_auth: Vec<IdentityAddress>,
+}
+
+pub struct Profile {
+    pub accounts: HashMap<AccountAddress, Account>,
+}
+impl Profile {
+    pub fn account_by_address(&self, address: AccountAddress) -> Result<Account> {
+        self.accounts
+            .get(&address)
+            .ok_or(CommonError::UnknownAccount)
+            .cloned()
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
@@ -677,4 +698,7 @@ pub enum CommonError {
 
     #[error("Empty FactorSources list")]
     FactorSourcesOfKindEmptyFactors,
+
+    #[error("Unknown account")]
+    UnknownAccount,
 }

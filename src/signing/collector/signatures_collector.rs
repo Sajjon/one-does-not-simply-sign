@@ -24,7 +24,9 @@ pub struct SignaturesCollector {
 }
 
 impl SignaturesCollector {
-    fn with(
+    /// Used by our tests. But Sargon will typically wanna use `SignaturesCollector::new` and passing
+    /// it a
+    pub(crate) fn with(
         all_factor_sources_in_profile: IndexSet<FactorSource>,
         transactions: IndexSet<TXToSign>,
         interactors: Arc<dyn SignatureCollectingInteractors>,
@@ -41,16 +43,77 @@ impl SignaturesCollector {
         }
     }
 
-    pub fn new<F>(
+    pub fn with_signers_extraction<F>(
         all_factor_sources_in_profile: IndexSet<FactorSource>,
         transactions: IndexSet<TransactionIntent>,
         interactors: Arc<dyn SignatureCollectingInteractors>,
         extract_signers: F,
-    ) -> Self
+    ) -> Result<Self>
     where
-        F: Fn(TransactionIntent) -> TXToSign,
+        F: Fn(TransactionIntent) -> Result<TXToSign>,
     {
-        todo!()
+        let transactions = transactions
+            .into_iter()
+            .map(extract_signers)
+            .collect::<Result<IndexSet<TXToSign>>>()?;
+
+        Ok(Self::with(
+            all_factor_sources_in_profile,
+            transactions,
+            interactors,
+        ))
+    }
+
+    pub fn new(
+        all_factor_sources_in_profile: IndexSet<FactorSource>,
+        transactions: IndexSet<TransactionIntent>,
+        interactors: Arc<dyn SignatureCollectingInteractors>,
+        profile: &Profile,
+    ) -> Result<Self> {
+        Self::with_signers_extraction(
+            all_factor_sources_in_profile,
+            transactions,
+            interactors,
+            |i| TXToSign::extracting_from_intent_and_profile(&i, profile),
+        )
+    }
+}
+
+impl TXToSign {
+    pub fn extracting_from_intent_and_profile(
+        intent: &TransactionIntent,
+        profile: &Profile,
+    ) -> Result<Self> {
+        let summary = intent.manifest_summary();
+        let mut entities_requiring_auth: IndexSet<AccountOrPersona> = IndexSet::new();
+
+        let accounts = summary
+            .addresses_of_accounts_requiring_auth
+            .into_iter()
+            .map(|a| profile.account_by_address(a))
+            .collect::<Result<Vec<_>>>()?;
+
+        entities_requiring_auth.extend(
+            accounts
+                .into_iter()
+                .map(AccountOrPersona::from)
+                .collect_vec(),
+        );
+
+        let personas = summary
+            .addresses_of_personas_requiring_auth
+            .into_iter()
+            .map(|a| profile.persona_by_address(a))
+            .collect::<Result<Vec<_>>>()?;
+
+        entities_requiring_auth.extend(
+            personas
+                .into_iter()
+                .map(AccountOrPersona::from)
+                .collect_vec(),
+        );
+
+        Ok(Self::new(entities_requiring_auth))
     }
 }
 

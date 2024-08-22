@@ -3,7 +3,7 @@ use crate::prelude::*;
 #[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
 pub struct TXToSign {
     pub intent_hash: IntentHash,
-    pub entities_requiring_auth: Vec<AccountOrPersona>, // should be a set but Sets are not `Hash`.
+    entities_requiring_auth: Vec<AccountOrPersona>, // should be a set but Sets are not `Hash`.
 }
 
 impl TXToSign {
@@ -17,5 +17,9 @@ impl TXToSign {
                 .map(|i| i.into())
                 .collect_vec(),
         }
+    }
+
+    pub fn entities_requiring_auth(&self) -> IndexSet<AccountOrPersona> {
+        self.entities_requiring_auth.clone().into_iter().collect()
     }
 }
