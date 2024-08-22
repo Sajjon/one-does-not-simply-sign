@@ -28,8 +28,8 @@ impl Petitions {
         self.txid_to_petition
             .borrow()
             .iter()
-            .map(|p| format!("{:?}: {:?}", p.0, p.1))
-            .join("\n")
+            .map(|p| format!("Petitions({:#?}: {:#?})", p.0, p.1))
+            .join(" + ")
     }
     pub fn outcome(self) -> SignaturesOutcome {
         let txid_to_petition = self.txid_to_petition.into_inner();

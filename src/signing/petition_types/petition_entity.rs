@@ -21,18 +21,23 @@ pub struct PetitionEntity {
 
 impl PetitionEntity {
     fn debug_str(&self) -> String {
+        let thres: String = self
+            .threshold_factors
+            .clone()
+            .map(|f| format!("threshold_factors {:#?}", f.borrow()))
+            .or(Some(String::new()))
+            .unwrap();
+
+        let overr: String = self
+            .override_factors
+            .clone()
+            .map(|f| format!("override_factors {:#?}", f.borrow()))
+            .or(Some(String::new()))
+            .unwrap();
+
         format!(
-            "intent_hash: {:?}, entity: {:?}, {:?}{:?}",
-            self.intent_hash,
-            self.entity,
-            self.threshold_factors
-                .clone()
-                .map(|f| format!("threshold_factors {:?}", f.borrow()))
-                .or(Some(String::new())),
-            self.override_factors
-                .clone()
-                .map(|f| format!("override_factors {:?}", f.borrow()))
-                .or(Some(String::new()))
+            "intent_hash: {:#?}, entity: {:#?}, {:#?}{:#?}",
+            self.intent_hash, self.entity, thres, overr
         )
     }
 

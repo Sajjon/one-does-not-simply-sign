@@ -16,17 +16,16 @@ pub(super) struct PetitionFactorsStateSnapshot {
 impl PetitionFactorsStateSnapshot {
     fn debug_str(&self) -> String {
         format!(
-            "signatures: {:?}
-            skipped: {:?}",
+            "signatures: {:#?}, skipped: {:#?}",
             self.signed
                 .clone()
                 .into_iter()
-                .map(|s| format!("{:?}", s))
+                .map(|s| format!("{:#?}", s))
                 .join(", "),
             self.skipped
                 .clone()
                 .into_iter()
-                .map(|s| format!("{:?}", s))
+                .map(|s| format!("{:#?}", s))
                 .join(", ")
         )
     }

@@ -1,7 +1,8 @@
 use super::*;
 use crate::prelude::*;
 
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, derive_more::Debug)]
+#[debug("PetitionFactorsInput(factors: {:#?})", self.factors)]
 pub struct PetitionFactorsInput {
     /// Factors to sign with.
     pub(super) factors: IndexSet<HierarchicalDeterministicFactorInstance>,

@@ -4,7 +4,7 @@ use crate::prelude::*;
 pub enum SignWithFactorSourceOrSourcesOutcome<T> {
     /// The user successfully signed with the factor source(s), the associated
     /// value contains the produces signatures and any relevant metadata.
-    #[debug("Signed: {:?}", produced_signatures)]
+    #[debug("Signed: {:#?}", produced_signatures)]
     Signed { produced_signatures: T },
 
     /// The user skipped signing with the factor sources with ids

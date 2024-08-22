@@ -2,7 +2,7 @@ use crate::prelude::*;
 
 /// A signature of `intent_hash` by `entity` using `factor_source_id` and `derivation_path`, with `public_key` used for verification.
 #[derive(Clone, PartialEq, Eq, Hash, derive_more::Debug)]
-#[debug("HDSignature {{ input: {:?} }}", input)]
+#[debug("HDSignature {{ input: {:#?} }}", input)]
 pub struct HDSignature {
     /// The input used to produce this `HDSignature`
     pub input: HDSignatureInput,

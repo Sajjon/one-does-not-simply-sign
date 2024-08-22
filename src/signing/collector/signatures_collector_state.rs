@@ -1,11 +1,12 @@
 use crate::prelude::*;
 
+#[derive(derive_more::Debug)]
+#[debug("{:#?}", petitions.borrow())]
 pub(super) struct SignaturesCollectorState {
     pub(super) petitions: RefCell<Petitions>,
 }
 impl SignaturesCollectorState {
     pub fn new(petitions: Petitions) -> Self {
-        println!("petitions: {:?}", &petitions);
         Self {
             petitions: RefCell::new(petitions),
         }

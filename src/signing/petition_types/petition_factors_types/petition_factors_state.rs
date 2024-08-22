@@ -50,7 +50,7 @@ impl PetitionFactorsState {
     fn assert_not_referencing_factor_source(&self, factor_source_id: FactorSourceID) {
         assert!(
             !self.references_factor_source_by_id(factor_source_id),
-            "Programmer error! Factor source {:?} already used, should only be referenced once.",
+            "Programmer error! Factor source {:#?} already used, should only be referenced once.",
             factor_source_id,
         );
     }

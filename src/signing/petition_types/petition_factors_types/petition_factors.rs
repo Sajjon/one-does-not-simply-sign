@@ -14,7 +14,11 @@ pub struct PetitionFactors {
 
 impl PetitionFactors {
     pub fn debug_str(&self) -> String {
-        format!("{:?}", self.state_snapshot())
+        format!(
+            "PetitionFactors(input: {:#?}, state_snapshot: {:#?})",
+            self.input,
+            self.state_snapshot()
+        )
     }
     pub fn new(factor_list_kind: FactorListKind, input: PetitionFactorsInput) -> Self {
         Self {

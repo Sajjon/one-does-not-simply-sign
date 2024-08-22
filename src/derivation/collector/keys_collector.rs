@@ -110,7 +110,7 @@ impl KeysCollector {
         _ = self
             .derive_with_factors() // in decreasing "friction order"
             .await
-            .inspect_err(|e| eprintln!("Failed to use factor sources: {:?}", e));
+            .inspect_err(|e| eprintln!("Failed to use factor sources: {:#?}", e));
         self.state.into_inner().keyrings.into_inner().outcome()
     }
 }

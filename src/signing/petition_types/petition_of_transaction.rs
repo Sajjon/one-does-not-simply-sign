@@ -13,11 +13,14 @@ pub(crate) struct PetitionTransaction {
 
 impl PetitionTransaction {
     fn debug_str(&self) -> String {
-        self.for_entities
+        let entities = self
+            .for_entities
             .borrow()
             .iter()
-            .map(|p| format!("{:?}", p.1))
-            .join(", ")
+            .map(|p| format!("PetitionEntity({:#?})", p.1))
+            .join(", ");
+
+        format!("PetitionTransaction(for_entities: [{}])", entities)
     }
 
     /// Returns `(true, _)` if this transaction has been successfully signed by

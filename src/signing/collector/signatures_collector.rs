@@ -155,6 +155,8 @@ impl SignaturesCollector {
     async fn sign_with_factors(&self) -> Result<()> {
         let factors_of_kind = self.dependencies.factors_of_kind.clone();
         for factor_sources_of_kind in factors_of_kind.into_iter() {
+            println!("🔮 state: {:#?}", &self.state.borrow());
+
             self.sign_with_factors_of_kind(factor_sources_of_kind)
                 .await?;
 
@@ -245,7 +247,7 @@ impl SignaturesCollector {
         _ = self
             .sign_with_factors() // in decreasing "friction order"
             .await
-            .inspect_err(|e| eprintln!("Failed to use factor sources: {:?}", e));
+            .inspect_err(|e| eprintln!("Failed to use factor sources: {:#?}", e));
         self.state.into_inner().petitions.into_inner().outcome()
     }
 }

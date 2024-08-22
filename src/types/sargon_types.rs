@@ -42,7 +42,7 @@ impl HasSampleValues for FactorSourceID {
 }
 
 #[derive(Clone, PartialEq, Eq, std::hash::Hash, derive_more::Debug)]
-#[debug("{:?}", id)]
+#[debug("{:#?}", id)]
 pub struct FactorSource {
     pub last_used: SystemTime,
     id: FactorSourceID,
@@ -258,7 +258,7 @@ pub struct HierarchicalDeterministicFactorInstance {
 impl HierarchicalDeterministicFactorInstance {
     fn debug_str(&self) -> String {
         format!(
-            "factor_source_id: {:?}, derivation_path: {:?}",
+            "factor_source_id: {:#?}, derivation_path: {:#?}",
             self.factor_source_id, self.public_key.derivation_path
         )
     }
@@ -365,7 +365,8 @@ impl From<MatrixOfFactorInstances> for EntitySecurityState {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash, derive_more::Display)]
+#[display("{name}")]
 pub struct AbstractAddress<T> {
     phantom: PhantomData<T>,
     pub name: String,
@@ -401,12 +402,18 @@ pub struct IdentityAddressTag;
 pub type AccountAddress = AbstractAddress<AccountAddressTag>;
 pub type IdentityAddress = AbstractAddress<IdentityAddressTag>;
 
-#[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
+#[derive(Clone, PartialEq, Eq, std::hash::Hash, derive_more::Display)]
 pub enum AddressOfAccountOrPersona {
+    #[display("acco_{_0}")]
     Account(AccountAddress),
+    #[display("ident_{_0}")]
     Identity(IdentityAddress),
 }
-
+impl std::fmt::Debug for AddressOfAccountOrPersona {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.to_string())
+    }
+}
 impl HasSampleValues for AddressOfAccountOrPersona {
     fn sample() -> Self {
         Self::Account(AccountAddress::sample())
@@ -422,7 +429,8 @@ pub enum AccountOrPersona {
     PersonaEntity(Persona),
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
+#[derive(Clone, PartialEq, Eq, std::hash::Hash, derive_more::Debug)]
+#[debug("{}", self.address())]
 pub struct AbstractEntity<A: Clone + Into<AddressOfAccountOrPersona>> {
     address: A,
     pub security_state: EntitySecurityState,
@@ -601,7 +609,8 @@ pub trait HasSampleValues {
     fn sample_other() -> Self;
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash, Getters)]
+#[derive(Clone, PartialEq, Eq, std::hash::Hash, Getters, derive_more::Debug)]
+#[debug("TXID({:#?})", hash.id.to_string()[..6].to_owned())]
 pub struct IntentHash {
     hash: Hash,
 }

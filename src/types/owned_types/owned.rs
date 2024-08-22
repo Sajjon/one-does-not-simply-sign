@@ -2,7 +2,7 @@ use crate::prelude::*;
 
 /// Some value with a known owner - an account or persona.
 #[derive(Clone, PartialEq, Eq, std::hash::Hash, derive_more::Debug)]
-#[debug("{:?}: {:?}", owner, value)]
+#[debug("{:#?}: {:#?}", owner, value)]
 pub struct Owned<T> {
     /// The known owner - an account or persona - of `value`.
     pub owner: AddressOfAccountOrPersona,

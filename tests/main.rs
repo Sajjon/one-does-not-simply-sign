@@ -53,7 +53,7 @@ mod key_derivation_tests {
             Arc::new(TestDerivationInteractors::fail()),
         );
         let outcome = collector.collect_keys().await;
-        println!("{:?}", outcome);
+        println!("{:#?}", outcome);
         assert!(outcome.all_factors().is_empty())
     }
 
