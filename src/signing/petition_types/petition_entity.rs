@@ -3,7 +3,8 @@ use crate::prelude::*;
 /// Petition of signatures from an entity in a transaction.
 /// Essentially a wrapper around a tuple
 /// `{ threshold: PetitionFactors, override: PetitionFactors }`
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, derive_more::Debug)]
+#[debug("{}", self.debug_str())]
 pub struct PetitionEntity {
     /// The owner of these factors
     pub entity: AddressOfAccountOrPersona,
@@ -19,6 +20,22 @@ pub struct PetitionEntity {
 }
 
 impl PetitionEntity {
+    fn debug_str(&self) -> String {
+        format!(
+            "intent_hash: {:?}, entity: {:?}, {:?}{:?}",
+            self.intent_hash,
+            self.entity,
+            self.threshold_factors
+                .clone()
+                .map(|f| format!("threshold_factors {:?}", f.borrow()))
+                .or(Some(String::new())),
+            self.override_factors
+                .clone()
+                .map(|f| format!("override_factors {:?}", f.borrow()))
+                .or(Some(String::new()))
+        )
+    }
+
     pub fn new(
         intent_hash: IntentHash,
         entity: AddressOfAccountOrPersona,

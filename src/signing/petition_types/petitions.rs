@@ -2,6 +2,8 @@
 
 use crate::prelude::*;
 
+#[derive(derive_more::Debug)]
+#[debug("{}", self.debug_str())]
 pub(crate) struct Petitions {
     /// Lookup from factor to TXID.
     ///
@@ -22,6 +24,13 @@ pub(crate) struct Petitions {
 }
 
 impl Petitions {
+    fn debug_str(&self) -> String {
+        self.txid_to_petition
+            .borrow()
+            .iter()
+            .map(|p| format!("{:?}: {:?}", p.0, p.1))
+            .join("\n")
+    }
     pub fn outcome(self) -> SignaturesOutcome {
         let txid_to_petition = self.txid_to_petition.into_inner();
         let mut failed_transactions = MaybeSignedTransactions::empty();

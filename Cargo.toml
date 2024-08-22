@@ -7,11 +7,14 @@ edition = "2021"
 actix-rt = "2.10.0"
 async-trait = "0.1.80"
 derive-getters = "0.4.0"
-derive_more = { git = "https://github.com/JelteF/derive_more", rev = "1196b2dd7a366c06db621093884adbc379fc0f0a", features = [
+
+# 1.0.0
+derive_more = { git = "https://github.com/JelteF/derive_more", rev = "d7f5b9e94d024790682f6fc4dcca13941cce64c8", features = [
     "debug",
     "display",
     "from_str",
 ] }
+
 indexmap = "2.2.6"
 indexset = "0.4.0"
 itertools = "0.13.0"

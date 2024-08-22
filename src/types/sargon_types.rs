@@ -248,13 +248,21 @@ impl HierarchicalDeterministicPublicKey {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
+#[derive(Clone, PartialEq, Eq, std::hash::Hash, derive_more::Debug)]
+#[debug("{}", self.debug_str())]
 pub struct HierarchicalDeterministicFactorInstance {
     pub factor_source_id: FactorSourceID,
     pub public_key: HierarchicalDeterministicPublicKey,
 }
 
 impl HierarchicalDeterministicFactorInstance {
+    fn debug_str(&self) -> String {
+        format!(
+            "factor_source_id: {:?}, derivation_path: {:?}",
+            self.factor_source_id, self.public_key.derivation_path
+        )
+    }
+
     pub fn new(
         public_key: HierarchicalDeterministicPublicKey,
         factor_source_id: FactorSourceID,

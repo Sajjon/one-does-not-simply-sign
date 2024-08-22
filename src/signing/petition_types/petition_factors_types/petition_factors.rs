@@ -2,7 +2,8 @@ use super::*;
 use crate::prelude::*;
 
 /// Petition of signatures from a factors list of an entity in a transaction.
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, derive_more::Debug)]
+#[debug("{}", self.debug_str())]
 pub struct PetitionFactors {
     pub factor_list_kind: FactorListKind,
 
@@ -12,6 +13,9 @@ pub struct PetitionFactors {
 }
 
 impl PetitionFactors {
+    pub fn debug_str(&self) -> String {
+        format!("{:?}", self.state_snapshot())
+    }
     pub fn new(factor_list_kind: FactorListKind, input: PetitionFactorsInput) -> Self {
         Self {
             factor_list_kind,

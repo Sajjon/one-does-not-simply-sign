@@ -569,7 +569,32 @@ mod signing_tests {
             use super::*;
 
             #[actix_rt::test]
-            async fn prudent_user_single_tx_two_accounts_a0_a1() {
+            async fn prudent_user_single_tx_two_accounts_same_factor_source() {
+                let collector = SignaturesCollector::test_prudent([TXToSign::new([
+                    Account::unsecurified_mainnet(0, "A0", FactorSourceID::fs0()),
+                    Account::unsecurified_mainnet(1, "A1", FactorSourceID::fs0()),
+                ])]);
+
+                let outcome = collector.collect_signatures().await;
+                assert!(outcome.successful());
+                let signatures = outcome.all_signatures();
+                assert_eq!(signatures.len(), 2);
+                assert_eq!(
+                    signatures
+                        .into_iter()
+                        .map(|s| s.derivation_path())
+                        .collect::<HashSet<_>>(),
+                    [
+                        DerivationPath::account_tx(NetworkID::Mainnet, 0),
+                        DerivationPath::account_tx(NetworkID::Mainnet, 1),
+                    ]
+                    .into_iter()
+                    .collect::<HashSet<_>>()
+                )
+            }
+
+            #[actix_rt::test]
+            async fn prudent_user_single_tx_two_accounts_different_factor_sources() {
                 let collector = SignaturesCollector::test_prudent([TXToSign::new([
                     Account::a0(),
                     Account::a1(),

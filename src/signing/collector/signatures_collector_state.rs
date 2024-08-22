@@ -5,6 +5,7 @@ pub(super) struct SignaturesCollectorState {
 }
 impl SignaturesCollectorState {
     pub fn new(petitions: Petitions) -> Self {
+        println!("petitions: {:?}", &petitions);
         Self {
             petitions: RefCell::new(petitions),
         }

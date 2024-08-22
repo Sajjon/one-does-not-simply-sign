@@ -2,6 +2,8 @@ use crate::prelude::*;
 
 /// Petition of signatures for a transaction.
 /// Essentially a wrapper around `Iterator<Item = PetitionEntity>`.
+#[derive(derive_more::Debug)]
+#[debug("{}", self.debug_str())]
 pub(crate) struct PetitionTransaction {
     /// Hash of transaction to sign
     pub intent_hash: IntentHash,
@@ -10,6 +12,14 @@ pub(crate) struct PetitionTransaction {
 }
 
 impl PetitionTransaction {
+    fn debug_str(&self) -> String {
+        self.for_entities
+            .borrow()
+            .iter()
+            .map(|p| format!("{:?}", p.1))
+            .join(", ")
+    }
+
     /// Returns `(true, _)` if this transaction has been successfully signed by
     /// all required factor instances.
     ///
