@@ -20,20 +20,19 @@ pub struct PetitionEntity {
 }
 
 impl PetitionEntity {
+    #[allow(unused)]
     fn debug_str(&self) -> String {
         let thres: String = self
             .threshold_factors
             .clone()
             .map(|f| format!("threshold_factors {:#?}", f.borrow()))
-            .or(Some(String::new()))
-            .unwrap();
+            .unwrap_or_default();
 
         let overr: String = self
             .override_factors
             .clone()
             .map(|f| format!("override_factors {:#?}", f.borrow()))
-            .or(Some(String::new()))
-            .unwrap();
+            .unwrap_or_default();
 
         format!(
             "intent_hash: {:#?}, entity: {:#?}, {:#?}{:#?}",

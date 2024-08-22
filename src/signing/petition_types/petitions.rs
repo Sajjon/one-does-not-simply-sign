@@ -24,6 +24,7 @@ pub(crate) struct Petitions {
 }
 
 impl Petitions {
+    #[allow(unused)]
     fn debug_str(&self) -> String {
         self.txid_to_petition
             .borrow()

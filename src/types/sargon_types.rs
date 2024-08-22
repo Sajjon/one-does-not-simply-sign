@@ -256,6 +256,7 @@ pub struct HierarchicalDeterministicFactorInstance {
 }
 
 impl HierarchicalDeterministicFactorInstance {
+    #[allow(unused)]
     fn debug_str(&self) -> String {
         format!(
             "factor_source_id: {:#?}, derivation_path: {:#?}",

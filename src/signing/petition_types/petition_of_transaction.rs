@@ -12,6 +12,7 @@ pub(crate) struct PetitionTransaction {
 }
 
 impl PetitionTransaction {
+    #[allow(unused)]
     fn debug_str(&self) -> String {
         let entities = self
             .for_entities

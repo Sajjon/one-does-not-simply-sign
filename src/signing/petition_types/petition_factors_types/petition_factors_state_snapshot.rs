@@ -1,5 +1,3 @@
-use std::fmt::format;
-
 use crate::prelude::*;
 
 /// An immutable "snapshot" of `PetitionFactorsState`
@@ -14,6 +12,7 @@ pub(super) struct PetitionFactorsStateSnapshot {
 }
 
 impl PetitionFactorsStateSnapshot {
+    #[allow(unused)]
     fn debug_str(&self) -> String {
         format!(
             "signatures: {:#?}, skipped: {:#?}",
