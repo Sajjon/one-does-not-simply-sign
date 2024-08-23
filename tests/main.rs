@@ -509,7 +509,7 @@ mod signing_tests {
         use super::*;
 
         #[actix_rt::test]
-        async fn from_profile_accounts_and_personas() {
+        async fn multi_accounts_multi_personas_all_single_factor_controlled() {
             let factor_sources = &FactorSource::all();
             let a0 = &Account::a0();
             let a1 = &Account::a1();
@@ -548,6 +548,50 @@ mod signing_tests {
                     t1.clone().intent_hash,
                     t2.clone().intent_hash,
                 ])
+            );
+            let st0 = outcome
+                .successful_transactions()
+                .into_iter()
+                .find(|st| st.intent_hash == t0.intent_hash)
+                .unwrap();
+
+            assert_eq!(
+                st0.signatures
+                    .clone()
+                    .into_iter()
+                    .map(|s| s.owned_factor_instance().owner.clone())
+                    .collect::<HashSet<_>>(),
+                HashSet::from_iter([a0.address(), a1.address(), p0.address(), p1.address()])
+            );
+
+            let st1 = outcome
+                .successful_transactions()
+                .into_iter()
+                .find(|st| st.intent_hash == t1.intent_hash)
+                .unwrap();
+
+            assert_eq!(
+                st1.signatures
+                    .clone()
+                    .into_iter()
+                    .map(|s| s.owned_factor_instance().owner.clone())
+                    .collect::<HashSet<_>>(),
+                HashSet::from_iter([a0.address(), a1.address(), a2.address()])
+            );
+
+            let st2 = outcome
+                .successful_transactions()
+                .into_iter()
+                .find(|st| st.intent_hash == t2.intent_hash)
+                .unwrap();
+
+            assert_eq!(
+                st2.signatures
+                    .clone()
+                    .into_iter()
+                    .map(|s| s.owned_factor_instance().owner.clone())
+                    .collect::<HashSet<_>>(),
+                HashSet::from_iter([p0.address(), p1.address(), p2.address()])
             );
         }
 
