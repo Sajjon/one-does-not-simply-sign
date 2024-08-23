@@ -4,6 +4,8 @@ use crate::prelude::*;
 /// a collection of transactions to sign with multiple keys (derivation paths),
 /// and a collection of transactions which would be invalid if the user skips
 /// signing with this factor source.
+#[derive(derive_more::Debug)]
+#[debug("input: {:#?}", input)]
 pub struct SerialBatchSigningRequest {
     pub input: BatchTXBatchKeySigningRequest,
     /// A collection of transactions which would be invalid if the user skips

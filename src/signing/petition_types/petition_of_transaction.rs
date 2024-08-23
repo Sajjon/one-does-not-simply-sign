@@ -2,7 +2,7 @@ use crate::prelude::*;
 
 /// Petition of signatures for a transaction.
 /// Essentially a wrapper around `Iterator<Item = PetitionEntity>`.
-#[derive(derive_more::Debug)]
+#[derive(derive_more::Debug, PartialEq, Eq)]
 #[debug("{}", self.debug_str())]
 pub(crate) struct PetitionTransaction {
     /// Hash of transaction to sign
@@ -12,16 +12,14 @@ pub(crate) struct PetitionTransaction {
 }
 
 impl PetitionTransaction {
-    #[allow(unused)]
-    fn debug_str(&self) -> String {
-        let entities = self
-            .for_entities
-            .borrow()
-            .iter()
-            .map(|p| format!("PetitionEntity({:#?})", p.1))
-            .join(", ");
-
-        format!("PetitionTransaction(for_entities: [{}])", entities)
+    pub(crate) fn new(
+        intent_hash: IntentHash,
+        for_entities: HashMap<AddressOfAccountOrPersona, PetitionEntity>,
+    ) -> Self {
+        Self {
+            intent_hash,
+            for_entities: RefCell::new(for_entities),
+        }
     }
 
     /// Returns `(true, _)` if this transaction has been successfully signed by
@@ -115,13 +113,75 @@ impl PetitionTransaction {
             .collect()
     }
 
-    pub(crate) fn new(
-        intent_hash: IntentHash,
-        for_entities: HashMap<AddressOfAccountOrPersona, PetitionEntity>,
-    ) -> Self {
-        Self {
-            intent_hash,
-            for_entities: RefCell::new(for_entities),
-        }
+    #[allow(unused)]
+    fn debug_str(&self) -> String {
+        let entities = self
+            .for_entities
+            .borrow()
+            .iter()
+            .map(|p| format!("PetitionEntity({:#?})", p.1))
+            .join(", ");
+
+        format!("PetitionTransaction(for_entities: [{}])", entities)
+    }
+}
+
+impl HasSampleValues for PetitionTransaction {
+    fn sample() -> Self {
+        let intent_hash = IntentHash::sample();
+        let entity = Account::sample_securified();
+        Self::new(
+            intent_hash.clone(),
+            HashMap::from_iter([(
+                entity.address(),
+                PetitionEntity::new(
+                    intent_hash.clone(),
+                    entity.address(),
+                    PetitionFactors::sample(),
+                    PetitionFactors::sample_other(),
+                ),
+            )]),
+        )
+    }
+
+    fn sample_other() -> Self {
+        let intent_hash = IntentHash::sample_other();
+        let entity = Persona::sample_unsecurified();
+        Self::new(
+            intent_hash.clone(),
+            HashMap::from_iter([(
+                entity.address(),
+                PetitionEntity::new(
+                    intent_hash.clone(),
+                    entity.address(),
+                    PetitionFactors::sample_other(),
+                    None,
+                ),
+            )]),
+        )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    type Sut = PetitionTransaction;
+
+    #[test]
+    fn equality() {
+        assert_eq!(Sut::sample(), Sut::sample());
+        assert_eq!(Sut::sample_other(), Sut::sample_other());
+    }
+
+    #[test]
+    fn inequality() {
+        assert_ne!(Sut::sample(), Sut::sample_other());
+    }
+
+    #[test]
+    fn debug() {
+        assert_eq!(format!("{:?}", Sut::sample()), "PetitionTransaction(for_entities: [PetitionEntity(intent_hash: TXID(\"dedede\"), entity: acco_Grace, \"threshold_factors PetitionFactors(input: PetitionFactorsInput(factors: {\\n    factor_source_id: Device:dededede-dede-dede-dede-dededededede, derivation_path: 0/A/tx/0,\\n    factor_source_id: Ledger:1e1e1e1e-1e1e-1e1e-1e1e-1e1e1e1e1e1e, derivation_path: 0/A/tx/1,\\n}), state_snapshot: signatures: \\\"\\\", skipped: \\\"\\\")\"\"override_factors PetitionFactors(input: PetitionFactorsInput(factors: {\\n    factor_source_id: Ledger:1e1e1e1e-1e1e-1e1e-1e1e-1e1e1e1e1e1e, derivation_path: 0/A/tx/1,\\n}), state_snapshot: signatures: \\\"\\\", skipped: \\\"\\\")\")])");
     }
 }

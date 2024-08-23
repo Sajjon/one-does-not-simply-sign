@@ -2,7 +2,7 @@
 
 use crate::prelude::*;
 
-#[derive(derive_more::Debug)]
+#[derive(derive_more::Debug, PartialEq, Eq)]
 #[debug("{}", self.debug_str())]
 pub(crate) struct Petitions {
     /// Lookup from factor to TXID.
@@ -24,14 +24,16 @@ pub(crate) struct Petitions {
 }
 
 impl Petitions {
-    #[allow(unused)]
-    fn debug_str(&self) -> String {
-        self.txid_to_petition
-            .borrow()
-            .iter()
-            .map(|p| format!("Petitions({:#?}: {:#?})", p.0, p.1))
-            .join(" + ")
+    pub(crate) fn new(
+        factor_to_txid: HashMap<FactorSourceID, IndexSet<IntentHash>>,
+        txid_to_petition: IndexMap<IntentHash, PetitionTransaction>,
+    ) -> Self {
+        Self {
+            factor_to_txid,
+            txid_to_petition: RefCell::new(txid_to_petition),
+        }
     }
+
     pub fn outcome(self) -> SignaturesOutcome {
         let txid_to_petition = self.txid_to_petition.into_inner();
         let mut failed_transactions = MaybeSignedTransactions::empty();
@@ -54,16 +56,6 @@ impl Petitions {
         )
     }
 
-    pub(crate) fn new(
-        factor_to_txid: HashMap<FactorSourceID, IndexSet<IntentHash>>,
-        txid_to_petition: IndexMap<IntentHash, PetitionTransaction>,
-    ) -> Self {
-        Self {
-            factor_to_txid,
-            txid_to_petition: RefCell::new(txid_to_petition),
-        }
-    }
-
     /// `Ok(true)` means "continue", `Ok(false)` means "stop, we are done". `Err(_)` means "stop, we have failed".
     pub fn continue_if_necessary(&self) -> Result<bool> {
         let should_continue_signals = self
@@ -80,7 +72,9 @@ impl Petitions {
             })
             .collect::<Result<Vec<bool>>>()?;
 
-        let should_continue_signal = should_continue_signals.into_iter().all(|b| b);
+        // If **any** petition says we should continue, we must continue.
+        let should_continue_signal = should_continue_signals.into_iter().any(|b| b);
+
         Ok(should_continue_signal)
     }
 
@@ -153,5 +147,61 @@ impl Petitions {
                 }
             }
         }
+    }
+
+    #[allow(unused)]
+    fn debug_str(&self) -> String {
+        self.txid_to_petition
+            .borrow()
+            .iter()
+            .map(|p| format!("Petitions({:#?}: {:#?})", p.0, p.1))
+            .join(" + ")
+    }
+}
+
+impl HasSampleValues for Petitions {
+    fn sample() -> Self {
+        let p0 = PetitionTransaction::sample();
+        Self::new(
+            HashMap::from_iter([(
+                FactorSourceID::fs0(),
+                IndexSet::from_iter([p0.intent_hash.clone()]),
+            )]),
+            IndexMap::from_iter([(p0.intent_hash.clone(), p0)]),
+        )
+    }
+
+    fn sample_other() -> Self {
+        let p1 = PetitionTransaction::sample();
+        Self::new(
+            HashMap::from_iter([(
+                FactorSourceID::fs1(),
+                IndexSet::from_iter([p1.intent_hash.clone()]),
+            )]),
+            IndexMap::from_iter([(p1.intent_hash.clone(), p1)]),
+        )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    type Sut = Petitions;
+
+    #[test]
+    fn equality_of_samples() {
+        assert_eq!(Sut::sample(), Sut::sample());
+        assert_eq!(Sut::sample_other(), Sut::sample_other());
+    }
+
+    #[test]
+    fn inequality_of_samples() {
+        assert_ne!(Sut::sample(), Sut::sample_other());
+    }
+
+    #[test]
+    fn debug() {
+        assert_eq!(format!("{:?}", Sut::sample()), "Petitions(TXID(\"dedede\"): PetitionTransaction(for_entities: [PetitionEntity(intent_hash: TXID(\"dedede\"), entity: acco_Grace, \"threshold_factors PetitionFactors(input: PetitionFactorsInput(factors: {\\n    factor_source_id: Device:dededede-dede-dede-dede-dededededede, derivation_path: 0/A/tx/0,\\n    factor_source_id: Ledger:1e1e1e1e-1e1e-1e1e-1e1e-1e1e1e1e1e1e, derivation_path: 0/A/tx/1,\\n}), state_snapshot: signatures: \\\"\\\", skipped: \\\"\\\")\"\"override_factors PetitionFactors(input: PetitionFactorsInput(factors: {\\n    factor_source_id: Ledger:1e1e1e1e-1e1e-1e1e-1e1e-1e1e1e1e1e1e, derivation_path: 0/A/tx/1,\\n}), state_snapshot: signatures: \\\"\\\", skipped: \\\"\\\")\")]))");
     }
 }

@@ -12,14 +12,20 @@ pub struct PetitionFactors {
     state: RefCell<PetitionFactorsState>,
 }
 
-impl PetitionFactors {
-    pub fn debug_str(&self) -> String {
-        format!(
-            "PetitionFactors(input: {:#?}, state_snapshot: {:#?})",
-            self.input,
-            self.state_snapshot()
+impl HasSampleValues for PetitionFactors {
+    fn sample() -> Self {
+        Self::new(FactorListKind::Threshold, PetitionFactorsInput::sample())
+    }
+
+    fn sample_other() -> Self {
+        Self::new(
+            FactorListKind::Override,
+            PetitionFactorsInput::sample_other(),
         )
     }
+}
+
+impl PetitionFactors {
     pub fn new(factor_list_kind: FactorListKind, input: PetitionFactorsInput) -> Self {
         Self {
             factor_list_kind,
@@ -158,5 +164,13 @@ impl PetitionFactors {
             return PetitionFactorsStatus::Finished(finished_state);
         }
         PetitionFactorsStatus::InProgress
+    }
+
+    pub fn debug_str(&self) -> String {
+        format!(
+            "PetitionFactors(input: {:#?}, state_snapshot: {:#?})",
+            self.input,
+            self.state_snapshot()
+        )
     }
 }

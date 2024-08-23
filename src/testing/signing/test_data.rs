@@ -58,6 +58,14 @@ impl FactorSource {
 
 use once_cell::sync::Lazy;
 
+pub static ID_STEPPER: Lazy<UuidStepper> = Lazy::new(UuidStepper::new);
+
+impl UuidStepper {
+    pub fn next() -> Uuid {
+        ID_STEPPER._next()
+    }
+}
+
 pub static ALL_FACTOR_SOURCES: Lazy<[FactorSource; 10]> = Lazy::new(|| {
     [
         FactorSource::fs0(),

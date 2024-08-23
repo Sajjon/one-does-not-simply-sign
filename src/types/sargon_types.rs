@@ -2,8 +2,47 @@ use std::marker::PhantomData;
 
 use crate::prelude::*;
 
-#[derive(Clone, Copy, PartialEq, Eq, std::hash::Hash, derive_more::Debug)]
-#[debug("{kind}:{id}")]
+use std::borrow::Borrow;
+use std::borrow::BorrowMut;
+use std::ops::AddAssign;
+use std::sync::Mutex;
+
+/// An UNSAFE IDStepper, which `next` returns the consecutive next ID,
+/// should only be used by tests and sample value creation.
+pub struct IDStepper<T: From<Uuid>> {
+    ctr: Arc<Mutex<u64>>,
+    phantom: PhantomData<T>,
+}
+pub type UuidStepper = IDStepper<Uuid>;
+
+impl<T: From<Uuid>> IDStepper<T> {
+    pub fn starting_at(ctr: u64) -> Self {
+        Self {
+            ctr: Arc::new(Mutex::new(ctr)),
+            phantom: PhantomData,
+        }
+    }
+
+    #[allow(clippy::new_without_default)]
+    pub fn new() -> Self {
+        Self::starting_at(0)
+    }
+
+    /// ONLY Use this in a test or when creating sample (preview) values.
+    ///
+    /// # Safety
+    /// This is completely unsafe, it does not generate a random UUID, it creates
+    /// the consecutive "next" ID.
+    pub fn _next(&self) -> T {
+        let n = Uuid::from_u64_pair(0, **self.ctr.lock().unwrap().borrow());
+        self.ctr.lock().unwrap().borrow_mut().add_assign(1);
+        n.into()
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, std::hash::Hash, derive_more::Display, derive_more::Debug)]
+#[display("{kind}:{id}")]
+#[debug("{}", self.to_string())]
 pub struct FactorSourceID {
     pub kind: FactorSourceKind,
     pub id: Uuid,
@@ -14,7 +53,7 @@ impl FactorSourceID {
         Self { kind, id }
     }
     pub fn new(kind: FactorSourceKind) -> Self {
-        Self::with_details(kind, Uuid::new_v4())
+        Self::with_details(kind, IDStepper::next())
     }
     pub fn to_bytes(&self) -> Vec<u8> {
         self.id.as_bytes().to_vec()
@@ -132,9 +171,14 @@ impl HasSampleValues for FactorSourceKind {
 pub type DerivationIndex = u32;
 
 #[repr(u8)]
-#[derive(Clone, Debug, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, derive_more::Display, derive_more::Debug)]
 pub enum CAP26KeyKind {
+    #[display("tx")]
+    #[debug("tx")]
     T9n,
+
+    #[display("rola")]
+    #[debug("rola")]
     Rola,
 }
 impl CAP26KeyKind {
@@ -144,11 +188,17 @@ impl CAP26KeyKind {
 }
 
 #[repr(u8)]
-#[derive(Clone, Debug, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, derive_more::Display, derive_more::Debug)]
 pub enum NetworkID {
+    #[display("Mainnet")]
+    #[debug("0")]
     Mainnet,
+
+    #[display("Stokenet")]
+    #[debug("1")]
     Stokenet,
 }
+
 impl NetworkID {
     fn discriminant(&self) -> u8 {
         core::intrinsics::discriminant_value(self)
@@ -156,9 +206,14 @@ impl NetworkID {
 }
 
 #[repr(u8)]
-#[derive(Clone, Debug, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, derive_more::Display, derive_more::Debug)]
 pub enum CAP26EntityKind {
+    #[display("Account")]
+    #[debug("A")]
     Account,
+
+    #[display("Identity")]
+    #[debug("I")]
     Identity,
 }
 
@@ -168,7 +223,9 @@ impl CAP26EntityKind {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, derive_more::Display, derive_more::Debug)]
+#[display("{}/{}/{}/{}", network_id, entity_kind, key_kind, index)]
+#[debug("{:?}/{:?}/{:?}/{:?}", network_id, entity_kind, key_kind, index)]
 pub struct DerivationPath {
     pub network_id: NetworkID,
     pub entity_kind: CAP26EntityKind,

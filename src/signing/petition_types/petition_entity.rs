@@ -20,26 +20,6 @@ pub struct PetitionEntity {
 }
 
 impl PetitionEntity {
-    #[allow(unused)]
-    fn debug_str(&self) -> String {
-        let thres: String = self
-            .threshold_factors
-            .clone()
-            .map(|f| format!("threshold_factors {:#?}", f.borrow()))
-            .unwrap_or_default();
-
-        let overr: String = self
-            .override_factors
-            .clone()
-            .map(|f| format!("override_factors {:#?}", f.borrow()))
-            .unwrap_or_default();
-
-        format!(
-            "intent_hash: {:#?}, entity: {:#?}, {:#?}{:#?}",
-            self.intent_hash, self.entity, thres, overr
-        )
-    }
-
     pub fn new(
         intent_hash: IntentHash,
         entity: AddressOfAccountOrPersona,
@@ -255,6 +235,26 @@ impl PetitionEntity {
             },
         }
     }
+
+    #[allow(unused)]
+    fn debug_str(&self) -> String {
+        let thres: String = self
+            .threshold_factors
+            .clone()
+            .map(|f| format!("threshold_factors {:#?}", f.borrow()))
+            .unwrap_or_default();
+
+        let overr: String = self
+            .override_factors
+            .clone()
+            .map(|f| format!("override_factors {:#?}", f.borrow()))
+            .unwrap_or_default();
+
+        format!(
+            "intent_hash: {:#?}, entity: {:#?}, {:#?}{:#?}",
+            self.intent_hash, self.entity, thres, overr
+        )
+    }
 }
 
 impl PetitionEntity {
@@ -285,6 +285,11 @@ impl HasSampleValues for PetitionEntity {
 mod tests {
     use super::*;
     type Sut = PetitionEntity;
+
+    #[test]
+    fn debug() {
+        pretty_assertions::assert_eq!(format!("{:?}", Sut::sample()), "intent_hash: TXID(\"dedede\"), entity: acco_Grace, \"threshold_factors PetitionFactors(input: PetitionFactorsInput(factors: {\\n    factor_source_id: Device:00000000-0000-0000-0000-000000000000, derivation_path: 0/A/tx/6,\\n    factor_source_id: Arculus:00000000-0000-0000-0000-000000000003, derivation_path: 0/A/tx/6,\\n    factor_source_id: Yubikey:00000000-0000-0000-0000-000000000005, derivation_path: 0/A/tx/6,\\n}), state_snapshot: signatures: \\\"\\\", skipped: \\\"\\\")\"\"override_factors PetitionFactors(input: PetitionFactorsInput(factors: {\\n    factor_source_id: Ledger:00000000-0000-0000-0000-000000000001, derivation_path: 0/A/tx/6,\\n    factor_source_id: Arculus:00000000-0000-0000-0000-000000000004, derivation_path: 0/A/tx/6,\\n}), state_snapshot: signatures: \\\"\\\", skipped: \\\"\\\")\"");
+    }
 
     #[test]
     #[should_panic(expected = "Programmer error! Must have at least one factors list.")]
@@ -377,5 +382,11 @@ mod tests {
     #[test]
     fn inequality() {
         assert_ne!(Sut::sample(), Sut::sample_other())
+    }
+
+    #[test]
+    fn equality() {
+        assert_eq!(Sut::sample(), Sut::sample());
+        assert_eq!(Sut::sample_other(), Sut::sample_other());
     }
 }

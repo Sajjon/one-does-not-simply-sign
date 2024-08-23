@@ -137,10 +137,13 @@ impl SignaturesCollector {
         factor_sources_of_kind: FactorSourcesOfKind,
     ) -> Result<()> {
         let interactor = self.get_interactor(factor_sources_of_kind.kind);
+
         let client = SignWithFactorClient::new(interactor);
+
         let result = client
             .use_factor_sources(factor_sources_of_kind.factor_sources(), self)
             .await;
+
         match result {
             Ok(_) => {}
             Err(_) => self.process_batch_response(SignWithFactorSourceOrSourcesOutcome::Skipped {
@@ -154,14 +157,11 @@ impl SignaturesCollector {
     async fn sign_with_factors(&self) -> Result<()> {
         let factors_of_kind = self.dependencies.factors_of_kind.clone();
         for factor_sources_of_kind in factors_of_kind.into_iter() {
-            println!("🔮 state: {:#?}", &self.state.borrow());
-
-            self.sign_with_factors_of_kind(factor_sources_of_kind)
-                .await?;
-
             if !self.continue_if_necessary()? {
                 break; // finished early, we have fulfilled signing requirements of all transactions
             }
+            self.sign_with_factors_of_kind(factor_sources_of_kind)
+                .await?;
         }
         Ok(())
     }
@@ -239,6 +239,20 @@ impl SignaturesCollector {
         let petitions = state.petitions.borrow_mut();
         petitions.process_batch_response(response)
     }
+
+    fn outcome(self) -> SignaturesOutcome {
+        let state = self.state.borrow_mut();
+        let petitions = state.petitions.borrow_mut();
+        let expected_number_of_transactions = petitions.txid_to_petition.borrow().len();
+        drop(petitions);
+        drop(state);
+        let outcome = self.state.into_inner().petitions.into_inner().outcome();
+        assert_eq!(
+            outcome.failed_transactions().len() + outcome.successful_transactions().len(),
+            expected_number_of_transactions
+        );
+        outcome
+    }
 }
 
 impl SignaturesCollector {
@@ -247,7 +261,8 @@ impl SignaturesCollector {
             .sign_with_factors() // in decreasing "friction order"
             .await
             .inspect_err(|e| eprintln!("Failed to use factor sources: {:#?}", e));
-        self.state.into_inner().petitions.into_inner().outcome()
+
+        self.outcome()
     }
 }
 

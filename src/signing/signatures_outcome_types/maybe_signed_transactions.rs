@@ -6,6 +6,22 @@ pub struct MaybeSignedTransactions {
     pub(super) transactions: IndexMap<IntentHash, IndexSet<HDSignature>>,
 }
 
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct SignedTransaction {
+    /// The transaction intent hash.
+    pub intent_hash: IntentHash,
+    /// The signatures for this transaction.
+    pub signatures: IndexSet<HDSignature>,
+}
+impl SignedTransaction {
+    pub fn new(intent_hash: IntentHash, signatures: IndexSet<HDSignature>) -> Self {
+        Self {
+            intent_hash,
+            signatures,
+        }
+    }
+}
+
 impl MaybeSignedTransactions {
     fn new(transactions: IndexMap<IntentHash, IndexSet<HDSignature>>) -> Self {
         Self { transactions }
@@ -21,6 +37,14 @@ impl MaybeSignedTransactions {
     /// any transactions.
     pub fn is_empty(&self) -> bool {
         self.transactions.is_empty()
+    }
+
+    pub fn transactions(&self) -> Vec<SignedTransaction> {
+        self.transactions
+            .clone()
+            .into_iter()
+            .map(|(k, v)| SignedTransaction::new(k, v))
+            .collect_vec()
     }
 
     /// Validates that all values, all signatures, have the same `intent_hash`
