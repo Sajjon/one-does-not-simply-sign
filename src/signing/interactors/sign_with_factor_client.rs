@@ -37,9 +37,12 @@ impl SignWithFactorClient {
                     // Prepare the request for the interactor
                     let request =
                         collector.request_for_serial_interactor(&factor_source.factor_source_id());
+                    println!("🌈 request: {:#?}", &request);
 
                     // Produce the results from the interactor
                     let response = interactor.sign(request).await?;
+
+                    println!("🌈 response: {:#?}", &response);
 
                     // Report the results back to the collector
                     collector.process_batch_response(response);

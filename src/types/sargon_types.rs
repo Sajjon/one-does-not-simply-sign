@@ -2,8 +2,9 @@ use std::marker::PhantomData;
 
 use crate::prelude::*;
 
-#[derive(Clone, Copy, PartialEq, Eq, std::hash::Hash, derive_more::Debug)]
-#[debug("{kind}:{id}")]
+#[derive(Clone, Copy, PartialEq, Eq, std::hash::Hash, derive_more::Display, derive_more::Debug)]
+#[display("{kind}:{id}")]
+#[debug("{}", self.to_string())]
 pub struct FactorSourceID {
     pub kind: FactorSourceKind,
     pub id: Uuid,
@@ -132,9 +133,14 @@ impl HasSampleValues for FactorSourceKind {
 pub type DerivationIndex = u32;
 
 #[repr(u8)]
-#[derive(Clone, Debug, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, derive_more::Display, derive_more::Debug)]
 pub enum CAP26KeyKind {
+    #[display("tx")]
+    #[debug("tx")]
     T9n,
+
+    #[display("rola")]
+    #[debug("rola")]
     Rola,
 }
 impl CAP26KeyKind {
@@ -144,11 +150,17 @@ impl CAP26KeyKind {
 }
 
 #[repr(u8)]
-#[derive(Clone, Debug, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, derive_more::Display, derive_more::Debug)]
 pub enum NetworkID {
+    #[display("Mainnet")]
+    #[debug("0")]
     Mainnet,
+
+    #[display("Stokenet")]
+    #[debug("1")]
     Stokenet,
 }
+
 impl NetworkID {
     fn discriminant(&self) -> u8 {
         core::intrinsics::discriminant_value(self)
@@ -156,9 +168,14 @@ impl NetworkID {
 }
 
 #[repr(u8)]
-#[derive(Clone, Debug, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, derive_more::Display, derive_more::Debug)]
 pub enum CAP26EntityKind {
+    #[display("Account")]
+    #[debug("A")]
     Account,
+
+    #[display("Identity")]
+    #[debug("I")]
     Identity,
 }
 
@@ -168,7 +185,9 @@ impl CAP26EntityKind {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, derive_more::Display, derive_more::Debug)]
+#[display("{}/{}/{}/{}", network_id, entity_kind, key_kind, index)]
+#[debug("{:?}/{:?}/{:?}/{:?}", network_id, entity_kind, key_kind, index)]
 pub struct DerivationPath {
     pub network_id: NetworkID,
     pub entity_kind: CAP26EntityKind,

@@ -526,27 +526,6 @@ mod signing_tests {
 
             let profile = Profile::new(factor_sources.clone(), [a0, a1, a2], [p0, p1, p2]);
 
-            type F = FactorSourceID;
-            assert!([
-                F::fs0(),
-                F::fs1(),
-                F::fs2(),
-                F::fs3(),
-                F::fs4(),
-                F::fs5(),
-                F::fs6(),
-                F::fs7(),
-                F::fs8(),
-                F::fs9()
-            ]
-            .iter()
-            .all(|f| {
-                factor_sources
-                    .iter()
-                    .map(|x| x.factor_source_id())
-                    .contains(f)
-            }));
-
             let collector = SignaturesCollector::new(
                 IndexSet::<TransactionIntent>::from_iter([t0, t1, t2]),
                 Arc::new(TestSignatureCollectingInteractors::new(

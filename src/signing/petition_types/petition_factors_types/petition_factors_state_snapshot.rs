@@ -14,19 +14,21 @@ pub(super) struct PetitionFactorsStateSnapshot {
 impl PetitionFactorsStateSnapshot {
     #[allow(unused)]
     fn debug_str(&self) -> String {
-        format!(
-            "signatures: {:#?}, skipped: {:#?}",
-            self.signed
-                .clone()
-                .into_iter()
-                .map(|s| format!("{:#?}", s))
-                .join(", "),
-            self.skipped
-                .clone()
-                .into_iter()
-                .map(|s| format!("{:#?}", s))
-                .join(", ")
-        )
+        let signatures = self
+            .signed
+            .clone()
+            .into_iter()
+            .map(|s| format!("{:#?}", s))
+            .join(", ");
+
+        let skipped = self
+            .skipped
+            .clone()
+            .into_iter()
+            .map(|s| format!("{:#?}", s))
+            .join(", ");
+
+        format!("signatures: {:#?}, skipped: {:#?}", signatures, skipped)
     }
 
     pub(super) fn new(

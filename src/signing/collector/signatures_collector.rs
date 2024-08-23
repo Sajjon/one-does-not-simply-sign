@@ -137,10 +137,13 @@ impl SignaturesCollector {
         factor_sources_of_kind: FactorSourcesOfKind,
     ) -> Result<()> {
         let interactor = self.get_interactor(factor_sources_of_kind.kind);
+
         let client = SignWithFactorClient::new(interactor);
+
         let result = client
             .use_factor_sources(factor_sources_of_kind.factor_sources(), self)
             .await;
+
         match result {
             Ok(_) => {}
             Err(_) => self.process_batch_response(SignWithFactorSourceOrSourcesOutcome::Skipped {
@@ -156,12 +159,11 @@ impl SignaturesCollector {
         for factor_sources_of_kind in factors_of_kind.into_iter() {
             println!("🔮 state: {:#?}", &self.state.borrow());
 
-            self.sign_with_factors_of_kind(factor_sources_of_kind)
-                .await?;
-
             if !self.continue_if_necessary()? {
                 break; // finished early, we have fulfilled signing requirements of all transactions
             }
+            self.sign_with_factors_of_kind(factor_sources_of_kind)
+                .await?;
         }
         Ok(())
     }

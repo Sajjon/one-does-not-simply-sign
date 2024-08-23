@@ -34,9 +34,8 @@ impl SignWithFactorParallelInteractor for TestSigningParallelInteractor {
                 let signatures = request
                     .per_factor_source
                     .iter()
-                    .map(|(k, v)| {
-                        let value = v
-                            .per_transaction
+                    .flat_map(|(_, v)| {
+                        v.per_transaction
                             .iter()
                             .flat_map(|x| {
                                 x.signature_inputs()
@@ -44,15 +43,21 @@ impl SignWithFactorParallelInteractor for TestSigningParallelInteractor {
                                     .map(|y| HDSignature::produced_signing_with_input(y.clone()))
                                     .collect_vec()
                             })
-                            .collect::<IndexSet<HDSignature>>();
-                        (*k, value)
+                            .collect::<IndexSet<HDSignature>>()
                     })
-                    .collect::<IndexMap<FactorSourceID, IndexSet<HDSignature>>>();
+                    .collect::<IndexSet<HDSignature>>();
 
-                let response = SignWithFactorSourceOrSourcesOutcome::signed(
-                    BatchSigningResponse::new(signatures),
+                let signatures = signatures
+                    .into_iter()
+                    .into_group_map_by(|x| x.factor_source_id());
+                let response = BatchSigningResponse::new(
+                    signatures
+                        .into_iter()
+                        .map(|(k, v)| (k, IndexSet::from_iter(v)))
+                        .collect(),
                 );
-                Ok(response)
+
+                Ok(SignWithFactorSourceOrSourcesOutcome::signed(response))
             }
 
             SigningUserInput::Skip => Ok(SignWithFactorSourceOrSourcesOutcome::skipped(

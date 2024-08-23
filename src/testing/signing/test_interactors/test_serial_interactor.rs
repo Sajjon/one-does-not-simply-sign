@@ -36,18 +36,22 @@ impl SignWithFactorSerialInteractor for TestSigningSerialInteractor {
                     .input
                     .per_transaction
                     .into_iter()
-                    .map(|r| {
-                        let key = r.factor_source_id;
-
-                        let value = r
-                            .signature_inputs()
+                    .flat_map(|r| {
+                        r.signature_inputs()
                             .iter()
                             .map(|x| HDSignature::produced_signing_with_input(x.clone()))
-                            .collect::<IndexSet<_>>();
-                        (key, value)
+                            .collect::<IndexSet<_>>()
                     })
-                    .collect::<IndexMap<FactorSourceID, IndexSet<HDSignature>>>();
-                let response = BatchSigningResponse::new(signatures);
+                    .collect::<IndexSet<HDSignature>>();
+                let signatures = signatures
+                    .into_iter()
+                    .into_group_map_by(|x| x.factor_source_id());
+                let response = BatchSigningResponse::new(
+                    signatures
+                        .into_iter()
+                        .map(|(k, v)| (k, IndexSet::from_iter(v)))
+                        .collect(),
+                );
                 Ok(SignWithFactorSourceOrSourcesOutcome::signed(response))
             }
             SigningUserInput::Skip => {
