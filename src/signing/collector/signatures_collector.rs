@@ -57,11 +57,9 @@ impl SignaturesCollector {
             .map(extract_signers)
             .collect::<Result<IndexSet<TXToSign>>>()?;
 
-        Ok(Self::with(
-            all_factor_sources_in_profile,
-            transactions,
-            interactors,
-        ))
+        let collector = Self::with(all_factor_sources_in_profile, transactions, interactors);
+
+        Ok(collector)
     }
 
     pub fn new(
@@ -267,6 +265,30 @@ mod tests {
     use std::iter;
 
     use super::*;
+
+    #[test]
+    fn invalid_profile_unknown_account() {
+        let res = SignaturesCollector::new(
+            IndexSet::from_iter([TransactionIntent::new([Account::a0().entity_address()], [])]),
+            Arc::new(TestSignatureCollectingInteractors::new(
+                SimulatedUser::prudent_no_fail(),
+            )),
+            &Profile::new(IndexSet::new(), [], []),
+        );
+        assert!(matches!(res, Err(CommonError::UnknownAccount)));
+    }
+
+    #[test]
+    fn invalid_profile_unknown_persona() {
+        let res = SignaturesCollector::new(
+            IndexSet::from_iter([TransactionIntent::new([], [Persona::p0().entity_address()])]),
+            Arc::new(TestSignatureCollectingInteractors::new(
+                SimulatedUser::prudent_no_fail(),
+            )),
+            &Profile::new(IndexSet::new(), [], []),
+        );
+        assert!(matches!(res, Err(CommonError::UnknownPersona)));
+    }
 
     #[test]
     fn test_profile() {
