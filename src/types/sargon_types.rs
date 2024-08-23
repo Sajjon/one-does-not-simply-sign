@@ -464,6 +464,52 @@ pub enum AccountOrPersona {
     PersonaEntity(Persona),
 }
 
+pub trait IsEntity: Into<AccountOrPersona> + Clone {
+    type Address: Clone + Into<AddressOfAccountOrPersona> + EntityKindSpecifier;
+
+    fn new(name: impl AsRef<str>, security_state: impl Into<EntitySecurityState>) -> Self;
+
+    fn entity_address(&self) -> Self::Address;
+    fn kind() -> CAP26EntityKind {
+        Self::Address::entity_kind()
+    }
+    fn security_state(&self) -> EntitySecurityState;
+    fn address(&self) -> AddressOfAccountOrPersona {
+        self.entity_address().clone().into()
+    }
+    fn e0() -> Self;
+    fn e1() -> Self;
+    fn e2() -> Self;
+    fn e3() -> Self;
+    fn e4() -> Self;
+    fn e5() -> Self;
+    fn e6() -> Self;
+    fn e7() -> Self;
+
+    fn securified_mainnet(
+        index: u32,
+        name: impl AsRef<str>,
+        make_matrix: fn(u32) -> MatrixOfFactorInstances,
+    ) -> Self {
+        Self::new(name, make_matrix(index))
+    }
+
+    fn unsecurified_mainnet(
+        index: u32,
+        name: impl AsRef<str>,
+        factor_source_id: FactorSourceID,
+    ) -> Self {
+        Self::new(
+            name,
+            EntitySecurityState::Unsecured(HierarchicalDeterministicFactorInstance::mainnet_tx(
+                Self::kind(),
+                index,
+                factor_source_id,
+            )),
+        )
+    }
+}
+
 #[derive(Clone, PartialEq, Eq, std::hash::Hash, derive_more::Debug)]
 #[debug("{}", self.address())]
 pub struct AbstractEntity<A: Clone + Into<AddressOfAccountOrPersona> + EntityKindSpecifier> {
@@ -471,7 +517,86 @@ pub struct AbstractEntity<A: Clone + Into<AddressOfAccountOrPersona> + EntityKin
     pub security_state: EntitySecurityState,
 }
 pub type Account = AbstractEntity<AccountAddress>;
+impl IsEntity for Account {
+    fn new(name: impl AsRef<str>, security_state: impl Into<EntitySecurityState>) -> Self {
+        Self {
+            address: AccountAddress::from(name.as_ref().to_owned()),
+            security_state: security_state.into(),
+        }
+    }
+    type Address = AccountAddress;
+    fn security_state(&self) -> EntitySecurityState {
+        self.security_state.clone()
+    }
+    fn entity_address(&self) -> Self::Address {
+        self.address.clone()
+    }
+    fn e0() -> Self {
+        Self::a0()
+    }
+    fn e1() -> Self {
+        Self::a1()
+    }
+    fn e2() -> Self {
+        Self::a2()
+    }
+    fn e3() -> Self {
+        Self::a3()
+    }
+    fn e4() -> Self {
+        Self::a4()
+    }
+    fn e5() -> Self {
+        Self::a5()
+    }
+    fn e6() -> Self {
+        Self::a6()
+    }
+    fn e7() -> Self {
+        Self::a7()
+    }
+}
+
 pub type Persona = AbstractEntity<IdentityAddress>;
+impl IsEntity for Persona {
+    fn new(name: impl AsRef<str>, security_state: impl Into<EntitySecurityState>) -> Self {
+        Self {
+            address: IdentityAddress::from(name.as_ref().to_owned()),
+            security_state: security_state.into(),
+        }
+    }
+    type Address = IdentityAddress;
+    fn security_state(&self) -> EntitySecurityState {
+        self.security_state.clone()
+    }
+    fn entity_address(&self) -> Self::Address {
+        self.address.clone()
+    }
+    fn e0() -> Self {
+        Self::p0()
+    }
+    fn e1() -> Self {
+        Self::p1()
+    }
+    fn e2() -> Self {
+        Self::p2()
+    }
+    fn e3() -> Self {
+        Self::p3()
+    }
+    fn e4() -> Self {
+        Self::p4()
+    }
+    fn e5() -> Self {
+        Self::p5()
+    }
+    fn e6() -> Self {
+        Self::p6()
+    }
+    fn e7() -> Self {
+        Self::p7()
+    }
+}
 
 impl<T: Clone + Into<AddressOfAccountOrPersona> + EntityKindSpecifier> EntityKindSpecifier
     for AbstractEntity<T>
@@ -482,9 +607,6 @@ impl<T: Clone + Into<AddressOfAccountOrPersona> + EntityKindSpecifier> EntityKin
 }
 
 impl<T: Clone + Into<AddressOfAccountOrPersona> + EntityKindSpecifier> AbstractEntity<T> {
-    pub fn entity_address(&self) -> T {
-        self.address.clone()
-    }
     pub fn address(&self) -> AddressOfAccountOrPersona {
         self.address.clone().into()
     }
@@ -542,14 +664,11 @@ impl<T: Clone + Into<AddressOfAccountOrPersona> + EntityKindSpecifier + From<Str
 
     /// mainnet
     pub(crate) fn sample_securified() -> Self {
-        type F = FactorSourceID;
         Self::securified_mainnet(6, "Grace", |idx| {
-            let fi = HierarchicalDeterministicFactorInstance::f(idx);
-            MatrixOfFactorInstances::new(
-                [F::fs0(), F::fs3(), F::fs5()].map(&fi),
-                2,
-                [F::fs1(), F::fs4()].map(&fi),
-            )
+            MatrixOfFactorInstances::m6(HierarchicalDeterministicFactorInstance::f(
+                Self::entity_kind(),
+                idx,
+            ))
         })
     }
 

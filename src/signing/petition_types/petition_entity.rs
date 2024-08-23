@@ -308,7 +308,7 @@ mod tests {
     #[should_panic(expected = "A factor MUST NOT be present in both threshold AND override list.")]
     fn factor_should_not_be_used_in_both_lists() {
         Account::securified_mainnet(0, "Jane Doe", |idx| {
-            let fi = HierarchicalDeterministicFactorInstance::f(idx);
+            let fi = HierarchicalDeterministicFactorInstance::f(CAP26EntityKind::Account, idx);
             MatrixOfFactorInstances::new(
                 [FactorSourceID::fs0()].map(&fi),
                 1,
@@ -322,7 +322,7 @@ mod tests {
     fn cannot_add_same_signature_twice() {
         let intent_hash = IntentHash::sample();
         let entity = Account::securified_mainnet(0, "Jane Doe", |idx| {
-            let fi = HierarchicalDeterministicFactorInstance::f(idx);
+            let fi = HierarchicalDeterministicFactorInstance::f(CAP26EntityKind::Account, idx);
             MatrixOfFactorInstances::new(
                 [FactorSourceID::fs0()].map(&fi),
                 1,
