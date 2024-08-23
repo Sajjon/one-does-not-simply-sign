@@ -32,7 +32,6 @@ impl SignWithFactorSerialInteractor for TestSigningSerialInteractor {
             .sign_or_skip(invalid_transactions_if_skipped)
         {
             SigningUserInput::Sign => {
-                println!("\n#####################\n");
                 let signatures = request
                     .input
                     .per_transaction
@@ -40,31 +39,10 @@ impl SignWithFactorSerialInteractor for TestSigningSerialInteractor {
                     .flat_map(|r| {
                         r.signature_inputs()
                             .iter()
-                            .map(|x| {
-                                let sig = HDSignature::produced_signing_with_input(x.clone());
-                                println!("\n✅ ✅ SIGNATURE ✅ ✅");
-                                println!(
-                                    "factor={:?}",
-                                    &sig.input
-                                        .owned_factor_instance
-                                        .factor_instance()
-                                        .factor_source_id
-                                );
-                                println!("tx={:?}", &sig.input.intent_hash);
-                                println!("owner={:?}", &sig.input.owned_factor_instance.owner);
-                                println!(
-                                    "path={:?}",
-                                    &sig.input
-                                        .owned_factor_instance
-                                        .factor_instance()
-                                        .derivation_path()
-                                );
-                                sig
-                            })
+                            .map(|x| HDSignature::produced_signing_with_input(x.clone()))
                             .collect::<IndexSet<_>>()
                     })
                     .collect::<IndexSet<HDSignature>>();
-                println!("\nSIGNATURES END\n\n#####################\n");
                 let signatures = signatures
                     .into_iter()
                     .into_group_map_by(|x| x.factor_source_id());
