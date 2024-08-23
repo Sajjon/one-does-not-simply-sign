@@ -597,7 +597,65 @@ mod signing_tests {
         }
 
         #[actix_rt::test]
-        async fn multi_securified_entities() {}
+        async fn multi_securified_entities() {
+            let factor_sources = &FactorSource::all();
+
+            let a0 = &Account::a0();
+            let a1 = &Account::a1();
+            let a5 = &Account::a5();
+            let a6 = &Account::a6();
+            let a7 = &Account::a7();
+
+            let p0 = &Persona::p0();
+            let p1 = &Persona::p1();
+            let p5 = &Persona::p5();
+            let p6 = &Persona::p6();
+            let p7 = &Persona::p7();
+
+            let t0 = TransactionIntent::address_of([a0, a1], [p0, p1]);
+            let t1 = TransactionIntent::address_of([a0, a1, a5, a6, a7], []);
+            let t2 = TransactionIntent::address_of([a0, a5, a6, a7], [p1, p5, p6, p7]);
+            let t3 = TransactionIntent::address_of([], [p0, p1, p5, p6, p7]);
+
+            let profile = Profile::new(
+                factor_sources.clone(),
+                [a0, a1, a5, a6, a7],
+                [p0, p1, p5, p6, p7],
+            );
+
+            let collector = SignaturesCollector::new(
+                IndexSet::<TransactionIntent>::from_iter([
+                    t0.clone(),
+                    t1.clone(),
+                    t2.clone(),
+                    t3.clone(),
+                ]),
+                Arc::new(TestSignatureCollectingInteractors::new(
+                    SimulatedUser::prudent_no_fail(),
+                )),
+                &profile,
+            )
+            .unwrap();
+
+            let outcome = collector.collect_signatures().await;
+
+            assert!(outcome.successful());
+            assert!(outcome.failed_transactions().is_empty());
+            assert_eq!(outcome.signatures_of_successful_transactions().len(), 58);
+            assert_eq!(
+                outcome
+                    .successful_transactions()
+                    .into_iter()
+                    .map(|t| t.intent_hash)
+                    .collect::<HashSet<_>>(),
+                HashSet::from_iter([
+                    t0.clone().intent_hash,
+                    t1.clone().intent_hash,
+                    t2.clone().intent_hash,
+                    t3.clone().intent_hash,
+                ])
+            );
+        }
     }
 
     mod single_tx {
