@@ -625,10 +625,7 @@ mod signing_tests {
                 let collector = SignaturesCollector::test_prudent([tx.clone()]);
                 let signature = &collector.collect_signatures().await.all_signatures()[0];
                 assert_eq!(signature.intent_hash(), &tx.intent_hash);
-                assert_eq!(
-                    signature.derivation_path().entity_kind,
-                    CAP26EntityKind::Account
-                );
+                assert_eq!(signature.derivation_path().entity_kind, E::kind());
             }
 
             async fn prudent_user_single_tx_e0_assert_correct_owner_has_signed<E: IsEntity>() {
@@ -1132,6 +1129,181 @@ mod signing_tests {
 
                 #[actix_rt::test]
                 async fn lazy_always_skip_user_a7() {
+                    lazy_always_skip_user_e7::<E>().await
+                }
+
+                #[actix_rt::test]
+                async fn failure() {
+                    failure_e0::<E>().await
+                }
+
+                #[actix_rt::test]
+                async fn building_can_succeed_even_if_one_factor_source_fails_assert_ids_of_successful_tx(
+                ) {
+                    building_can_succeed_even_if_one_factor_source_fails_assert_ids_of_successful_tx_e4::<E>()
+                        .await
+                }
+
+                #[actix_rt::test]
+                async fn building_can_succeed_even_if_one_factor_source_fails_assert_ids_of_failed_tx(
+                ) {
+                    building_can_succeed_even_if_one_factor_source_fails_assert_ids_of_failed_tx_e4::<E>().await
+                }
+            }
+
+            mod persona {
+                use super::*;
+                type E = Persona;
+
+                #[actix_rt::test]
+                async fn prudent_user_single_tx_p0() {
+                    prudent_user_single_tx_e0::<E>().await
+                }
+
+                #[actix_rt::test]
+                async fn prudent_user_single_tx_p0_assert_correct_intent_hash_is_signed() {
+                    prudent_user_single_tx_e0_assert_correct_intent_hash_is_signed::<E>().await
+                }
+
+                #[actix_rt::test]
+                async fn prudent_user_single_tx_p0_assert_correct_owner_has_signed() {
+                    prudent_user_single_tx_e0_assert_correct_owner_has_signed::<E>().await
+                }
+
+                #[actix_rt::test]
+                async fn prudent_user_single_tx_p0_assert_correct_owner_factor_instance_signed() {
+                    prudent_user_single_tx_e0_assert_correct_owner_factor_instance_signed::<E>()
+                        .await
+                }
+
+                #[actix_rt::test]
+                async fn prudent_user_single_tx_p1() {
+                    prudent_user_single_tx_e1::<E>().await
+                }
+
+                #[actix_rt::test]
+                async fn prudent_user_single_tx_p2() {
+                    prudent_user_single_tx_e2::<E>().await
+                }
+
+                #[actix_rt::test]
+                async fn prudent_user_single_tx_p3() {
+                    prudent_user_single_tx_e3::<E>().await
+                }
+
+                #[actix_rt::test]
+                async fn prudent_user_single_tx_p4() {
+                    prudent_user_single_tx_e4::<E>().await
+                }
+
+                #[actix_rt::test]
+                async fn prudent_user_single_tx_p5() {
+                    prudent_user_single_tx_e5::<E>().await
+                }
+
+                #[actix_rt::test]
+                async fn prudent_user_single_tx_p6() {
+                    prudent_user_single_tx_e6::<E>().await
+                }
+
+                #[actix_rt::test]
+                async fn prudent_user_single_tx_p7() {
+                    prudent_user_single_tx_e7::<E>().await
+                }
+
+                #[actix_rt::test]
+                async fn lazy_sign_minimum_user_single_tx_p0() {
+                    lazy_sign_minimum_user_single_tx_e0::<E>().await
+                }
+
+                #[actix_rt::test]
+                async fn lazy_sign_minimum_user_single_tx_p1() {
+                    lazy_sign_minimum_user_single_tx_e1::<E>().await
+                }
+
+                #[actix_rt::test]
+                async fn lazy_sign_minimum_user_single_tx_p2() {
+                    lazy_sign_minimum_user_single_tx_e2::<E>().await
+                }
+
+                #[actix_rt::test]
+                async fn lazy_sign_minimum_user_p3() {
+                    lazy_sign_minimum_user_e3::<E>().await
+                }
+
+                #[actix_rt::test]
+                async fn lazy_sign_minimum_user_p4() {
+                    lazy_sign_minimum_user_e4::<E>().await
+                }
+
+                #[actix_rt::test]
+                async fn lazy_sign_minimum_user_p5() {
+                    lazy_sign_minimum_user_e5::<E>().await
+                }
+
+                #[actix_rt::test]
+                async fn lazy_sign_minimum_user_p6() {
+                    lazy_sign_minimum_user_e6::<E>().await
+                }
+
+                #[actix_rt::test]
+                async fn lazy_sign_minimum_user_p7() {
+                    lazy_sign_minimum_user_e7::<E>().await
+                }
+
+                #[actix_rt::test]
+                async fn lazy_sign_minimum_user_p5_last_factor_used() {
+                    lazy_sign_minimum_user_e5_last_factor_used::<E>().await
+                }
+
+                #[actix_rt::test]
+                async fn lazy_sign_minimum_all_known_factors_used_as_override_factors_signed_with_device_for_account(
+                ) {
+                    lazy_sign_minimum_all_known_factors_used_as_override_factors_signed_with_device_for_entity::<E>().await
+                }
+
+                #[actix_rt::test]
+                async fn lazy_always_skip_user_single_tx_p0() {
+                    lazy_always_skip_user_single_tx_e0::<E>().await
+                }
+
+                #[actix_rt::test]
+                async fn fail_get_skipped_p0() {
+                    fail_get_skipped_e0::<E>().await
+                }
+
+                #[actix_rt::test]
+                async fn lazy_always_skip_user_single_tx_p1() {
+                    lazy_always_skip_user_single_tx_e1::<E>().await
+                }
+
+                #[actix_rt::test]
+                async fn lazy_always_skip_user_single_tx_p2() {
+                    lazy_always_skip_user_single_tx_e2::<E>().await
+                }
+
+                #[actix_rt::test]
+                async fn lazy_always_skip_user_p3() {
+                    lazy_always_skip_user_e3::<E>().await
+                }
+
+                #[actix_rt::test]
+                async fn lazy_always_skip_user_p4() {
+                    lazy_always_skip_user_e4::<E>().await
+                }
+
+                #[actix_rt::test]
+                async fn lazy_always_skip_user_p5() {
+                    lazy_always_skip_user_e5::<E>().await
+                }
+
+                #[actix_rt::test]
+                async fn lazy_always_skip_user_p6() {
+                    lazy_always_skip_user_e6::<E>().await
+                }
+
+                #[actix_rt::test]
+                async fn lazy_always_skip_user_p7() {
                     lazy_always_skip_user_e7::<E>().await
                 }
 
