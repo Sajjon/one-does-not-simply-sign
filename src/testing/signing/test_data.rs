@@ -135,7 +135,7 @@ impl FactorSourceID {
 
 impl HierarchicalDeterministicFactorInstance {
     pub fn f(idx: u32) -> impl Fn(FactorSourceID) -> Self {
-        move |id: FactorSourceID| Self::account_mainnet_tx(idx, id)
+        move |id: FactorSourceID| Self::mainnet_tx(CAP26EntityKind::Account, idx, id)
     }
 }
 
@@ -154,7 +154,7 @@ impl Account {
     pub fn a2() -> Self {
         Self::securified_mainnet(2, "Carla", |idx| {
             MatrixOfFactorInstances::single_threshold(
-                HierarchicalDeterministicFactorInstance::account_mainnet_tx(
+                HierarchicalDeterministicFactorInstance::mainnet_tx_account(
                     idx,
                     FactorSourceID::fs0(),
                 ),
@@ -166,7 +166,7 @@ impl Account {
     pub fn a3() -> Self {
         Self::securified_mainnet(3, "David", |idx| {
             MatrixOfFactorInstances::single_override(
-                HierarchicalDeterministicFactorInstance::account_mainnet_tx(
+                HierarchicalDeterministicFactorInstance::mainnet_tx_account(
                     idx,
                     FactorSourceID::fs1(),
                 ),

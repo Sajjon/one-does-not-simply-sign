@@ -857,7 +857,7 @@ mod signing_tests {
                         TXToSign::new([Account::securified_mainnet(0, "all override", |idx| {
                             MatrixOfFactorInstances::override_only(
                                 FactorSource::all().into_iter().map(|f| {
-                                    HierarchicalDeterministicFactorInstance::account_mainnet_tx(
+                                    HierarchicalDeterministicFactorInstance::mainnet_tx_account(
                                         idx,
                                         f.factor_source_id(),
                                     )

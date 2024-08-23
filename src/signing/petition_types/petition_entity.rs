@@ -334,7 +334,7 @@ mod tests {
             intent_hash,
             OwnedFactorInstance::new(
                 entity.address(),
-                HierarchicalDeterministicFactorInstance::account_mainnet_tx(
+                HierarchicalDeterministicFactorInstance::mainnet_tx_account(
                     0,
                     FactorSourceID::fs0(),
                 ),
@@ -354,7 +354,7 @@ mod tests {
                 sut.intent_hash.clone(),
                 OwnedFactorInstance::new(
                     sut.entity.clone(),
-                    HierarchicalDeterministicFactorInstance::account_mainnet_tx(
+                    HierarchicalDeterministicFactorInstance::mainnet_tx_account(
                         6,
                         FactorSourceID::fs1(),
                     ),

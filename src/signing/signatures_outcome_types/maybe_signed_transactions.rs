@@ -95,7 +95,7 @@ impl HasSampleValues for MaybeSignedTransactions {
             tx_a.clone(),
             OwnedFactorInstance::new(
                 AddressOfAccountOrPersona::sample(),
-                HierarchicalDeterministicFactorInstance::account_mainnet_tx(
+                HierarchicalDeterministicFactorInstance::mainnet_tx_account(
                     0,
                     FactorSourceID::sample(),
                 ),
@@ -105,7 +105,7 @@ impl HasSampleValues for MaybeSignedTransactions {
             tx_a.clone(),
             OwnedFactorInstance::new(
                 AddressOfAccountOrPersona::sample(),
-                HierarchicalDeterministicFactorInstance::account_mainnet_tx(
+                HierarchicalDeterministicFactorInstance::mainnet_tx_account(
                     1,
                     FactorSourceID::sample_other(),
                 ),
@@ -119,7 +119,7 @@ impl HasSampleValues for MaybeSignedTransactions {
             tx_b.clone(),
             OwnedFactorInstance::new(
                 AddressOfAccountOrPersona::sample(),
-                HierarchicalDeterministicFactorInstance::account_mainnet_tx(
+                HierarchicalDeterministicFactorInstance::mainnet_tx_account(
                     2,
                     FactorSourceID::sample_third(),
                 ),
@@ -129,7 +129,7 @@ impl HasSampleValues for MaybeSignedTransactions {
             tx_b.clone(),
             OwnedFactorInstance::new(
                 AddressOfAccountOrPersona::sample(),
-                HierarchicalDeterministicFactorInstance::account_mainnet_tx(
+                HierarchicalDeterministicFactorInstance::mainnet_tx_account(
                     3,
                     FactorSourceID::sample_fourth(),
                 ),
@@ -155,7 +155,7 @@ impl HasSampleValues for MaybeSignedTransactions {
             tx_a.clone(),
             OwnedFactorInstance::new(
                 AddressOfAccountOrPersona::sample(),
-                HierarchicalDeterministicFactorInstance::account_mainnet_tx(
+                HierarchicalDeterministicFactorInstance::mainnet_tx_account(
                     10,
                     FactorSourceID::sample(),
                 ),
@@ -165,7 +165,7 @@ impl HasSampleValues for MaybeSignedTransactions {
             tx_a.clone(),
             OwnedFactorInstance::new(
                 AddressOfAccountOrPersona::sample(),
-                HierarchicalDeterministicFactorInstance::account_mainnet_tx(
+                HierarchicalDeterministicFactorInstance::mainnet_tx_account(
                     11,
                     FactorSourceID::sample_other(),
                 ),
@@ -175,7 +175,7 @@ impl HasSampleValues for MaybeSignedTransactions {
             tx_a.clone(),
             OwnedFactorInstance::new(
                 AddressOfAccountOrPersona::sample(),
-                HierarchicalDeterministicFactorInstance::account_mainnet_tx(
+                HierarchicalDeterministicFactorInstance::mainnet_tx_account(
                     12,
                     FactorSourceID::sample_third(),
                 ),
@@ -224,7 +224,7 @@ mod tests {
             tx.clone(),
             OwnedFactorInstance::new(
                 AddressOfAccountOrPersona::sample(),
-                HierarchicalDeterministicFactorInstance::account_mainnet_tx(
+                HierarchicalDeterministicFactorInstance::mainnet_tx_account(
                     0,
                     FactorSourceID::sample(),
                 ),
@@ -244,7 +244,7 @@ mod tests {
             tx,
             OwnedFactorInstance::new(
                 AddressOfAccountOrPersona::sample(),
-                HierarchicalDeterministicFactorInstance::account_mainnet_tx(
+                HierarchicalDeterministicFactorInstance::mainnet_tx_account(
                     0,
                     FactorSourceID::sample(),
                 ),
