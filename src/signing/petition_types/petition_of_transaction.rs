@@ -2,14 +2,28 @@ use crate::prelude::*;
 
 /// Petition of signatures for a transaction.
 /// Essentially a wrapper around `Iterator<Item = PetitionEntity>`.
+#[derive(derive_more::Debug)]
+#[debug("{}", self.debug_str())]
 pub(crate) struct PetitionTransaction {
     /// Hash of transaction to sign
     pub intent_hash: IntentHash,
 
-    pub for_entities: RefCell<HashMap<AccountAddressOrIdentityAddress, PetitionEntity>>,
+    pub for_entities: RefCell<HashMap<AddressOfAccountOrPersona, PetitionEntity>>,
 }
 
 impl PetitionTransaction {
+    #[allow(unused)]
+    fn debug_str(&self) -> String {
+        let entities = self
+            .for_entities
+            .borrow()
+            .iter()
+            .map(|p| format!("PetitionEntity({:#?})", p.1))
+            .join(", ");
+
+        format!("PetitionTransaction(for_entities: [{}])", entities)
+    }
+
     /// Returns `(true, _)` if this transaction has been successfully signed by
     /// all required factor instances.
     ///
@@ -103,7 +117,7 @@ impl PetitionTransaction {
 
     pub(crate) fn new(
         intent_hash: IntentHash,
-        for_entities: HashMap<AccountAddressOrIdentityAddress, PetitionEntity>,
+        for_entities: HashMap<AddressOfAccountOrPersona, PetitionEntity>,
     ) -> Self {
         Self {
             intent_hash,

@@ -4,7 +4,7 @@ use crate::prelude::*;
 /// has the same signer, which would be a bug.
 #[derive(Clone, PartialEq, Eq, Hash, derive_more::Debug)]
 #[debug(
-    "HDSignatureInput {{ intent_hash: {:?}, owned_factor_instance: {:?} }}",
+    "HDSignatureInput {{ intent_hash: {:#?}, owned_factor_instance: {:#?} }}",
     intent_hash,
     owned_factor_instance
 )]

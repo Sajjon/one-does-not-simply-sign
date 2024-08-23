@@ -78,7 +78,7 @@ pub fn fs_at(index: usize) -> FactorSource {
 }
 
 pub fn fs_id_at(index: usize) -> FactorSourceID {
-    fs_at(index).id
+    fs_at(index).factor_source_id()
 }
 
 impl FactorSourceID {
@@ -133,13 +133,74 @@ impl FactorSourceID {
     }
 }
 
-impl FactorInstance {
-    pub fn f(idx: u32) -> impl Fn(FactorSourceID) -> Self {
-        move |id: FactorSourceID| Self::account_mainnet_tx(idx, id)
+impl HierarchicalDeterministicFactorInstance {
+    pub fn f(entity_kind: CAP26EntityKind, idx: u32) -> impl Fn(FactorSourceID) -> Self {
+        move |id: FactorSourceID| Self::mainnet_tx(entity_kind, idx, id)
     }
 }
 
-impl Entity {
+impl MatrixOfFactorInstances {
+    /// Securified { Single Threshold only }
+    pub fn m2<F>(fi: F) -> Self
+    where
+        F: Fn(FactorSourceID) -> HierarchicalDeterministicFactorInstance,
+    {
+        Self::single_threshold(fi(FactorSourceID::fs0()))
+    }
+
+    /// Securified { Single Override only }
+    pub fn m3<F>(fi: F) -> Self
+    where
+        F: Fn(FactorSourceID) -> HierarchicalDeterministicFactorInstance,
+    {
+        Self::single_override(fi(FactorSourceID::fs1()))
+    }
+
+    /// Securified { Threshold factors only #3 }
+    pub fn m4<F>(fi: F) -> Self
+    where
+        F: Fn(FactorSourceID) -> HierarchicalDeterministicFactorInstance,
+    {
+        type F = FactorSourceID;
+        Self::threshold_only([F::fs0(), F::fs3(), F::fs5()].map(fi), 2)
+    }
+
+    /// Securified { Override factors only #2 }
+    pub fn m5<F>(fi: F) -> Self
+    where
+        F: Fn(FactorSourceID) -> HierarchicalDeterministicFactorInstance,
+    {
+        type F = FactorSourceID;
+        Self::override_only([F::fs1(), F::fs4()].map(&fi))
+    }
+
+    /// Securified { Threshold #3 and Override factors #2  }
+    pub fn m6<F>(fi: F) -> Self
+    where
+        F: Fn(FactorSourceID) -> HierarchicalDeterministicFactorInstance,
+    {
+        type F = FactorSourceID;
+        Self::new(
+            [F::fs0(), F::fs3(), F::fs5()].map(&fi),
+            2,
+            [F::fs1(), F::fs4()].map(&fi),
+        )
+    }
+
+    /// Securified { Threshold only # 5/5 }
+    pub fn m7<F>(fi: F) -> Self
+    where
+        F: Fn(FactorSourceID) -> HierarchicalDeterministicFactorInstance,
+    {
+        type F = FactorSourceID;
+        Self::threshold_only(
+            [F::fs2(), F::fs6(), F::fs7(), F::fs8(), F::fs9()].map(&fi),
+            5,
+        )
+    }
+}
+
+impl Account {
     /// Alice | 0 | Unsecurified { Device }
     pub fn a0() -> Self {
         Self::unsecurified_mainnet(0, "Alice", FactorSourceID::fs0())
@@ -153,9 +214,9 @@ impl Entity {
     /// Carla | 2 | Securified { Single Threshold only }
     pub fn a2() -> Self {
         Self::securified_mainnet(2, "Carla", |idx| {
-            MatrixOfFactorInstances::single_threshold(FactorInstance::account_mainnet_tx(
+            MatrixOfFactorInstances::m2(HierarchicalDeterministicFactorInstance::f(
+                Self::entity_kind(),
                 idx,
-                FactorSourceID::fs0(),
             ))
         })
     }
@@ -163,54 +224,122 @@ impl Entity {
     /// David | 3 | Securified { Single Override only }
     pub fn a3() -> Self {
         Self::securified_mainnet(3, "David", |idx| {
-            MatrixOfFactorInstances::single_override(FactorInstance::account_mainnet_tx(
+            MatrixOfFactorInstances::m3(HierarchicalDeterministicFactorInstance::f(
+                Self::entity_kind(),
                 idx,
-                FactorSourceID::fs1(),
             ))
         })
     }
 
     /// Emily | 4 | Securified { Threshold factors only #3 }
     pub fn a4() -> Self {
-        type F = FactorSourceID;
         Self::securified_mainnet(4, "Emily", |idx| {
-            MatrixOfFactorInstances::threshold_only(
-                [F::fs0(), F::fs3(), F::fs5()].map(FactorInstance::f(idx)),
-                2,
-            )
+            MatrixOfFactorInstances::m4(HierarchicalDeterministicFactorInstance::f(
+                Self::entity_kind(),
+                idx,
+            ))
         })
     }
 
     /// Frank | 5 | Securified { Override factors only #2 }
     pub fn a5() -> Self {
-        type F = FactorSourceID;
         Self::securified_mainnet(5, "Frank", |idx| {
-            MatrixOfFactorInstances::override_only([F::fs1(), F::fs4()].map(FactorInstance::f(idx)))
+            MatrixOfFactorInstances::m5(HierarchicalDeterministicFactorInstance::f(
+                Self::entity_kind(),
+                idx,
+            ))
         })
     }
 
     /// Grace | 6 | Securified { Threshold #3 and Override factors #2  }
     pub fn a6() -> Self {
-        type F = FactorSourceID;
         Self::securified_mainnet(6, "Grace", |idx| {
-            let fi = FactorInstance::f(idx);
-            MatrixOfFactorInstances::new(
-                [F::fs0(), F::fs3(), F::fs5()].map(&fi),
-                2,
-                [F::fs1(), F::fs4()].map(&fi),
-            )
+            MatrixOfFactorInstances::m6(HierarchicalDeterministicFactorInstance::f(
+                Self::entity_kind(),
+                idx,
+            ))
         })
     }
 
     /// Ida | 7 | Securified { Threshold only # 5/5 }
     pub fn a7() -> Self {
-        type F = FactorSourceID;
         Self::securified_mainnet(7, "Ida", |idx| {
-            let fi = FactorInstance::f(idx);
-            MatrixOfFactorInstances::threshold_only(
-                [F::fs2(), F::fs6(), F::fs7(), F::fs8(), F::fs9()].map(&fi),
-                5,
-            )
+            MatrixOfFactorInstances::m7(HierarchicalDeterministicFactorInstance::f(
+                Self::entity_kind(),
+                idx,
+            ))
+        })
+    }
+}
+
+impl Persona {
+    /// Satoshi | 0 | Unsecurified { Device }
+    pub fn p0() -> Self {
+        Self::unsecurified_mainnet(0, "Satoshi", FactorSourceID::fs0())
+    }
+
+    /// Batman | 1 | Unsecurified { Ledger }
+    pub fn p1() -> Self {
+        Self::unsecurified_mainnet(1, "Batman", FactorSourceID::fs1())
+    }
+
+    /// Ziggy | 2 | Securified { Single Threshold only }
+    pub fn p2() -> Self {
+        Self::securified_mainnet(2, "Ziggy", |idx| {
+            MatrixOfFactorInstances::m2(HierarchicalDeterministicFactorInstance::f(
+                Self::entity_kind(),
+                idx,
+            ))
+        })
+    }
+
+    /// Superman | 3 | Securified { Single Override only }
+    pub fn p3() -> Self {
+        Self::securified_mainnet(3, "Superman", |idx| {
+            MatrixOfFactorInstances::m3(HierarchicalDeterministicFactorInstance::f(
+                Self::entity_kind(),
+                idx,
+            ))
+        })
+    }
+
+    /// Banksy | 4 | Securified { Threshold factors only #3 }
+    pub fn p4() -> Self {
+        Self::securified_mainnet(4, "Banksy", |idx| {
+            MatrixOfFactorInstances::m4(HierarchicalDeterministicFactorInstance::f(
+                Self::entity_kind(),
+                idx,
+            ))
+        })
+    }
+
+    /// Voltaire | 5 | Securified { Override factors only #2 }
+    pub fn p5() -> Self {
+        Self::securified_mainnet(5, "Voltaire", |idx| {
+            MatrixOfFactorInstances::m5(HierarchicalDeterministicFactorInstance::f(
+                Self::entity_kind(),
+                idx,
+            ))
+        })
+    }
+
+    /// Kasparov | 6 | Securified { Threshold #3 and Override factors #2  }
+    pub fn p6() -> Self {
+        Self::securified_mainnet(6, "Kasparov", |idx| {
+            MatrixOfFactorInstances::m6(HierarchicalDeterministicFactorInstance::f(
+                Self::entity_kind(),
+                idx,
+            ))
+        })
+    }
+
+    /// Pelé | 7 | Securified { Threshold only # 5/5 }
+    pub fn p7() -> Self {
+        Self::securified_mainnet(7, "Pelé", |idx| {
+            MatrixOfFactorInstances::m7(HierarchicalDeterministicFactorInstance::f(
+                Self::entity_kind(),
+                idx,
+            ))
         })
     }
 }

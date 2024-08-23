@@ -15,7 +15,10 @@ impl FactorSourcesOfKind {
         if factor_sources.is_empty() {
             return Err(CommonError::FactorSourcesOfKindEmptyFactors);
         }
-        if factor_sources.iter().any(|f| f.kind() != kind) {
+        if factor_sources
+            .iter()
+            .any(|f| f.factor_source_kind() != kind)
+        {
             return Err(CommonError::InvalidFactorSourceKind);
         }
         Ok(Self {
@@ -29,7 +32,10 @@ impl FactorSourcesOfKind {
     }
 
     pub(crate) fn factor_source_ids(&self) -> Vec<FactorSourceID> {
-        self.factor_sources.iter().map(|f| f.id).collect()
+        self.factor_sources
+            .iter()
+            .map(|f| f.factor_source_id())
+            .collect()
     }
 }
 

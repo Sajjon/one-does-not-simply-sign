@@ -43,18 +43,25 @@ impl KeysCollectingInteractors for TestDerivationInteractors {
 }
 
 pub struct TestDerivationParallelInteractor {
-    handle: fn(SerialBatchKeyDerivationRequest) -> Result<IndexSet<FactorInstance>>,
+    handle: fn(
+        SerialBatchKeyDerivationRequest,
+    ) -> Result<IndexSet<HierarchicalDeterministicFactorInstance>>,
 }
 impl TestDerivationParallelInteractor {
     pub fn new(
-        handle: fn(SerialBatchKeyDerivationRequest) -> Result<IndexSet<FactorInstance>>,
+        handle: fn(
+            SerialBatchKeyDerivationRequest,
+        ) -> Result<IndexSet<HierarchicalDeterministicFactorInstance>>,
     ) -> Self {
         Self { handle }
     }
     pub fn fail() -> Self {
         Self::new(|_| Err(CommonError::Failure))
     }
-    fn derive(&self, request: SerialBatchKeyDerivationRequest) -> Result<IndexSet<FactorInstance>> {
+    fn derive(
+        &self,
+        request: SerialBatchKeyDerivationRequest,
+    ) -> Result<IndexSet<HierarchicalDeterministicFactorInstance>> {
         (self.handle)(request)
     }
 }
@@ -66,12 +73,12 @@ impl Default for TestDerivationParallelInteractor {
 
 fn do_derive_serially(
     request: SerialBatchKeyDerivationRequest,
-) -> Result<IndexSet<FactorInstance>> {
+) -> Result<IndexSet<HierarchicalDeterministicFactorInstance>> {
     let factor_source_id = &request.factor_source_id;
     let instances = request
         .derivation_paths
         .into_iter()
-        .map(|p| FactorInstance::mocked_with(p, factor_source_id))
+        .map(|p| HierarchicalDeterministicFactorInstance::mocked_with(p, factor_source_id))
         .collect::<IndexSet<_>>();
 
     Ok(instances)
@@ -83,7 +90,9 @@ impl DeriveKeyWithFactorParallelInteractor for TestDerivationParallelInteractor 
         &self,
         request: ParallelBatchKeyDerivationRequest,
     ) -> Result<BatchDerivationResponse> {
-        let pairs_result: Result<IndexMap<FactorSourceID, IndexSet<FactorInstance>>> = request
+        let pairs_result: Result<
+            IndexMap<FactorSourceID, IndexSet<HierarchicalDeterministicFactorInstance>>,
+        > = request
             .per_factor_source
             .into_iter()
             .map(|(k, r)| {
@@ -97,18 +106,25 @@ impl DeriveKeyWithFactorParallelInteractor for TestDerivationParallelInteractor 
 }
 
 pub struct TestDerivationSerialInteractor {
-    handle: fn(SerialBatchKeyDerivationRequest) -> Result<IndexSet<FactorInstance>>,
+    handle: fn(
+        SerialBatchKeyDerivationRequest,
+    ) -> Result<IndexSet<HierarchicalDeterministicFactorInstance>>,
 }
 impl TestDerivationSerialInteractor {
     pub fn new(
-        handle: fn(SerialBatchKeyDerivationRequest) -> Result<IndexSet<FactorInstance>>,
+        handle: fn(
+            SerialBatchKeyDerivationRequest,
+        ) -> Result<IndexSet<HierarchicalDeterministicFactorInstance>>,
     ) -> Self {
         Self { handle }
     }
     pub fn fail() -> Self {
         Self::new(|_| Err(CommonError::Failure))
     }
-    fn derive(&self, request: SerialBatchKeyDerivationRequest) -> Result<IndexSet<FactorInstance>> {
+    fn derive(
+        &self,
+        request: SerialBatchKeyDerivationRequest,
+    ) -> Result<IndexSet<HierarchicalDeterministicFactorInstance>> {
         (self.handle)(request)
     }
 }
@@ -153,13 +169,13 @@ impl KeysCollector {
     pub fn with(
         factor_source: &FactorSource,
         network_id: NetworkID,
-        key_kind: KeyKind,
-        entity_kind: EntityKind,
+        key_kind: CAP26KeyKind,
+        entity_kind: CAP26EntityKind,
         key_space: KeySpace,
     ) -> Self {
         let indices = StatelessDummyIndices;
         let path = indices.next_derivation_path(
-            factor_source.clone().id,
+            factor_source.clone().factor_source_id(),
             network_id,
             key_kind,
             entity_kind,
@@ -167,7 +183,10 @@ impl KeysCollector {
         );
         Self::new_test_with_factor_sources(
             [factor_source.clone()],
-            [(factor_source.id, IndexSet::from_iter([path]))],
+            [(
+                factor_source.factor_source_id(),
+                IndexSet::from_iter([path]),
+            )],
         )
     }
 }

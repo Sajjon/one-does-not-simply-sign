@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use crate::prelude::*;
 
 #[derive(Clone, Copy, PartialEq, Eq, std::hash::Hash, derive_more::Debug)]
@@ -40,14 +42,17 @@ impl HasSampleValues for FactorSourceID {
 }
 
 #[derive(Clone, PartialEq, Eq, std::hash::Hash, derive_more::Debug)]
-#[debug("{:?}", id)]
+#[debug("{:#?}", id)]
 pub struct FactorSource {
     pub last_used: SystemTime,
-    pub id: FactorSourceID,
+    id: FactorSourceID,
 }
 
 impl FactorSource {
-    pub fn kind(&self) -> FactorSourceKind {
+    pub fn factor_source_id(&self) -> FactorSourceID {
+        self.id
+    }
+    pub fn factor_source_kind(&self) -> FactorSourceKind {
         self.id.kind
     }
     pub fn new(kind: FactorSourceKind) -> Self {
@@ -83,7 +88,7 @@ impl PartialOrd for FactorSource {
 }
 impl Ord for FactorSource {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        match self.kind().cmp(&other.kind()) {
+        match self.factor_source_kind().cmp(&other.factor_source_kind()) {
             core::cmp::Ordering::Equal => {}
             ord => return ord,
         }
@@ -128,11 +133,11 @@ pub type DerivationIndex = u32;
 
 #[repr(u8)]
 #[derive(Clone, Debug, Copy, PartialEq, Eq, Hash)]
-pub enum KeyKind {
+pub enum CAP26KeyKind {
     T9n,
     Rola,
 }
-impl KeyKind {
+impl CAP26KeyKind {
     fn discriminant(&self) -> u8 {
         core::intrinsics::discriminant_value(self)
     }
@@ -152,12 +157,12 @@ impl NetworkID {
 
 #[repr(u8)]
 #[derive(Clone, Debug, Copy, PartialEq, Eq, Hash)]
-pub enum EntityKind {
+pub enum CAP26EntityKind {
     Account,
     Identity,
 }
 
-impl EntityKind {
+impl CAP26EntityKind {
     fn discriminant(&self) -> u8 {
         core::intrinsics::discriminant_value(self)
     }
@@ -166,16 +171,16 @@ impl EntityKind {
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct DerivationPath {
     pub network_id: NetworkID,
-    pub entity_kind: EntityKind,
-    pub key_kind: KeyKind,
+    pub entity_kind: CAP26EntityKind,
+    pub key_kind: CAP26KeyKind,
     pub index: DerivationIndex,
 }
 
 impl DerivationPath {
     pub fn new(
         network_id: NetworkID,
-        entity_kind: EntityKind,
-        key_kind: KeyKind,
+        entity_kind: CAP26EntityKind,
+        key_kind: CAP26KeyKind,
         index: DerivationIndex,
     ) -> Self {
         Self {
@@ -186,7 +191,12 @@ impl DerivationPath {
         }
     }
     pub fn account_tx(network_id: NetworkID, index: DerivationIndex) -> Self {
-        Self::new(network_id, EntityKind::Account, KeyKind::T9n, index)
+        Self::new(
+            network_id,
+            CAP26EntityKind::Account,
+            CAP26KeyKind::T9n,
+            index,
+        )
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
@@ -238,25 +248,34 @@ impl HierarchicalDeterministicPublicKey {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
-pub struct FactorInstance {
-    pub hd_public_key: HierarchicalDeterministicPublicKey,
+#[derive(Clone, PartialEq, Eq, std::hash::Hash, derive_more::Debug)]
+#[debug("{}", self.debug_str())]
+pub struct HierarchicalDeterministicFactorInstance {
     pub factor_source_id: FactorSourceID,
+    pub public_key: HierarchicalDeterministicPublicKey,
 }
 
-impl FactorInstance {
+impl HierarchicalDeterministicFactorInstance {
+    #[allow(unused)]
+    fn debug_str(&self) -> String {
+        format!(
+            "factor_source_id: {:#?}, derivation_path: {:#?}",
+            self.factor_source_id, self.public_key.derivation_path
+        )
+    }
+
     pub fn new(
-        hd_public_key: HierarchicalDeterministicPublicKey,
+        public_key: HierarchicalDeterministicPublicKey,
         factor_source_id: FactorSourceID,
     ) -> Self {
         Self {
-            hd_public_key,
+            public_key,
             factor_source_id,
         }
     }
 
-    pub fn path(&self) -> DerivationPath {
-        self.hd_public_key.derivation_path.clone()
+    pub fn derivation_path(&self) -> DerivationPath {
+        self.public_key.derivation_path.clone()
     }
 
     pub fn mocked_with(derivation_path: DerivationPath, factor_source_id: &FactorSourceID) -> Self {
@@ -266,36 +285,42 @@ impl FactorInstance {
         )
     }
 
-    pub fn account_tx_on_network(
+    pub fn tx_on_network(
+        entity_kind: CAP26EntityKind,
         network_id: NetworkID,
         index: DerivationIndex,
         factor_source_id: FactorSourceID,
     ) -> Self {
-        let derivation_path = DerivationPath::account_tx(network_id, index);
+        let derivation_path =
+            DerivationPath::new(network_id, entity_kind, CAP26KeyKind::T9n, index);
         let public_key = PublicKey::new(factor_source_id);
         let hd_public_key = HierarchicalDeterministicPublicKey::new(derivation_path, public_key);
         Self::new(hd_public_key, factor_source_id)
     }
 
-    pub fn account_mainnet_tx(index: DerivationIndex, factor_source_id: FactorSourceID) -> Self {
-        Self::account_tx_on_network(NetworkID::Mainnet, index, factor_source_id)
+    pub fn mainnet_tx(
+        entity_kind: CAP26EntityKind,
+        index: DerivationIndex,
+        factor_source_id: FactorSourceID,
+    ) -> Self {
+        Self::tx_on_network(entity_kind, NetworkID::Mainnet, index, factor_source_id)
+    }
+
+    pub fn mainnet_tx_account(index: DerivationIndex, factor_source_id: FactorSourceID) -> Self {
+        Self::mainnet_tx(CAP26EntityKind::Account, index, factor_source_id)
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
-        [
-            self.hd_public_key.to_bytes(),
-            self.factor_source_id.to_bytes(),
-        ]
-        .concat()
+        [self.public_key.to_bytes(), self.factor_source_id.to_bytes()].concat()
     }
 }
 
-impl HasSampleValues for FactorInstance {
+impl HasSampleValues for HierarchicalDeterministicFactorInstance {
     fn sample() -> Self {
-        Self::account_mainnet_tx(0, FactorSourceID::sample())
+        Self::mainnet_tx_account(0, FactorSourceID::sample())
     }
     fn sample_other() -> Self {
-        Self::account_mainnet_tx(1, FactorSourceID::sample_other())
+        Self::mainnet_tx_account(1, FactorSourceID::sample_other())
     }
 }
 
@@ -328,11 +353,11 @@ impl HasSampleValues for Hash {
 
 #[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
 pub enum EntitySecurityState {
-    Unsecured(FactorInstance),
+    Unsecured(HierarchicalDeterministicFactorInstance),
     Securified(MatrixOfFactorInstances),
 }
 impl EntitySecurityState {
-    pub fn all_factor_instances(&self) -> IndexSet<FactorInstance> {
+    pub fn all_factor_instances(&self) -> IndexSet<HierarchicalDeterministicFactorInstance> {
         match self {
             Self::Securified(matrix) => {
                 let mut set = IndexSet::new();
@@ -351,45 +376,267 @@ impl From<MatrixOfFactorInstances> for EntitySecurityState {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, std::hash::Hash)]
-pub struct AccountAddress;
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, std::hash::Hash)]
-pub struct IdentityAddress;
-
-#[derive(Clone, PartialEq, Eq, std::hash::Hash, derive_more::Debug)]
-#[debug("{name}")]
-pub struct AccountAddressOrIdentityAddress {
+#[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash, derive_more::Display)]
+#[display("{name}")]
+pub struct AbstractAddress<T: EntityKindSpecifier> {
+    phantom: PhantomData<T>,
     pub name: String,
-    id: Uuid,
 }
-impl AccountAddressOrIdentityAddress {
-    fn with_details(name: impl AsRef<str>, id: Uuid) -> Self {
+impl<T: EntityKindSpecifier> From<String> for AbstractAddress<T> {
+    fn from(value: String) -> Self {
+        Self::new(value)
+    }
+}
+impl<T: EntityKindSpecifier> AbstractAddress<T> {
+    pub fn entity_kind() -> CAP26EntityKind {
+        T::entity_kind()
+    }
+
+    pub fn new(name: impl AsRef<str>) -> Self {
         Self {
+            phantom: PhantomData,
             name: name.as_ref().to_owned(),
-            id,
         }
     }
-    pub fn new(name: impl AsRef<str>) -> Self {
-        Self::with_details(name, Uuid::new_v4())
-    }
 }
-impl HasSampleValues for AccountAddressOrIdentityAddress {
+impl<T: EntityKindSpecifier> HasSampleValues for AbstractAddress<T> {
     fn sample() -> Self {
-        Self::with_details("Alice", Uuid::from_bytes([0xac; 16]))
+        Self::new("Alice")
     }
     fn sample_other() -> Self {
-        Self::with_details("Bob", Uuid::from_bytes([0xc0; 16]))
+        Self::new("Bob")
     }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
-pub struct Entity {
-    pub address: AccountAddressOrIdentityAddress,
-    pub security_state: EntitySecurityState,
+pub struct AccountAddressTag;
+
+#[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
+pub struct IdentityAddressTag;
+
+pub trait EntityKindSpecifier {
+    fn entity_kind() -> CAP26EntityKind;
+}
+impl EntityKindSpecifier for AccountAddressTag {
+    fn entity_kind() -> CAP26EntityKind {
+        CAP26EntityKind::Account
+    }
+}
+impl EntityKindSpecifier for IdentityAddressTag {
+    fn entity_kind() -> CAP26EntityKind {
+        CAP26EntityKind::Identity
+    }
 }
 
-impl HasSampleValues for Entity {
+impl<T: EntityKindSpecifier> EntityKindSpecifier for AbstractAddress<T> {
+    fn entity_kind() -> CAP26EntityKind {
+        T::entity_kind()
+    }
+}
+
+pub type AccountAddress = AbstractAddress<AccountAddressTag>;
+pub type IdentityAddress = AbstractAddress<IdentityAddressTag>;
+
+#[derive(Clone, PartialEq, Eq, std::hash::Hash, derive_more::Display)]
+pub enum AddressOfAccountOrPersona {
+    #[display("acco_{_0}")]
+    Account(AccountAddress),
+    #[display("ident_{_0}")]
+    Identity(IdentityAddress),
+}
+impl std::fmt::Debug for AddressOfAccountOrPersona {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.to_string())
+    }
+}
+impl HasSampleValues for AddressOfAccountOrPersona {
+    fn sample() -> Self {
+        Self::Account(AccountAddress::sample())
+    }
+    fn sample_other() -> Self {
+        Self::Identity(IdentityAddress::sample())
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
+pub enum AccountOrPersona {
+    AccountEntity(Account),
+    PersonaEntity(Persona),
+}
+
+pub trait IsEntity: Into<AccountOrPersona> + Clone {
+    type Address: Clone + Into<AddressOfAccountOrPersona> + EntityKindSpecifier;
+
+    fn new(name: impl AsRef<str>, security_state: impl Into<EntitySecurityState>) -> Self;
+
+    fn entity_address(&self) -> Self::Address;
+    fn kind() -> CAP26EntityKind {
+        Self::Address::entity_kind()
+    }
+    fn security_state(&self) -> EntitySecurityState;
+    fn address(&self) -> AddressOfAccountOrPersona {
+        self.entity_address().clone().into()
+    }
+    fn e0() -> Self;
+    fn e1() -> Self;
+    fn e2() -> Self;
+    fn e3() -> Self;
+    fn e4() -> Self;
+    fn e5() -> Self;
+    fn e6() -> Self;
+    fn e7() -> Self;
+
+    fn securified_mainnet(
+        index: u32,
+        name: impl AsRef<str>,
+        make_matrix: fn(u32) -> MatrixOfFactorInstances,
+    ) -> Self {
+        Self::new(name, make_matrix(index))
+    }
+
+    fn unsecurified_mainnet(
+        index: u32,
+        name: impl AsRef<str>,
+        factor_source_id: FactorSourceID,
+    ) -> Self {
+        Self::new(
+            name,
+            EntitySecurityState::Unsecured(HierarchicalDeterministicFactorInstance::mainnet_tx(
+                Self::kind(),
+                index,
+                factor_source_id,
+            )),
+        )
+    }
+}
+
+#[derive(Clone, PartialEq, Eq, std::hash::Hash, derive_more::Debug)]
+#[debug("{}", self.address())]
+pub struct AbstractEntity<A: Clone + Into<AddressOfAccountOrPersona> + EntityKindSpecifier> {
+    address: A,
+    pub security_state: EntitySecurityState,
+}
+pub type Account = AbstractEntity<AccountAddress>;
+impl IsEntity for Account {
+    fn new(name: impl AsRef<str>, security_state: impl Into<EntitySecurityState>) -> Self {
+        Self {
+            address: AccountAddress::from(name.as_ref().to_owned()),
+            security_state: security_state.into(),
+        }
+    }
+    type Address = AccountAddress;
+    fn security_state(&self) -> EntitySecurityState {
+        self.security_state.clone()
+    }
+    fn entity_address(&self) -> Self::Address {
+        self.address.clone()
+    }
+    fn e0() -> Self {
+        Self::a0()
+    }
+    fn e1() -> Self {
+        Self::a1()
+    }
+    fn e2() -> Self {
+        Self::a2()
+    }
+    fn e3() -> Self {
+        Self::a3()
+    }
+    fn e4() -> Self {
+        Self::a4()
+    }
+    fn e5() -> Self {
+        Self::a5()
+    }
+    fn e6() -> Self {
+        Self::a6()
+    }
+    fn e7() -> Self {
+        Self::a7()
+    }
+}
+
+pub type Persona = AbstractEntity<IdentityAddress>;
+impl IsEntity for Persona {
+    fn new(name: impl AsRef<str>, security_state: impl Into<EntitySecurityState>) -> Self {
+        Self {
+            address: IdentityAddress::from(name.as_ref().to_owned()),
+            security_state: security_state.into(),
+        }
+    }
+    type Address = IdentityAddress;
+    fn security_state(&self) -> EntitySecurityState {
+        self.security_state.clone()
+    }
+    fn entity_address(&self) -> Self::Address {
+        self.address.clone()
+    }
+    fn e0() -> Self {
+        Self::p0()
+    }
+    fn e1() -> Self {
+        Self::p1()
+    }
+    fn e2() -> Self {
+        Self::p2()
+    }
+    fn e3() -> Self {
+        Self::p3()
+    }
+    fn e4() -> Self {
+        Self::p4()
+    }
+    fn e5() -> Self {
+        Self::p5()
+    }
+    fn e6() -> Self {
+        Self::p6()
+    }
+    fn e7() -> Self {
+        Self::p7()
+    }
+}
+
+impl<T: Clone + Into<AddressOfAccountOrPersona> + EntityKindSpecifier> EntityKindSpecifier
+    for AbstractEntity<T>
+{
+    fn entity_kind() -> CAP26EntityKind {
+        T::entity_kind()
+    }
+}
+
+impl<T: Clone + Into<AddressOfAccountOrPersona> + EntityKindSpecifier> AbstractEntity<T> {
+    pub fn address(&self) -> AddressOfAccountOrPersona {
+        self.address.clone().into()
+    }
+}
+
+impl From<Account> for AccountOrPersona {
+    fn from(value: Account) -> Self {
+        Self::AccountEntity(value)
+    }
+}
+
+impl From<Persona> for AccountOrPersona {
+    fn from(value: Persona) -> Self {
+        Self::PersonaEntity(value)
+    }
+}
+
+impl From<AccountAddress> for AddressOfAccountOrPersona {
+    fn from(value: AccountAddress) -> Self {
+        Self::Account(value)
+    }
+}
+
+impl From<IdentityAddress> for AddressOfAccountOrPersona {
+    fn from(value: IdentityAddress) -> Self {
+        Self::Identity(value)
+    }
+}
+
+impl HasSampleValues for Account {
     fn sample() -> Self {
         Self::sample_unsecurified()
     }
@@ -398,7 +645,18 @@ impl HasSampleValues for Entity {
     }
 }
 
-impl Entity {
+impl HasSampleValues for Persona {
+    fn sample() -> Self {
+        Self::sample_unsecurified()
+    }
+    fn sample_other() -> Self {
+        Self::sample_securified()
+    }
+}
+
+impl<T: Clone + Into<AddressOfAccountOrPersona> + EntityKindSpecifier + From<String>>
+    AbstractEntity<T>
+{
     /// mainnet
     pub(crate) fn sample_unsecurified() -> Self {
         Self::unsecurified_mainnet(0, "Alice", FactorSourceID::fs0())
@@ -406,20 +664,17 @@ impl Entity {
 
     /// mainnet
     pub(crate) fn sample_securified() -> Self {
-        type F = FactorSourceID;
         Self::securified_mainnet(6, "Grace", |idx| {
-            let fi = FactorInstance::f(idx);
-            MatrixOfFactorInstances::new(
-                [F::fs0(), F::fs3(), F::fs5()].map(&fi),
-                2,
-                [F::fs1(), F::fs4()].map(&fi),
-            )
+            MatrixOfFactorInstances::m6(HierarchicalDeterministicFactorInstance::f(
+                Self::entity_kind(),
+                idx,
+            ))
         })
     }
 
     fn new(name: impl AsRef<str>, security_state: impl Into<EntitySecurityState>) -> Self {
         Self {
-            address: AccountAddressOrIdentityAddress::new(name),
+            address: T::from(name.as_ref().to_owned()),
             security_state: security_state.into(),
         }
     }
@@ -439,7 +694,8 @@ impl Entity {
     ) -> Self {
         Self::new(
             name,
-            EntitySecurityState::Unsecured(FactorInstance::account_mainnet_tx(
+            EntitySecurityState::Unsecured(HierarchicalDeterministicFactorInstance::mainnet_tx(
+                Self::entity_kind(),
                 index,
                 factor_source_id,
             )),
@@ -505,13 +761,13 @@ where
     }
 }
 
-pub type MatrixOfFactorInstances = MatrixOfFactors<FactorInstance>;
+pub type MatrixOfFactorInstances = MatrixOfFactors<HierarchicalDeterministicFactorInstance>;
 pub type MatrixOfFactorSources = MatrixOfFactors<FactorSource>;
 
 /// For unsecurified entities we map single factor -> single threshold factor.
 /// Which is used by ROLA.
-impl From<FactorInstance> for MatrixOfFactorInstances {
-    fn from(value: FactorInstance) -> Self {
+impl From<HierarchicalDeterministicFactorInstance> for MatrixOfFactorInstances {
+    fn from(value: HierarchicalDeterministicFactorInstance) -> Self {
         Self {
             threshold: 1,
             threshold_factors: vec![value],
@@ -525,7 +781,8 @@ pub trait HasSampleValues {
     fn sample_other() -> Self;
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash, Getters)]
+#[derive(Clone, PartialEq, Eq, std::hash::Hash, Getters, derive_more::Debug)]
+#[debug("TXID({:#?})", hash.id.to_string()[..6].to_owned())]
 pub struct IntentHash {
     hash: Hash,
 }
@@ -551,18 +808,123 @@ impl HasSampleValues for IntentHash {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
+#[derive(Clone, PartialEq, Eq, Debug, Hash)]
+pub struct TransactionManifest {
+    addresses_of_accounts_requiring_auth: Vec<AccountAddress>,
+    addresses_of_personas_requiring_auth: Vec<IdentityAddress>,
+}
+
+impl TransactionManifest {
+    pub fn new(
+        addresses_of_accounts_requiring_auth: impl IntoIterator<Item = AccountAddress>,
+        addresses_of_personas_requiring_auth: impl IntoIterator<Item = IdentityAddress>,
+    ) -> Self {
+        Self {
+            addresses_of_accounts_requiring_auth: addresses_of_accounts_requiring_auth
+                .into_iter()
+                .collect_vec(),
+            addresses_of_personas_requiring_auth: addresses_of_personas_requiring_auth
+                .into_iter()
+                .collect_vec(),
+        }
+    }
+    pub fn summary(&self) -> ManifestSummary {
+        ManifestSummary::new(
+            self.addresses_of_accounts_requiring_auth.clone(),
+            self.addresses_of_personas_requiring_auth.clone(),
+        )
+    }
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Hash)]
 pub struct TransactionIntent {
     pub intent_hash: IntentHash,
-    pub entities_requiring_auth: Vec<Entity>, // should be a set but Sets are not `Hash`.
+    pub(crate) manifest: TransactionManifest,
 }
 
 impl TransactionIntent {
-    pub fn new(entities_requiring_auth: impl IntoIterator<Item = Entity>) -> Self {
+    fn with(manifest: TransactionManifest) -> Self {
         Self {
+            manifest,
             intent_hash: IntentHash::generate(),
-            entities_requiring_auth: entities_requiring_auth.into_iter().collect_vec(),
         }
+    }
+    pub fn new(
+        addresses_of_accounts_requiring_auth: impl IntoIterator<Item = AccountAddress>,
+        addresses_of_personas_requiring_auth: impl IntoIterator<Item = IdentityAddress>,
+    ) -> Self {
+        Self::with(TransactionManifest::new(
+            addresses_of_accounts_requiring_auth,
+            addresses_of_personas_requiring_auth,
+        ))
+    }
+    pub fn address_of<'a, 'p>(
+        accounts_requiring_auth: impl IntoIterator<Item = &'a Account>,
+        personas_requiring_auth: impl IntoIterator<Item = &'p Persona>,
+    ) -> Self {
+        Self::new(
+            accounts_requiring_auth
+                .into_iter()
+                .map(|a| a.entity_address())
+                .collect_vec(),
+            personas_requiring_auth
+                .into_iter()
+                .map(|a| a.entity_address())
+                .collect_vec(),
+        )
+    }
+}
+
+pub struct ManifestSummary {
+    pub addresses_of_accounts_requiring_auth: Vec<AccountAddress>,
+    pub addresses_of_personas_requiring_auth: Vec<IdentityAddress>,
+}
+
+impl ManifestSummary {
+    pub fn new(
+        addresses_of_accounts_requiring_auth: impl IntoIterator<Item = AccountAddress>,
+        addresses_of_personas_requiring_auth: impl IntoIterator<Item = IdentityAddress>,
+    ) -> Self {
+        Self {
+            addresses_of_accounts_requiring_auth: addresses_of_accounts_requiring_auth
+                .into_iter()
+                .collect_vec(),
+            addresses_of_personas_requiring_auth: addresses_of_personas_requiring_auth
+                .into_iter()
+                .collect_vec(),
+        }
+    }
+}
+
+pub struct Profile {
+    pub factor_sources: IndexSet<FactorSource>,
+    pub accounts: HashMap<AccountAddress, Account>,
+    pub personas: HashMap<IdentityAddress, Persona>,
+}
+
+impl Profile {
+    pub fn new<'a, 'p>(
+        factor_sources: IndexSet<FactorSource>,
+        accounts: impl IntoIterator<Item = &'a Account>,
+        personas: impl IntoIterator<Item = &'p Persona>,
+    ) -> Self {
+        Self {
+            factor_sources,
+            accounts: accounts
+                .into_iter()
+                .map(|a| (a.entity_address(), a.clone()))
+                .collect::<HashMap<_, _>>(),
+            personas: personas
+                .into_iter()
+                .map(|p| (p.entity_address(), p.clone()))
+                .collect::<HashMap<_, _>>(),
+        }
+    }
+    pub fn account_by_address(&self, address: AccountAddress) -> Result<Account> {
+        self.accounts
+            .get(&address)
+            .ok_or(CommonError::UnknownAccount)
+            .cloned()
     }
 }
 
@@ -581,7 +943,7 @@ impl Signature {
     /// deterministic manner.
     pub fn produced_by(
         intent_hash: IntentHash,
-        factor_instance: impl Into<FactorInstance>,
+        factor_instance: impl Into<HierarchicalDeterministicFactorInstance>,
     ) -> Self {
         let factor_instance = factor_instance.into();
 
@@ -616,4 +978,10 @@ pub enum CommonError {
 
     #[error("Empty FactorSources list")]
     FactorSourcesOfKindEmptyFactors,
+
+    #[error("Unknown account")]
+    UnknownAccount,
+
+    #[error("Unknown persona")]
+    UnknownPersona,
 }

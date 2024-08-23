@@ -9,7 +9,7 @@ pub struct InvalidTransactionIfSkipped {
     pub intent_hash: IntentHash,
 
     /// The entities in the transaction which would fail auth.
-    entities_which_would_fail_auth: Vec<AccountAddressOrIdentityAddress>,
+    entities_which_would_fail_auth: Vec<AddressOfAccountOrPersona>,
 }
 
 impl InvalidTransactionIfSkipped {
@@ -20,7 +20,7 @@ impl InvalidTransactionIfSkipped {
     /// Panics if `entities_which_would_fail_auth` is empty.
     pub fn new(
         intent_hash: IntentHash,
-        entities_which_would_fail_auth: impl IntoIterator<Item = AccountAddressOrIdentityAddress>,
+        entities_which_would_fail_auth: impl IntoIterator<Item = AddressOfAccountOrPersona>,
     ) -> Self {
         let entities_which_would_fail_auth =
             entities_which_would_fail_auth.into_iter().collect_vec();
@@ -44,7 +44,7 @@ impl InvalidTransactionIfSkipped {
         }
     }
 
-    pub fn entities_which_would_fail_auth(&self) -> IndexSet<AccountAddressOrIdentityAddress> {
+    pub fn entities_which_would_fail_auth(&self) -> IndexSet<AddressOfAccountOrPersona> {
         IndexSet::from_iter(self.entities_which_would_fail_auth.clone())
     }
 }
@@ -68,8 +68,8 @@ mod tests {
         Sut::new(
             IntentHash::sample(),
             [
-                AccountAddressOrIdentityAddress::sample(),
-                AccountAddressOrIdentityAddress::sample(),
+                AddressOfAccountOrPersona::sample(),
+                AddressOfAccountOrPersona::sample(),
             ],
         );
     }
@@ -77,8 +77,8 @@ mod tests {
     #[test]
     fn new() {
         let entities = [
-            AccountAddressOrIdentityAddress::sample(),
-            AccountAddressOrIdentityAddress::sample_other(),
+            AddressOfAccountOrPersona::sample(),
+            AddressOfAccountOrPersona::sample_other(),
         ];
         let sut = Sut::new(IntentHash::sample(), entities.clone());
         assert_eq!(

@@ -11,7 +11,7 @@ pub struct PetitionFactorsState {
     signed: RefCell<PetitionFactorsSubState<HDSignature>>,
 
     /// Factors that user skipped.
-    skipped: RefCell<PetitionFactorsSubState<FactorInstance>>,
+    skipped: RefCell<PetitionFactorsSubState<HierarchicalDeterministicFactorInstance>>,
 }
 
 impl PetitionFactorsState {
@@ -24,7 +24,9 @@ impl PetitionFactorsState {
     }
 
     /// A reference to the skipped factors so far.
-    pub(super) fn skipped(&self) -> Ref<PetitionFactorsSubState<FactorInstance>> {
+    pub(super) fn skipped(
+        &self,
+    ) -> Ref<PetitionFactorsSubState<HierarchicalDeterministicFactorInstance>> {
         self.skipped.borrow()
     }
 
@@ -39,7 +41,7 @@ impl PetitionFactorsState {
     }
 
     /// A set factors have been skipped so far.
-    pub fn all_skipped(&self) -> IndexSet<FactorInstance> {
+    pub fn all_skipped(&self) -> IndexSet<HierarchicalDeterministicFactorInstance> {
         self.skipped().snapshot()
     }
 
@@ -48,7 +50,7 @@ impl PetitionFactorsState {
     fn assert_not_referencing_factor_source(&self, factor_source_id: FactorSourceID) {
         assert!(
             !self.references_factor_source_by_id(factor_source_id),
-            "Programmer error! Factor source {:?} already used, should only be referenced once.",
+            "Programmer error! Factor source {:#?} already used, should only be referenced once.",
             factor_source_id,
         );
     }
@@ -56,7 +58,11 @@ impl PetitionFactorsState {
     /// # Panics
     /// Panics if this factor source has already been skipped or signed and
     /// this is not a simulation.
-    pub(crate) fn did_skip(&self, factor_instance: &FactorInstance, simulated: bool) {
+    pub(crate) fn did_skip(
+        &self,
+        factor_instance: &HierarchicalDeterministicFactorInstance,
+        simulated: bool,
+    ) {
         if !simulated {
             self.assert_not_referencing_factor_source(factor_instance.factor_source_id);
         }
@@ -94,7 +100,7 @@ mod tests {
     #[should_panic]
     fn skipping_twice_panics() {
         let sut = Sut::new();
-        let fi = FactorInstance::sample();
+        let fi = HierarchicalDeterministicFactorInstance::sample();
         sut.did_skip(&fi, false);
         sut.did_skip(&fi, false);
     }
@@ -115,13 +121,11 @@ mod tests {
 
         let intent_hash = IntentHash::sample();
 
-        let factor_instance = FactorInstance::account_mainnet_tx(0, FactorSourceID::fs0());
+        let factor_instance =
+            HierarchicalDeterministicFactorInstance::mainnet_tx_account(0, FactorSourceID::fs0());
         let sign_input = HDSignatureInput::new(
             intent_hash,
-            OwnedFactorInstance::new(
-                AccountAddressOrIdentityAddress::sample(),
-                factor_instance.clone(),
-            ),
+            OwnedFactorInstance::new(AddressOfAccountOrPersona::sample(), factor_instance.clone()),
         );
         let signature = HDSignature::produced_signing_with_input(sign_input);
 
@@ -136,16 +140,14 @@ mod tests {
         let sut = Sut::new();
 
         let intent_hash = IntentHash::sample();
-        let factor_instance = FactorInstance::account_mainnet_tx(0, FactorSourceID::fs0());
+        let factor_instance =
+            HierarchicalDeterministicFactorInstance::mainnet_tx_account(0, FactorSourceID::fs0());
 
         sut.did_skip(&factor_instance, false);
 
         let sign_input = HDSignatureInput::new(
             intent_hash,
-            OwnedFactorInstance::new(
-                AccountAddressOrIdentityAddress::sample(),
-                factor_instance.clone(),
-            ),
+            OwnedFactorInstance::new(AddressOfAccountOrPersona::sample(), factor_instance.clone()),
         );
 
         let signature = HDSignature::produced_signing_with_input(sign_input);

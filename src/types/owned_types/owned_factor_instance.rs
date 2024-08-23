@@ -2,20 +2,20 @@ use std::borrow::Borrow;
 
 use crate::prelude::*;
 
-/// A `FactorInstance` with a known owner - an account or persona.
-pub type OwnedFactorInstance = Owned<FactorInstance>;
+/// A `HierarchicalDeterministicFactorInstance` with a known owner - an account or persona.
+pub type OwnedFactorInstance = Owned<HierarchicalDeterministicFactorInstance>;
 
 impl OwnedFactorInstance {
     /// Constructs a new `OwnedFactorInstance`.
     pub fn owned_factor_instance(
-        owner: AccountAddressOrIdentityAddress,
-        factor_instance: FactorInstance,
+        owner: AddressOfAccountOrPersona,
+        factor_instance: HierarchicalDeterministicFactorInstance,
     ) -> Self {
         Self::new(owner, factor_instance)
     }
 
-    /// The owned `FactorInstance`, the value of this `OwnedFactorInstance`.
-    pub fn factor_instance(&self) -> &FactorInstance {
+    /// The owned `HierarchicalDeterministicFactorInstance`, the value of this `OwnedFactorInstance`.
+    pub fn factor_instance(&self) -> &HierarchicalDeterministicFactorInstance {
         &self.value
     }
 
@@ -27,7 +27,7 @@ impl OwnedFactorInstance {
     }
 }
 
-impl From<OwnedFactorInstance> for FactorInstance {
+impl From<OwnedFactorInstance> for HierarchicalDeterministicFactorInstance {
     fn from(value: OwnedFactorInstance) -> Self {
         value.value
     }

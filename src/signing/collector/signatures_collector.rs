@@ -24,9 +24,11 @@ pub struct SignaturesCollector {
 }
 
 impl SignaturesCollector {
-    pub fn new(
+    /// Used by our tests. But Sargon will typically wanna use `SignaturesCollector::new` and passing
+    /// it a
+    pub(crate) fn with(
         all_factor_sources_in_profile: IndexSet<FactorSource>,
-        transactions: IndexSet<TransactionIntent>,
+        transactions: IndexSet<TXToSign>,
         interactors: Arc<dyn SignatureCollectingInteractors>,
     ) -> Self {
         let preprocessor = SignaturesCollectorPreprocessor::new(transactions);
@@ -39,6 +41,77 @@ impl SignaturesCollector {
             dependencies,
             state: RefCell::new(state),
         }
+    }
+
+    pub fn with_signers_extraction<F>(
+        all_factor_sources_in_profile: IndexSet<FactorSource>,
+        transactions: IndexSet<TransactionIntent>,
+        interactors: Arc<dyn SignatureCollectingInteractors>,
+        extract_signers: F,
+    ) -> Result<Self>
+    where
+        F: Fn(TransactionIntent) -> Result<TXToSign>,
+    {
+        let transactions = transactions
+            .into_iter()
+            .map(extract_signers)
+            .collect::<Result<IndexSet<TXToSign>>>()?;
+
+        let collector = Self::with(all_factor_sources_in_profile, transactions, interactors);
+
+        Ok(collector)
+    }
+
+    pub fn new(
+        transactions: IndexSet<TransactionIntent>,
+        interactors: Arc<dyn SignatureCollectingInteractors>,
+        profile: &Profile,
+    ) -> Result<Self> {
+        Self::with_signers_extraction(
+            profile.factor_sources.clone(),
+            transactions,
+            interactors,
+            |i| TXToSign::extracting_from_intent_and_profile(&i, profile),
+        )
+    }
+}
+
+impl TXToSign {
+    pub fn extracting_from_intent_and_profile(
+        intent: &TransactionIntent,
+        profile: &Profile,
+    ) -> Result<Self> {
+        let intent_hash = intent.intent_hash.clone();
+        let summary = intent.manifest_summary();
+        let mut entities_requiring_auth: IndexSet<AccountOrPersona> = IndexSet::new();
+
+        let accounts = summary
+            .addresses_of_accounts_requiring_auth
+            .into_iter()
+            .map(|a| profile.account_by_address(a))
+            .collect::<Result<Vec<_>>>()?;
+
+        entities_requiring_auth.extend(
+            accounts
+                .into_iter()
+                .map(AccountOrPersona::from)
+                .collect_vec(),
+        );
+
+        let personas = summary
+            .addresses_of_personas_requiring_auth
+            .into_iter()
+            .map(|a| profile.persona_by_address(a))
+            .collect::<Result<Vec<_>>>()?;
+
+        entities_requiring_auth.extend(
+            personas
+                .into_iter()
+                .map(AccountOrPersona::from)
+                .collect_vec(),
+        );
+
+        Ok(Self::with(intent_hash, entities_requiring_auth))
     }
 }
 
@@ -81,6 +154,8 @@ impl SignaturesCollector {
     async fn sign_with_factors(&self) -> Result<()> {
         let factors_of_kind = self.dependencies.factors_of_kind.clone();
         for factor_sources_of_kind in factors_of_kind.into_iter() {
+            println!("🔮 state: {:#?}", &self.state.borrow());
+
             self.sign_with_factors_of_kind(factor_sources_of_kind)
                 .await?;
 
@@ -171,7 +246,263 @@ impl SignaturesCollector {
         _ = self
             .sign_with_factors() // in decreasing "friction order"
             .await
-            .inspect_err(|e| eprintln!("Failed to use factor sources: {:?}", e));
+            .inspect_err(|e| eprintln!("Failed to use factor sources: {:#?}", e));
         self.state.into_inner().petitions.into_inner().outcome()
+    }
+}
+
+#[cfg(test)]
+impl SignaturesCollector {
+    /// Used by tests
+    pub(crate) fn petitions(self) -> Petitions {
+        self.state.into_inner().petitions.into_inner()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use std::iter;
+
+    use super::*;
+
+    #[test]
+    fn invalid_profile_unknown_account() {
+        let res = SignaturesCollector::new(
+            IndexSet::from_iter([TransactionIntent::new([Account::a0().entity_address()], [])]),
+            Arc::new(TestSignatureCollectingInteractors::new(
+                SimulatedUser::prudent_no_fail(),
+            )),
+            &Profile::new(IndexSet::new(), [], []),
+        );
+        assert!(matches!(res, Err(CommonError::UnknownAccount)));
+    }
+
+    #[test]
+    fn invalid_profile_unknown_persona() {
+        let res = SignaturesCollector::new(
+            IndexSet::from_iter([TransactionIntent::new([], [Persona::p0().entity_address()])]),
+            Arc::new(TestSignatureCollectingInteractors::new(
+                SimulatedUser::prudent_no_fail(),
+            )),
+            &Profile::new(IndexSet::new(), [], []),
+        );
+        assert!(matches!(res, Err(CommonError::UnknownPersona)));
+    }
+
+    #[actix_rt::test]
+    async fn valid_profile() {
+        let factors_sources = FactorSource::all();
+        let persona = Persona::p0();
+        let collector = SignaturesCollector::new(
+            IndexSet::from_iter([TransactionIntent::new([], [persona.entity_address()])]),
+            Arc::new(TestSignatureCollectingInteractors::new(
+                SimulatedUser::prudent_no_fail(),
+            )),
+            &Profile::new(factors_sources, [], [&persona]),
+        )
+        .unwrap();
+        let outcome = collector.collect_signatures().await;
+        assert!(outcome.successful())
+    }
+
+    #[test]
+    fn test_profile() {
+        let factor_sources = &FactorSource::all();
+        let a0 = &Account::a0();
+        let a1 = &Account::a1();
+        let a2 = &Account::a2();
+        let a6 = &Account::a6();
+
+        let p0 = &Persona::p0();
+        let p1 = &Persona::p1();
+        let p2 = &Persona::p2();
+        let p6 = &Persona::p6();
+
+        let t0 = TransactionIntent::address_of([a0, a1], [p0, p1]);
+        let t1 = TransactionIntent::address_of([a0, a1, a2], []);
+        let t2 = TransactionIntent::address_of([], [p0, p1, p2]);
+        let t3 = TransactionIntent::address_of([a6], [p6]);
+
+        let profile = Profile::new(factor_sources.clone(), [a0, a1, a2, a6], [p0, p1, p2, p6]);
+
+        let collector = SignaturesCollector::new(
+            IndexSet::<TransactionIntent>::from_iter([
+                t0.clone(),
+                t1.clone(),
+                t2.clone(),
+                t3.clone(),
+            ]),
+            Arc::new(TestSignatureCollectingInteractors::new(
+                SimulatedUser::prudent_no_fail(),
+            )),
+            &profile,
+        )
+        .unwrap();
+
+        let petitions = collector.petitions();
+
+        assert_eq!(petitions.txid_to_petition.borrow().len(), 4);
+
+        {
+            let petitions_ref = petitions.txid_to_petition.borrow();
+            let petition = petitions_ref.get(&t3.intent_hash).unwrap();
+            let for_entities = petition.for_entities.borrow().clone();
+            let pet6 = for_entities.get(&a6.address()).unwrap();
+
+            let paths6 = pet6
+                .all_factor_instances()
+                .iter()
+                .map(|f| f.factor_instance().derivation_path())
+                .collect_vec();
+
+            pretty_assertions::assert_eq!(
+                paths6,
+                iter::repeat_n(
+                    DerivationPath::new(
+                        NetworkID::Mainnet,
+                        CAP26EntityKind::Account,
+                        CAP26KeyKind::T9n,
+                        6
+                    ),
+                    5
+                )
+                .collect_vec()
+            );
+        }
+
+        let assert_petition = |t: &TransactionIntent,
+                               threshold_factors: HashMap<
+            AddressOfAccountOrPersona,
+            HashSet<FactorSourceID>,
+        >,
+                               override_factors: HashMap<
+            AddressOfAccountOrPersona,
+            HashSet<FactorSourceID>,
+        >| {
+            let petitions_ref = petitions.txid_to_petition.borrow();
+            let petition = petitions_ref.get(&t.intent_hash).unwrap();
+            assert_eq!(petition.intent_hash, t.intent_hash);
+
+            let mut addresses = threshold_factors.keys().collect::<HashSet<_>>();
+            addresses.extend(override_factors.keys().collect::<HashSet<_>>());
+
+            assert_eq!(
+                petition
+                    .for_entities
+                    .borrow()
+                    .keys()
+                    .collect::<HashSet<_>>(),
+                addresses
+            );
+
+            assert!(petition
+                .for_entities
+                .borrow()
+                .iter()
+                .all(|(a, p)| { p.entity == *a }));
+
+            assert!(petition
+                .for_entities
+                .borrow()
+                .iter()
+                .all(|(_, p)| { p.intent_hash == t.intent_hash }));
+
+            for (k, v) in petition.for_entities.borrow().iter() {
+                let threshold = threshold_factors.get(k);
+                if let Some(actual_threshold) = &v.threshold_factors {
+                    let threshold = threshold.unwrap().clone();
+                    assert_eq!(
+                        actual_threshold
+                            .borrow()
+                            .factor_instances()
+                            .into_iter()
+                            .map(|f| f.factor_source_id)
+                            .collect::<HashSet<_>>(),
+                        threshold
+                    );
+                } else {
+                    assert!(threshold.is_none());
+                }
+
+                let override_ = override_factors.get(k);
+                if let Some(actual_override) = &v.override_factors {
+                    let override_ = override_.unwrap().clone();
+                    assert_eq!(
+                        actual_override
+                            .borrow()
+                            .factor_instances()
+                            .into_iter()
+                            .map(|f| f.factor_source_id)
+                            .collect::<HashSet<_>>(),
+                        override_
+                    );
+                } else {
+                    assert!(override_.is_none());
+                }
+            }
+        };
+        assert_petition(
+            &t0,
+            HashMap::from_iter([
+                (a0.address(), HashSet::from_iter([FactorSourceID::fs0()])),
+                (a1.address(), HashSet::from_iter([FactorSourceID::fs1()])),
+                (p0.address(), HashSet::from_iter([FactorSourceID::fs0()])),
+                (p1.address(), HashSet::from_iter([FactorSourceID::fs1()])),
+            ]),
+            HashMap::new(),
+        );
+
+        assert_petition(
+            &t1,
+            HashMap::from_iter([
+                (a0.address(), HashSet::from_iter([FactorSourceID::fs0()])),
+                (a1.address(), HashSet::from_iter([FactorSourceID::fs1()])),
+                (a2.address(), HashSet::from_iter([FactorSourceID::fs0()])),
+            ]),
+            HashMap::new(),
+        );
+
+        assert_petition(
+            &t2,
+            HashMap::from_iter([
+                (p0.address(), HashSet::from_iter([FactorSourceID::fs0()])),
+                (p1.address(), HashSet::from_iter([FactorSourceID::fs1()])),
+                (p2.address(), HashSet::from_iter([FactorSourceID::fs0()])),
+            ]),
+            HashMap::new(),
+        );
+
+        assert_petition(
+            &t3,
+            HashMap::from_iter([
+                (
+                    a6.address(),
+                    HashSet::from_iter([
+                        FactorSourceID::fs0(),
+                        FactorSourceID::fs3(),
+                        FactorSourceID::fs5(),
+                    ]),
+                ),
+                (
+                    p6.address(),
+                    HashSet::from_iter([
+                        FactorSourceID::fs0(),
+                        FactorSourceID::fs3(),
+                        FactorSourceID::fs5(),
+                    ]),
+                ),
+            ]),
+            HashMap::from_iter([
+                (
+                    a6.address(),
+                    HashSet::from_iter([FactorSourceID::fs1(), FactorSourceID::fs4()]),
+                ),
+                (
+                    p6.address(),
+                    HashSet::from_iter([FactorSourceID::fs1(), FactorSourceID::fs4()]),
+                ),
+            ]),
+        );
     }
 }

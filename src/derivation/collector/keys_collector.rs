@@ -110,22 +110,28 @@ impl KeysCollector {
         _ = self
             .derive_with_factors() // in decreasing "friction order"
             .await
-            .inspect_err(|e| eprintln!("Failed to use factor sources: {:?}", e));
+            .inspect_err(|e| eprintln!("Failed to use factor sources: {:#?}", e));
         self.state.into_inner().keyrings.into_inner().outcome()
     }
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct KeyDerivationOutcome {
-    pub factors_by_source: IndexMap<FactorSourceID, IndexSet<FactorInstance>>,
+    pub factors_by_source:
+        IndexMap<FactorSourceID, IndexSet<HierarchicalDeterministicFactorInstance>>,
 }
 impl KeyDerivationOutcome {
-    pub fn new(factors_by_source: IndexMap<FactorSourceID, IndexSet<FactorInstance>>) -> Self {
+    pub fn new(
+        factors_by_source: IndexMap<
+            FactorSourceID,
+            IndexSet<HierarchicalDeterministicFactorInstance>,
+        >,
+    ) -> Self {
         Self { factors_by_source }
     }
 
     /// ALL factor instances derived by the KeysCollector
-    pub fn all_factors(&self) -> IndexSet<FactorInstance> {
+    pub fn all_factors(&self) -> IndexSet<HierarchicalDeterministicFactorInstance> {
         self.factors_by_source
             .clone()
             .into_iter()

@@ -1,17 +1,38 @@
 use crate::prelude::*;
 
 /// An immutable "snapshot" of `PetitionFactorsState`
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, derive_more::Debug)]
+#[debug("{}", self.debug_str())]
 pub(super) struct PetitionFactorsStateSnapshot {
     /// Factors that have signed.
     signed: IndexSet<HDSignature>,
 
     /// Factors that user skipped.
-    skipped: IndexSet<FactorInstance>,
+    skipped: IndexSet<HierarchicalDeterministicFactorInstance>,
 }
 
 impl PetitionFactorsStateSnapshot {
-    pub(super) fn new(signed: IndexSet<HDSignature>, skipped: IndexSet<FactorInstance>) -> Self {
+    #[allow(unused)]
+    fn debug_str(&self) -> String {
+        format!(
+            "signatures: {:#?}, skipped: {:#?}",
+            self.signed
+                .clone()
+                .into_iter()
+                .map(|s| format!("{:#?}", s))
+                .join(", "),
+            self.skipped
+                .clone()
+                .into_iter()
+                .map(|s| format!("{:#?}", s))
+                .join(", ")
+        )
+    }
+
+    pub(super) fn new(
+        signed: IndexSet<HDSignature>,
+        skipped: IndexSet<HierarchicalDeterministicFactorInstance>,
+    ) -> Self {
         Self { signed, skipped }
     }
     pub(super) fn prompted_count(&self) -> i8 {

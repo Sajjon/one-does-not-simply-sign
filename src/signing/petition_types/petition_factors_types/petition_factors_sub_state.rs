@@ -38,7 +38,7 @@ pub trait FactorSourceReferencing: std::hash::Hash + PartialEq + Eq + Clone {
     fn factor_source_id(&self) -> FactorSourceID;
 }
 
-impl FactorSourceReferencing for FactorInstance {
+impl FactorSourceReferencing for HierarchicalDeterministicFactorInstance {
     fn factor_source_id(&self) -> FactorSourceID {
         self.factor_source_id
     }

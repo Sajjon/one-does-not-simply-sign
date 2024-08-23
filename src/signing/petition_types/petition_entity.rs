@@ -3,10 +3,11 @@ use crate::prelude::*;
 /// Petition of signatures from an entity in a transaction.
 /// Essentially a wrapper around a tuple
 /// `{ threshold: PetitionFactors, override: PetitionFactors }`
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, derive_more::Debug)]
+#[debug("{}", self.debug_str())]
 pub struct PetitionEntity {
     /// The owner of these factors
-    pub entity: AccountAddressOrIdentityAddress,
+    pub entity: AddressOfAccountOrPersona,
 
     /// Index and hash of transaction
     pub intent_hash: IntentHash,
@@ -19,9 +20,29 @@ pub struct PetitionEntity {
 }
 
 impl PetitionEntity {
+    #[allow(unused)]
+    fn debug_str(&self) -> String {
+        let thres: String = self
+            .threshold_factors
+            .clone()
+            .map(|f| format!("threshold_factors {:#?}", f.borrow()))
+            .unwrap_or_default();
+
+        let overr: String = self
+            .override_factors
+            .clone()
+            .map(|f| format!("override_factors {:#?}", f.borrow()))
+            .unwrap_or_default();
+
+        format!(
+            "intent_hash: {:#?}, entity: {:#?}, {:#?}{:#?}",
+            self.intent_hash, self.entity, thres, overr
+        )
+    }
+
     pub fn new(
         intent_hash: IntentHash,
-        entity: AccountAddressOrIdentityAddress,
+        entity: AddressOfAccountOrPersona,
         threshold_factors: impl Into<Option<PetitionFactors>>,
         override_factors: impl Into<Option<PetitionFactors>>,
     ) -> Self {
@@ -40,7 +61,7 @@ impl PetitionEntity {
 
     pub fn new_securified(
         intent_hash: IntentHash,
-        entity: AccountAddressOrIdentityAddress,
+        entity: AddressOfAccountOrPersona,
         matrix: MatrixOfFactorInstances,
     ) -> Self {
         Self::new(
@@ -53,8 +74,8 @@ impl PetitionEntity {
 
     pub fn new_unsecurified(
         intent_hash: IntentHash,
-        entity: AccountAddressOrIdentityAddress,
-        instance: FactorInstance,
+        entity: AddressOfAccountOrPersona,
+        instance: HierarchicalDeterministicFactorInstance,
     ) -> Self {
         Self::new(
             intent_hash,
@@ -93,7 +114,7 @@ impl PetitionEntity {
             .collect::<IndexSet<_>>()
     }
 
-    pub fn all_skipped_factor_instance(&self) -> IndexSet<FactorInstance> {
+    pub fn all_skipped_factor_instance(&self) -> IndexSet<HierarchicalDeterministicFactorInstance> {
         self.union_of(|f| f.all_skipped())
     }
 
@@ -133,31 +154,6 @@ impl PetitionEntity {
         let t = self.on_list(FactorListKind::Threshold, &r#do);
         let o = self.on_list(FactorListKind::Override, &r#do);
         combine(t, o)
-    }
-
-    fn first_kind<F>(&self, r#if: F) -> Option<FactorListKind>
-    where
-        F: Fn(&PetitionFactors) -> bool,
-    {
-        if self
-            .on_list(FactorListKind::Override, &r#if)
-            .unwrap_or(false)
-        {
-            return self
-                .override_factors
-                .as_ref()
-                .map(|r| r.borrow().factor_list_kind);
-        }
-        if self
-            .on_list(FactorListKind::Threshold, &r#if)
-            .unwrap_or(false)
-        {
-            return self
-                .threshold_factors
-                .as_ref()
-                .map(|r| r.borrow().factor_list_kind);
-        }
-        None
     }
 
     fn both_void<F, R>(&self, r#do: F)
@@ -218,22 +214,22 @@ impl PetitionEntity {
         }
     }
 
-    fn petition(&self, factor_source_id: &FactorSourceID) -> Result<FactorListKind> {
-        self.first_kind(|l| l.references_factor_source_with_id(factor_source_id))
-            .ok_or(CommonError::UnknownFactorSource)
-    }
-
     pub fn status_if_skipped_factor_source(
         &self,
         factor_source_id: &FactorSourceID,
     ) -> PetitionFactorsStatus {
         let simulation = self.clone();
-        simulation.did_skip(factor_source_id, true).unwrap();
+        simulation
+            .did_skip_if_relevant(factor_source_id, true)
+            .unwrap();
         simulation.status()
     }
 
-    pub fn did_skip(&self, factor_source_id: &FactorSourceID, simulated: bool) -> Result<()> {
-        let _ = self.petition(factor_source_id)?;
+    pub fn did_skip_if_relevant(
+        &self,
+        factor_source_id: &FactorSourceID,
+        simulated: bool,
+    ) -> Result<()> {
         self.both_void(|l| l.did_skip_if_relevant(factor_source_id, simulated));
         Ok(())
     }
@@ -262,23 +258,26 @@ impl PetitionEntity {
 }
 
 impl PetitionEntity {
-    fn from_entity(entity: Entity, intent_hash: IntentHash) -> Self {
-        match entity.security_state {
+    fn from_entity(entity: impl Into<AccountOrPersona>, intent_hash: IntentHash) -> Self {
+        let entity = entity.into();
+        match entity.security_state() {
             EntitySecurityState::Securified(matrix) => {
-                Self::new_securified(intent_hash, entity.address, matrix)
+                Self::new_securified(intent_hash, entity.address(), matrix)
             }
             EntitySecurityState::Unsecured(factor) => {
-                Self::new_unsecurified(intent_hash, entity.address, factor)
+                Self::new_unsecurified(intent_hash, entity.address(), factor)
             }
         }
     }
 }
+
 impl HasSampleValues for PetitionEntity {
     fn sample() -> Self {
-        Self::from_entity(Entity::sample_securified(), IntentHash::sample())
+        Self::from_entity(Account::sample_securified(), IntentHash::sample())
     }
+
     fn sample_other() -> Self {
-        Self::from_entity(Entity::sample_unsecurified(), IntentHash::sample_other())
+        Self::from_entity(Account::sample_unsecurified(), IntentHash::sample_other())
     }
 }
 
@@ -292,7 +291,7 @@ mod tests {
     fn invalid_empty_factors() {
         Sut::new(
             IntentHash::sample(),
-            AccountAddressOrIdentityAddress::sample(),
+            AddressOfAccountOrPersona::sample(),
             None,
             None,
         );
@@ -308,8 +307,8 @@ mod tests {
     #[test]
     #[should_panic(expected = "A factor MUST NOT be present in both threshold AND override list.")]
     fn factor_should_not_be_used_in_both_lists() {
-        Entity::securified_mainnet(0, "Jane Doe", |idx| {
-            let fi = FactorInstance::f(idx);
+        Account::securified_mainnet(0, "Jane Doe", |idx| {
+            let fi = HierarchicalDeterministicFactorInstance::f(CAP26EntityKind::Account, idx);
             MatrixOfFactorInstances::new(
                 [FactorSourceID::fs0()].map(&fi),
                 1,
@@ -322,8 +321,8 @@ mod tests {
     #[should_panic]
     fn cannot_add_same_signature_twice() {
         let intent_hash = IntentHash::sample();
-        let entity = Entity::securified_mainnet(0, "Jane Doe", |idx| {
-            let fi = FactorInstance::f(idx);
+        let entity = Account::securified_mainnet(0, "Jane Doe", |idx| {
+            let fi = HierarchicalDeterministicFactorInstance::f(CAP26EntityKind::Account, idx);
             MatrixOfFactorInstances::new(
                 [FactorSourceID::fs0()].map(&fi),
                 1,
@@ -334,8 +333,11 @@ mod tests {
         let sign_input = HDSignatureInput::new(
             intent_hash,
             OwnedFactorInstance::new(
-                entity.address.clone(),
-                FactorInstance::account_mainnet_tx(0, FactorSourceID::fs0()),
+                entity.address(),
+                HierarchicalDeterministicFactorInstance::mainnet_tx_account(
+                    0,
+                    FactorSourceID::fs0(),
+                ),
             ),
         );
         let signature = HDSignature::produced_signing_with_input(sign_input);
@@ -352,7 +354,10 @@ mod tests {
                 sut.intent_hash.clone(),
                 OwnedFactorInstance::new(
                     sut.entity.clone(),
-                    FactorInstance::account_mainnet_tx(6, FactorSourceID::fs1()),
+                    HierarchicalDeterministicFactorInstance::mainnet_tx_account(
+                        6,
+                        FactorSourceID::fs1(),
+                    ),
                 ),
             ),
         ));
@@ -367,13 +372,6 @@ mod tests {
         can_skip(FactorSourceID::fs3());
         can_skip(FactorSourceID::fs4());
         can_skip(FactorSourceID::fs5());
-    }
-
-    #[test]
-    #[should_panic]
-    fn invalid_transactions_if_skipped_panics_for_unknown_factors() {
-        let sut = Sut::sample();
-        sut.invalid_transactions_if_skipped(&FactorSourceID::fs9());
     }
 
     #[test]

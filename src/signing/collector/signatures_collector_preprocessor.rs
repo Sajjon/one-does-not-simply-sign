@@ -1,7 +1,7 @@
 use crate::prelude::*;
 
 pub struct SignaturesCollectorPreprocessor {
-    transactions: IndexSet<TransactionIntent>,
+    transactions: IndexSet<TXToSign>,
 }
 
 pub fn sort_group_factors(
@@ -9,7 +9,7 @@ pub fn sort_group_factors(
 ) -> IndexSet<FactorSourcesOfKind> {
     let factors_of_kind = used_factor_sources
         .into_iter()
-        .into_grouping_map_by(|x| x.kind())
+        .into_grouping_map_by(|x| x.factor_source_kind())
         .collect::<IndexSet<FactorSource>>();
 
     let mut factors_of_kind = factors_of_kind
@@ -26,7 +26,7 @@ pub fn sort_group_factors(
 }
 
 impl SignaturesCollectorPreprocessor {
-    pub(super) fn new(transactions: IndexSet<TransactionIntent>) -> Self {
+    pub(super) fn new(transactions: IndexSet<TXToSign>) -> Self {
         Self { transactions }
     }
 
@@ -39,7 +39,7 @@ impl SignaturesCollectorPreprocessor {
 
         let all_factor_sources_in_profile = all_factor_sources_in_profile
             .into_iter()
-            .map(|f| (f.id, f))
+            .map(|f| (f.factor_source_id(), f))
             .collect::<HashMap<FactorSourceID, FactorSource>>();
 
         let mut factor_to_payloads = HashMap::<FactorSourceID, IndexSet<IntentHash>>::new();
@@ -65,15 +65,15 @@ impl SignaturesCollectorPreprocessor {
 
         for transaction in transactions.into_iter() {
             let mut petitions_for_entities =
-                HashMap::<AccountAddressOrIdentityAddress, PetitionEntity>::new();
+                HashMap::<AddressOfAccountOrPersona, PetitionEntity>::new();
 
-            for entity in transaction.clone().entities_requiring_auth {
-                let address = entity.address;
-                match entity.security_state {
+            for entity in transaction.entities_requiring_auth() {
+                let address = entity.address();
+                match entity.security_state() {
                     EntitySecurityState::Securified(sec) => {
                         let primary_role_matrix = sec;
 
-                        let mut add = |factors: Vec<FactorInstance>| {
+                        let mut add = |factors: Vec<HierarchicalDeterministicFactorInstance>| {
                             factors.into_iter().for_each(|f| {
                                 let factor_source_id = f.factor_source_id;
                                 use_factor_in_tx(&factor_source_id, &transaction.intent_hash);

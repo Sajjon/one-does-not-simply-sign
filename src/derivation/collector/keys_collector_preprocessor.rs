@@ -4,7 +4,7 @@ use crate::prelude::*;
 pub struct Keyring {
     pub factor_source_id: FactorSourceID,
     pub paths: IndexSet<DerivationPath>,
-    derived: RefCell<IndexSet<FactorInstance>>,
+    derived: RefCell<IndexSet<HierarchicalDeterministicFactorInstance>>,
 }
 
 impl Keyring {
@@ -15,11 +15,14 @@ impl Keyring {
             derived: RefCell::new(IndexSet::new()),
         }
     }
-    pub fn factors(&self) -> IndexSet<FactorInstance> {
+    pub fn factors(&self) -> IndexSet<HierarchicalDeterministicFactorInstance> {
         self.derived.borrow().clone()
     }
 
-    pub(crate) fn process_response(&self, response: IndexSet<FactorInstance>) {
+    pub(crate) fn process_response(
+        &self,
+        response: IndexSet<HierarchicalDeterministicFactorInstance>,
+    ) {
         assert!(response
             .iter()
             .all(|f| f.factor_source_id == self.factor_source_id
@@ -27,7 +30,7 @@ impl Keyring {
                     .derived
                     .borrow()
                     .iter()
-                    .any(|x| x.hd_public_key == f.hd_public_key)));
+                    .any(|x| x.public_key == f.public_key)));
 
         self.derived.borrow_mut().extend(response)
     }
@@ -96,7 +99,7 @@ impl KeysCollectorPreprocessor {
     ) -> (Keyrings, IndexSet<FactorSourcesOfKind>) {
         let all_factor_sources_in_profile = all_factor_sources_in_profile
             .into_iter()
-            .map(|f| (f.id, f))
+            .map(|f| (f.factor_source_id(), f))
             .collect::<HashMap<FactorSourceID, FactorSource>>();
 
         let factor_sources_of_kind = sort_group_factors(

@@ -52,10 +52,16 @@ impl SerialBatchKeyDerivationRequest {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BatchDerivationResponse {
-    pub per_factor_source: IndexMap<FactorSourceID, IndexSet<FactorInstance>>,
+    pub per_factor_source:
+        IndexMap<FactorSourceID, IndexSet<HierarchicalDeterministicFactorInstance>>,
 }
 impl BatchDerivationResponse {
-    pub fn new(per_factor_source: IndexMap<FactorSourceID, IndexSet<FactorInstance>>) -> Self {
+    pub fn new(
+        per_factor_source: IndexMap<
+            FactorSourceID,
+            IndexSet<HierarchicalDeterministicFactorInstance>,
+        >,
+    ) -> Self {
         Self { per_factor_source }
     }
 }
