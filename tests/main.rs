@@ -536,8 +536,12 @@ mod signing_tests {
 
             let outcome = collector.collect_signatures().await;
             assert!(outcome.signatures_of_failed_transactions().is_empty());
-            assert!(outcome.signatures_of_successful_transactions().len() > 2);
+            assert_eq!(outcome.signatures_of_successful_transactions().len(), 10);
+            assert_eq!(outcome.suc);
         }
+
+        #[actix_rt::test]
+        async fn multi_securified_entities() {}
     }
 
     mod single_tx {

@@ -3,12 +3,37 @@ use crate::prelude::*;
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct MaybeSignedTransactions {
     /// Collection of transactions which might be signed or not.
-    pub(super) transactions: IndexMap<IntentHash, IndexSet<HDSignature>>,
+    pub(super) transactions: IndexMap<IntentHash, SignedTransaction>,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct SignedTransaction {
+    /// The transaction intent hash.
+    pub intent_hash: IntentHash,
+    /// The signatures for this transaction.
+    pub signatures: IndexSet<HDSignature>,
+}
+impl SignedTransaction {
+    pub fn new(intent_hash: IntentHash, signatures: IndexSet<HDSignature>) -> Self {
+        Self {
+            intent_hash,
+            signatures,
+        }
+    }
 }
 
 impl MaybeSignedTransactions {
     fn new(transactions: IndexMap<IntentHash, IndexSet<HDSignature>>) -> Self {
-        Self { transactions }
+        Self {
+            transactions: transactions
+                .into_iter()
+                .map(|(k, v)| (k, SignedTransaction::new(k, v)))
+                .collect::<IndexMap<_, _>>(),
+        }
+    }
+
+    pub fn transactions(&self) -> Vec<SignedTransaction> {
+        self.transactions.values().cloned().collect_vec()
     }
 
     /// Constructs a new empty `MaybeSignedTransactions` which can be used
@@ -34,7 +59,7 @@ impl MaybeSignedTransactions {
     fn validate(&self) {
         for (intent_hash, signatures) in self.transactions.iter() {
             assert!(
-                signatures.iter().all(|s| s.intent_hash() == intent_hash),
+                signatures.intent_hash == *intent_hash,
                 "Discrepancy between intent hash and signature intent hash."
             );
         }
