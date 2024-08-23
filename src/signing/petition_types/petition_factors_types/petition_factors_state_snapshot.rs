@@ -12,6 +12,25 @@ pub(super) struct PetitionFactorsStateSnapshot {
 }
 
 impl PetitionFactorsStateSnapshot {
+    pub(super) fn new(
+        signed: IndexSet<HDSignature>,
+        skipped: IndexSet<HierarchicalDeterministicFactorInstance>,
+    ) -> Self {
+        Self { signed, skipped }
+    }
+
+    pub(super) fn prompted_count(&self) -> i8 {
+        self.signed_count() + self.skipped_count()
+    }
+
+    pub(super) fn signed_count(&self) -> i8 {
+        self.signed.len() as i8
+    }
+
+    fn skipped_count(&self) -> i8 {
+        self.skipped.len() as i8
+    }
+
     #[allow(unused)]
     fn debug_str(&self) -> String {
         let signatures = self
@@ -30,22 +49,45 @@ impl PetitionFactorsStateSnapshot {
 
         format!("signatures: {:#?}, skipped: {:#?}", signatures, skipped)
     }
+}
 
-    pub(super) fn new(
-        signed: IndexSet<HDSignature>,
-        skipped: IndexSet<HierarchicalDeterministicFactorInstance>,
-    ) -> Self {
-        Self { signed, skipped }
+impl HasSampleValues for PetitionFactorsStateSnapshot {
+    fn sample() -> Self {
+        Self::new(
+            IndexSet::from_iter([HDSignature::sample(), HDSignature::sample_other()]),
+            IndexSet::from_iter([
+                HierarchicalDeterministicFactorInstance::sample(),
+                HierarchicalDeterministicFactorInstance::sample_other(),
+            ]),
+        )
     }
-    pub(super) fn prompted_count(&self) -> i8 {
-        self.signed_count() + self.skipped_count()
+    fn sample_other() -> Self {
+        Self::new(
+            IndexSet::from_iter([HDSignature::sample_other()]),
+            IndexSet::from_iter([HierarchicalDeterministicFactorInstance::sample_other()]),
+        )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    type Sut = PetitionFactorsStateSnapshot;
+
+    #[test]
+    fn equality() {
+        assert_eq!(Sut::sample(), Sut::sample());
+        assert_eq!(Sut::sample_other(), Sut::sample_other());
     }
 
-    pub(super) fn signed_count(&self) -> i8 {
-        self.signed.len() as i8
+    #[test]
+    fn inequality() {
+        assert_ne!(Sut::sample(), Sut::sample_other())
     }
 
-    fn skipped_count(&self) -> i8 {
-        self.skipped.len() as i8
+    #[test]
+    fn debug() {
+        assert_eq!(format!("{:?}", Sut::sample()), "signatures: \"HDSignature { input: HDSignatureInput { intent_hash: TXID(\\\"dedede\\\"), owned_factor_instance: acco_Alice: factor_source_id: Device:dededede-dede-dede-dede-dededededede, derivation_path: 0/A/tx/0 } }, HDSignature { input: HDSignatureInput { intent_hash: TXID(\\\"ababab\\\"), owned_factor_instance: ident_Alice: factor_source_id: Ledger:1e1e1e1e-1e1e-1e1e-1e1e-1e1e1e1e1e1e, derivation_path: 0/A/tx/1 } }\", skipped: \"factor_source_id: Device:dededede-dede-dede-dede-dededededede, derivation_path: 0/A/tx/0, factor_source_id: Ledger:1e1e1e1e-1e1e-1e1e-1e1e-1e1e1e1e1e1e, derivation_path: 0/A/tx/1\"");
     }
 }
