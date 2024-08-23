@@ -290,6 +290,22 @@ mod tests {
         assert!(matches!(res, Err(CommonError::UnknownPersona)));
     }
 
+    #[actix_rt::test]
+    async fn valid_profile() {
+        let factors_sources = FactorSource::all();
+        let persona = Persona::p0();
+        let collector = SignaturesCollector::new(
+            IndexSet::from_iter([TransactionIntent::new([], [persona.entity_address()])]),
+            Arc::new(TestSignatureCollectingInteractors::new(
+                SimulatedUser::prudent_no_fail(),
+            )),
+            &Profile::new(factors_sources, [], [&persona]),
+        )
+        .unwrap();
+        let outcome = collector.collect_signatures().await;
+        assert!(outcome.successful())
+    }
+
     #[test]
     fn test_profile() {
         let factor_sources = &FactorSource::all();
