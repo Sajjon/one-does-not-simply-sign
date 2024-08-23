@@ -287,6 +287,11 @@ mod tests {
     type Sut = PetitionEntity;
 
     #[test]
+    fn debug() {
+        pretty_assertions::assert_eq!(format!("{:?}", Sut::sample()), "intent_hash: TXID(\"dedede\"), entity: acco_Grace, \"threshold_factors PetitionFactors(input: PetitionFactorsInput(factors: {\\n    factor_source_id: Device:00000000-0000-0000-0000-000000000000, derivation_path: 0/A/tx/6,\\n    factor_source_id: Arculus:00000000-0000-0000-0000-000000000003, derivation_path: 0/A/tx/6,\\n    factor_source_id: Yubikey:00000000-0000-0000-0000-000000000005, derivation_path: 0/A/tx/6,\\n}), state_snapshot: signatures: \\\"\\\", skipped: \\\"\\\")\"\"override_factors PetitionFactors(input: PetitionFactorsInput(factors: {\\n    factor_source_id: Ledger:00000000-0000-0000-0000-000000000001, derivation_path: 0/A/tx/6,\\n    factor_source_id: Arculus:00000000-0000-0000-0000-000000000004, derivation_path: 0/A/tx/6,\\n}), state_snapshot: signatures: \\\"\\\", skipped: \\\"\\\")\"");
+    }
+
+    #[test]
     #[should_panic(expected = "Programmer error! Must have at least one factors list.")]
     fn invalid_empty_factors() {
         Sut::new(

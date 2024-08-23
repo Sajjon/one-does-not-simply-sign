@@ -2,6 +2,44 @@ use std::marker::PhantomData;
 
 use crate::prelude::*;
 
+use std::borrow::Borrow;
+use std::borrow::BorrowMut;
+use std::ops::AddAssign;
+use std::sync::Mutex;
+
+/// An UNSAFE IDStepper, which `next` returns the consecutive next ID,
+/// should only be used by tests and sample value creation.
+pub struct IDStepper<T: From<Uuid>> {
+    ctr: Arc<Mutex<u64>>,
+    phantom: PhantomData<T>,
+}
+pub type UuidStepper = IDStepper<Uuid>;
+
+impl<T: From<Uuid>> IDStepper<T> {
+    pub fn starting_at(ctr: u64) -> Self {
+        Self {
+            ctr: Arc::new(Mutex::new(ctr)),
+            phantom: PhantomData,
+        }
+    }
+
+    #[allow(clippy::new_without_default)]
+    pub fn new() -> Self {
+        Self::starting_at(0)
+    }
+
+    /// ONLY Use this in a test or when creating sample (preview) values.
+    ///
+    /// # Safety
+    /// This is completely unsafe, it does not generate a random UUID, it creates
+    /// the consecutive "next" ID.
+    pub fn _next(&self) -> T {
+        let n = Uuid::from_u64_pair(0, **self.ctr.lock().unwrap().borrow());
+        self.ctr.lock().unwrap().borrow_mut().add_assign(1);
+        n.into()
+    }
+}
+
 #[derive(Clone, Copy, PartialEq, Eq, std::hash::Hash, derive_more::Display, derive_more::Debug)]
 #[display("{kind}:{id}")]
 #[debug("{}", self.to_string())]
@@ -15,7 +53,7 @@ impl FactorSourceID {
         Self { kind, id }
     }
     pub fn new(kind: FactorSourceKind) -> Self {
-        Self::with_details(kind, Uuid::new_v4())
+        Self::with_details(kind, IDStepper::next())
     }
     pub fn to_bytes(&self) -> Vec<u8> {
         self.id.as_bytes().to_vec()
