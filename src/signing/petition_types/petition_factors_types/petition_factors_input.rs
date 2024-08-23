@@ -11,6 +11,25 @@ pub struct PetitionFactorsInput {
     pub(super) required: i8,
 }
 
+impl HasSampleValues for PetitionFactorsInput {
+    fn sample() -> Self {
+        Self::new(
+            IndexSet::from_iter([
+                HierarchicalDeterministicFactorInstance::sample(),
+                HierarchicalDeterministicFactorInstance::sample_other(),
+            ]),
+            1,
+        )
+    }
+
+    fn sample_other() -> Self {
+        Self::new(
+            IndexSet::from_iter([HierarchicalDeterministicFactorInstance::sample_other()]),
+            1,
+        )
+    }
+}
+
 impl PetitionFactorsInput {
     pub(super) fn new(
         factors: IndexSet<HierarchicalDeterministicFactorInstance>,

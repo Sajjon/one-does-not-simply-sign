@@ -20,26 +20,6 @@ pub struct PetitionEntity {
 }
 
 impl PetitionEntity {
-    #[allow(unused)]
-    fn debug_str(&self) -> String {
-        let thres: String = self
-            .threshold_factors
-            .clone()
-            .map(|f| format!("threshold_factors {:#?}", f.borrow()))
-            .unwrap_or_default();
-
-        let overr: String = self
-            .override_factors
-            .clone()
-            .map(|f| format!("override_factors {:#?}", f.borrow()))
-            .unwrap_or_default();
-
-        format!(
-            "intent_hash: {:#?}, entity: {:#?}, {:#?}{:#?}",
-            self.intent_hash, self.entity, thres, overr
-        )
-    }
-
     pub fn new(
         intent_hash: IntentHash,
         entity: AddressOfAccountOrPersona,
@@ -255,6 +235,26 @@ impl PetitionEntity {
             },
         }
     }
+
+    #[allow(unused)]
+    fn debug_str(&self) -> String {
+        let thres: String = self
+            .threshold_factors
+            .clone()
+            .map(|f| format!("threshold_factors {:#?}", f.borrow()))
+            .unwrap_or_default();
+
+        let overr: String = self
+            .override_factors
+            .clone()
+            .map(|f| format!("override_factors {:#?}", f.borrow()))
+            .unwrap_or_default();
+
+        format!(
+            "intent_hash: {:#?}, entity: {:#?}, {:#?}{:#?}",
+            self.intent_hash, self.entity, thres, overr
+        )
+    }
 }
 
 impl PetitionEntity {
@@ -382,5 +382,11 @@ mod tests {
     #[test]
     fn inequality() {
         assert_ne!(Sut::sample(), Sut::sample_other())
+    }
+
+    #[test]
+    fn equality() {
+        assert_eq!(Sut::sample(), Sut::sample());
+        assert_eq!(Sut::sample_other(), Sut::sample_other());
     }
 }
