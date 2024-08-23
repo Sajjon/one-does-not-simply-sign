@@ -157,8 +157,6 @@ impl SignaturesCollector {
     async fn sign_with_factors(&self) -> Result<()> {
         let factors_of_kind = self.dependencies.factors_of_kind.clone();
         for factor_sources_of_kind in factors_of_kind.into_iter() {
-            println!("🔮 state: {:#?}", &self.state.borrow());
-
             if !self.continue_if_necessary()? {
                 break; // finished early, we have fulfilled signing requirements of all transactions
             }
@@ -245,6 +243,7 @@ impl SignaturesCollector {
 
 impl SignaturesCollector {
     pub async fn collect_signatures(self) -> SignaturesOutcome {
+        for (k0, v0) in self.state.borrow().petitions.
         _ = self
             .sign_with_factors() // in decreasing "friction order"
             .await

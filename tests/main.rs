@@ -508,7 +508,6 @@ mod signing_tests {
     mod multi_tx {
         use super::*;
 
-        #[ignore]
         #[actix_rt::test]
         async fn from_profile_accounts_and_personas() {
             let factor_sources = &FactorSource::all();
