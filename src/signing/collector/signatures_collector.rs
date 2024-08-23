@@ -239,6 +239,20 @@ impl SignaturesCollector {
         let petitions = state.petitions.borrow_mut();
         petitions.process_batch_response(response)
     }
+
+    fn outcome(self) -> SignaturesOutcome {
+        let state = self.state.borrow_mut();
+        let petitions = state.petitions.borrow_mut();
+        let expected_number_of_transactions = petitions.txid_to_petition.borrow().len();
+        drop(petitions);
+        drop(state);
+        let outcome = self.state.into_inner().petitions.into_inner().outcome();
+        assert_eq!(
+            outcome.failed_transactions().len() + outcome.successful_transactions().len(),
+            expected_number_of_transactions
+        );
+        outcome
+    }
 }
 
 impl SignaturesCollector {
@@ -247,7 +261,8 @@ impl SignaturesCollector {
             .sign_with_factors() // in decreasing "friction order"
             .await
             .inspect_err(|e| eprintln!("Failed to use factor sources: {:#?}", e));
-        self.state.into_inner().petitions.into_inner().outcome()
+
+        self.outcome()
     }
 }
 

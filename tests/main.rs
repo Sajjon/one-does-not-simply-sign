@@ -535,7 +535,8 @@ mod signing_tests {
             .unwrap();
 
             let outcome = collector.collect_signatures().await;
-            assert!(outcome.signatures_of_failed_transactions().is_empty());
+            assert!(outcome.successful());
+            assert!(outcome.failed_transactions().is_empty());
             assert_eq!(outcome.signatures_of_successful_transactions().len(), 10);
             assert_eq!(
                 outcome
