@@ -7,16 +7,22 @@ pub struct TXToSign {
 }
 
 impl TXToSign {
-    pub fn new(
+    pub fn with(
+        intent_hash: IntentHash,
         entities_requiring_auth: impl IntoIterator<Item = impl Into<AccountOrPersona>>,
     ) -> Self {
         Self {
-            intent_hash: IntentHash::generate(),
+            intent_hash,
             entities_requiring_auth: entities_requiring_auth
                 .into_iter()
                 .map(|i| i.into())
                 .collect_vec(),
         }
+    }
+    pub fn new(
+        entities_requiring_auth: impl IntoIterator<Item = impl Into<AccountOrPersona>>,
+    ) -> Self {
+        Self::with(IntentHash::generate(), entities_requiring_auth)
     }
 
     pub fn entities_requiring_auth(&self) -> IndexSet<AccountOrPersona> {

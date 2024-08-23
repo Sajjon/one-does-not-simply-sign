@@ -838,12 +838,16 @@ impl TransactionManifest {
 
 #[derive(Clone, PartialEq, Eq, Debug, Hash)]
 pub struct TransactionIntent {
+    pub intent_hash: IntentHash,
     pub(crate) manifest: TransactionManifest,
 }
 
 impl TransactionIntent {
     fn with(manifest: TransactionManifest) -> Self {
-        Self { manifest }
+        Self {
+            manifest,
+            intent_hash: IntentHash::generate(),
+        }
     }
     pub fn new(
         addresses_of_accounts_requiring_auth: impl IntoIterator<Item = AccountAddress>,

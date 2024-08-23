@@ -512,13 +512,13 @@ mod signing_tests {
         #[actix_rt::test]
         async fn from_profile_accounts_and_personas() {
             let factor_sources = &FactorSource::all();
-            let a0 = &Account::a0(); // fs0
-            let a1 = &Account::a1(); // fs1
-            let a2 = &Account::a2(); // fs0
+            let a0 = &Account::a0();
+            let a1 = &Account::a1();
+            let a2 = &Account::a2();
 
-            let p0 = &Persona::p0(); // fs0, fs1, fs3, fs4, fs5
-            let p1 = &Persona::p1(); // 2, 6, 7, 8, 9
-            let p2 = &Persona::p2(); // 1, 4
+            let p0 = &Persona::p0();
+            let p1 = &Persona::p1();
+            let p2 = &Persona::p2();
 
             let t0 = TransactionIntent::address_of([a0, a1], [p0, p1]);
             let t1 = TransactionIntent::address_of([a0, a1, a2], []);

@@ -8,7 +8,7 @@ pub struct PetitionFactors {
     pub factor_list_kind: FactorListKind,
 
     /// Factors to sign with and the required number of them.
-    input: PetitionFactorsInput,
+    pub(crate) input: PetitionFactorsInput,
     state: RefCell<PetitionFactorsState>,
 }
 
