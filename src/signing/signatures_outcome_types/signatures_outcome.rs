@@ -66,11 +66,9 @@ impl SignaturesOutcome {
         self.successful_transactions.all_signatures()
     }
 
-
-    pub fn successful_transactions(&self) -> IndexSet<HDSignature> {
-        self.successful_transactions
+    pub fn successful_transactions(&self) -> Vec<SignedTransaction> {
+        self.successful_transactions.clone().transactions()
     }
-
 
     pub fn skipped_factor_sources(&self) -> IndexSet<FactorSourceID> {
         self.skipped_factor_sources.clone()

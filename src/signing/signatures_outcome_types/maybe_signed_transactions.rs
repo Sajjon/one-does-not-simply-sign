@@ -3,7 +3,7 @@ use crate::prelude::*;
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct MaybeSignedTransactions {
     /// Collection of transactions which might be signed or not.
-    pub(super) transactions: IndexMap<IntentHash, SignedTransaction>,
+    pub(super) transactions: IndexMap<IntentHash, IndexSet<HDSignature>>,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -24,16 +24,7 @@ impl SignedTransaction {
 
 impl MaybeSignedTransactions {
     fn new(transactions: IndexMap<IntentHash, IndexSet<HDSignature>>) -> Self {
-        Self {
-            transactions: transactions
-                .into_iter()
-                .map(|(k, v)| (k, SignedTransaction::new(k, v)))
-                .collect::<IndexMap<_, _>>(),
-        }
-    }
-
-    pub fn transactions(&self) -> Vec<SignedTransaction> {
-        self.transactions.values().cloned().collect_vec()
+        Self { transactions }
     }
 
     /// Constructs a new empty `MaybeSignedTransactions` which can be used
@@ -48,6 +39,14 @@ impl MaybeSignedTransactions {
         self.transactions.is_empty()
     }
 
+    pub fn transactions(&self) -> Vec<SignedTransaction> {
+        self.transactions
+            .clone()
+            .into_iter()
+            .map(|(k, v)| SignedTransaction::new(k, v))
+            .collect_vec()
+    }
+
     /// Validates that all values, all signatures, have the same `intent_hash`
     /// as its key.
     ///
@@ -59,7 +58,7 @@ impl MaybeSignedTransactions {
     fn validate(&self) {
         for (intent_hash, signatures) in self.transactions.iter() {
             assert!(
-                signatures.intent_hash == *intent_hash,
+                signatures.iter().all(|s| s.intent_hash() == intent_hash),
                 "Discrepancy between intent hash and signature intent hash."
             );
         }

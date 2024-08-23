@@ -526,7 +526,7 @@ mod signing_tests {
             let profile = Profile::new(factor_sources.clone(), [a0, a1, a2], [p0, p1, p2]);
 
             let collector = SignaturesCollector::new(
-                IndexSet::<TransactionIntent>::from_iter([t0, t1, t2]),
+                IndexSet::<TransactionIntent>::from_iter([t0.clone(), t1.clone(), t2.clone()]),
                 Arc::new(TestSignatureCollectingInteractors::new(
                     SimulatedUser::prudent_no_fail(),
                 )),
@@ -537,7 +537,18 @@ mod signing_tests {
             let outcome = collector.collect_signatures().await;
             assert!(outcome.signatures_of_failed_transactions().is_empty());
             assert_eq!(outcome.signatures_of_successful_transactions().len(), 10);
-            assert_eq!(outcome.suc);
+            assert_eq!(
+                outcome
+                    .successful_transactions()
+                    .into_iter()
+                    .map(|t| t.intent_hash)
+                    .collect::<HashSet<_>>(),
+                HashSet::from_iter([
+                    t0.clone().intent_hash,
+                    t1.clone().intent_hash,
+                    t2.clone().intent_hash,
+                ])
+            );
         }
 
         #[actix_rt::test]
