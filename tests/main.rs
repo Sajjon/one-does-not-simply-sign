@@ -571,7 +571,6 @@ mod signing_tests {
                 )
             }
 
-            #[ignore]
             #[actix_rt::test]
             async fn prudent_user_single_tx_two_accounts_different_factor_sources() {
                 let collector = SignaturesCollector::test_prudent([TXToSign::new([

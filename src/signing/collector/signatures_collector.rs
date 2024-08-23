@@ -242,8 +242,23 @@ impl SignaturesCollector {
 }
 
 impl SignaturesCollector {
+    fn debug_print_expected_signatures(&self) {
+        let state = self.state.borrow();
+        let petitions = state.petitions.borrow();
+        println!("\n✨✨✨ Expected signatures - Per Transaction ✨✨✨\n");
+        for (txid, petition_tx) in petitions.txid_to_petition.borrow().iter() {
+            println!("\ttxid={:?}", txid);
+            for (entity_address, petition_entity) in petition_tx.for_entities.borrow().iter() {
+                println!("\t\tentity={:?}", entity_address);
+                for factor in petition_entity.all_factor_instances() {
+                    println!("\t\t\tfactor={:#?}", factor);
+                }
+            }
+        }
+    }
+
     pub async fn collect_signatures(self) -> SignaturesOutcome {
-        for (k0, v0) in self.state.borrow().petitions.
+        self.debug_print_expected_signatures();
         _ = self
             .sign_with_factors() // in decreasing "friction order"
             .await

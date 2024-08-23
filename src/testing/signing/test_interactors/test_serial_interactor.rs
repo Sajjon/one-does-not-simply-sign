@@ -42,7 +42,7 @@ impl SignWithFactorSerialInteractor for TestSigningSerialInteractor {
                             .iter()
                             .map(|x| {
                                 let sig = HDSignature::produced_signing_with_input(x.clone());
-                                println!("\n✍🏻 ✍🏻 SIGNATURE ✍🏻 ✍🏻");
+                                println!("\n✅ ✅ SIGNATURE ✅ ✅");
                                 println!(
                                     "factor={:?}",
                                     &sig.input

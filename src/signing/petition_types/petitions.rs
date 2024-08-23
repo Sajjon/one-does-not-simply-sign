@@ -32,6 +32,7 @@ impl Petitions {
             .map(|p| format!("Petitions({:#?}: {:#?})", p.0, p.1))
             .join(" + ")
     }
+
     pub fn outcome(self) -> SignaturesOutcome {
         let txid_to_petition = self.txid_to_petition.into_inner();
         let mut failed_transactions = MaybeSignedTransactions::empty();
@@ -80,7 +81,9 @@ impl Petitions {
             })
             .collect::<Result<Vec<bool>>>()?;
 
-        let should_continue_signal = should_continue_signals.into_iter().all(|b| b);
+        // If **any** petition says we should continue, we must continue.
+        let should_continue_signal = should_continue_signals.into_iter().any(|b| b);
+
         Ok(should_continue_signal)
     }
 
