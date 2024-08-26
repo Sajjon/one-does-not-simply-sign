@@ -506,10 +506,12 @@ mod signing_tests {
     use super::*;
 
     mod multi_tx {
+
         use super::*;
 
-        #[actix_rt::test]
-        async fn multi_accounts_multi_personas_all_single_factor_controlled() {
+        async fn multi_accounts_multi_personas_all_single_factor_controlled_with_sim_user(
+            sim: SimulatedUser,
+        ) {
             let factor_sources = &FactorSource::all();
             let a0 = &Account::a0();
             let a1 = &Account::a1();
@@ -527,9 +529,7 @@ mod signing_tests {
 
             let collector = SignaturesCollector::new(
                 IndexSet::<TransactionIntent>::from_iter([t0.clone(), t1.clone(), t2.clone()]),
-                Arc::new(TestSignatureCollectingInteractors::new(
-                    SimulatedUser::prudent_no_fail(),
-                )),
+                Arc::new(TestSignatureCollectingInteractors::new(sim)),
                 &profile,
             )
             .unwrap();
@@ -594,34 +594,49 @@ mod signing_tests {
                     .collect::<HashSet<_>>(),
                 HashSet::from_iter([p0.address(), p1.address(), p2.address()])
             );
+
+            // Assert sorted in increasing "friction order".
+            assert_eq!(
+                outcome
+                    .signatures_of_successful_transactions()
+                    .iter()
+                    .map(|f| { f.factor_source_id().kind })
+                    .collect::<IndexSet::<FactorSourceKind>>(),
+                IndexSet::<FactorSourceKind>::from_iter([
+                    FactorSourceKind::Device,
+                    FactorSourceKind::Ledger
+                ])
+            );
         }
 
-        #[actix_rt::test]
-        async fn multi_securified_entities() {
+        #[derive(Clone, Debug)]
+        struct Vector {
+            simulated_user: SimulatedUser,
+            expected: Expected,
+        }
+        #[derive(Clone, Debug, PartialEq, Eq)]
+        struct Expected {
+            successful_txs_signature_count: usize,
+            signed_factor_source_kinds: IndexSet<FactorSourceKind>,
+            expected_skipped_factor_source_count: usize,
+        }
+        async fn multi_securified_entities_with_sim_user(vector: Vector) {
             let factor_sources = &FactorSource::all();
 
-            let a0 = &Account::a0();
-            let a1 = &Account::a1();
+            let a4 = &Account::a4();
             let a5 = &Account::a5();
             let a6 = &Account::a6();
-            let a7 = &Account::a7();
 
-            let p0 = &Persona::p0();
-            let p1 = &Persona::p1();
+            let p4 = &Persona::p4();
             let p5 = &Persona::p5();
             let p6 = &Persona::p6();
-            let p7 = &Persona::p7();
 
-            let t0 = TransactionIntent::address_of([a0, a1], [p0, p1]);
-            let t1 = TransactionIntent::address_of([a0, a1, a5, a6, a7], []);
-            let t2 = TransactionIntent::address_of([a0, a5, a6, a7], [p1, p5, p6, p7]);
-            let t3 = TransactionIntent::address_of([], [p0, p1, p5, p6, p7]);
+            let t0 = TransactionIntent::address_of([a5], [p5]);
+            let t1 = TransactionIntent::address_of([a4, a5, a6], []);
+            let t2 = TransactionIntent::address_of([a4, a6], [p4, p6]);
+            let t3 = TransactionIntent::address_of([], [p4, p5, p6]);
 
-            let profile = Profile::new(
-                factor_sources.clone(),
-                [a0, a1, a5, a6, a7],
-                [p0, p1, p5, p6, p7],
-            );
+            let profile = Profile::new(factor_sources.clone(), [a4, a5, a6], [p4, p5, p6]);
 
             let collector = SignaturesCollector::new(
                 IndexSet::<TransactionIntent>::from_iter([
@@ -631,7 +646,7 @@ mod signing_tests {
                     t3.clone(),
                 ]),
                 Arc::new(TestSignatureCollectingInteractors::new(
-                    SimulatedUser::prudent_no_fail(),
+                    vector.simulated_user,
                 )),
                 &profile,
             )
@@ -639,9 +654,17 @@ mod signing_tests {
 
             let outcome = collector.collect_signatures().await;
 
+            assert_eq!(
+                outcome.skipped_factor_sources().len(),
+                vector.expected.expected_skipped_factor_source_count
+            );
+
             assert!(outcome.successful());
             assert!(outcome.failed_transactions().is_empty());
-            assert_eq!(outcome.signatures_of_successful_transactions().len(), 58);
+            assert_eq!(
+                outcome.signatures_of_successful_transactions().len(),
+                vector.expected.successful_txs_signature_count
+            );
             assert_eq!(
                 outcome
                     .successful_transactions()
@@ -655,6 +678,144 @@ mod signing_tests {
                     t3.clone().intent_hash,
                 ])
             );
+
+            // Assert sorted in increasing "friction order".
+            assert_eq!(
+                outcome
+                    .signatures_of_successful_transactions()
+                    .iter()
+                    .map(|f| { f.factor_source_id().kind })
+                    .collect::<IndexSet::<FactorSourceKind>>(),
+                vector.expected.signed_factor_source_kinds
+            );
+        }
+
+        mod with_failure {
+            use super::*;
+
+            #[actix_rt::test]
+            async fn multi_securified_entities() {
+                multi_securified_entities_with_sim_user(Vector {
+                    simulated_user: SimulatedUser::prudent_with_failures(
+                        SimulatedFailures::with_simulated_failures([FactorSourceID::fs1()]),
+                    ),
+                    expected: Expected {
+                        successful_txs_signature_count: 24,
+                        // We always end early
+                        // `Device` FactorSourceKind never got used since it
+                        // we are done after YubiKey.
+                        signed_factor_source_kinds: IndexSet::<FactorSourceKind>::from_iter([
+                            FactorSourceKind::Arculus,
+                            FactorSourceKind::Yubikey,
+                        ]),
+                        expected_skipped_factor_source_count: 1,
+                    },
+                })
+                .await;
+            }
+
+            #[actix_rt::test]
+            async fn many_failing_tx() {
+                let factor_sources = &FactorSource::all();
+                let a0 = &Account::a0();
+                let p3 = &Persona::p3();
+                let failing_transactions = (0..100)
+                    .map(|_| TransactionIntent::address_of([a0], []))
+                    .collect::<IndexSet<_>>();
+                let tx = TransactionIntent::address_of([], [p3]);
+                let mut all_transactions = failing_transactions.clone();
+                all_transactions.insert(tx.clone());
+
+                let profile = Profile::new(factor_sources.clone(), [a0], [p3]);
+
+                let collector = SignaturesCollector::new(
+                    all_transactions,
+                    Arc::new(TestSignatureCollectingInteractors::new(
+                        SimulatedUser::prudent_with_failures(
+                            SimulatedFailures::with_simulated_failures([FactorSourceID::fs0()]),
+                        ),
+                    )),
+                    &profile,
+                )
+                .unwrap();
+
+                let outcome = collector.collect_signatures().await;
+                assert!(!outcome.successful());
+                assert_eq!(
+                    outcome
+                        .failed_transactions()
+                        .iter()
+                        .map(|t| t.intent_hash.clone())
+                        .collect_vec(),
+                    failing_transactions
+                        .iter()
+                        .map(|t| t.intent_hash.clone())
+                        .collect_vec()
+                );
+
+                assert_eq!(
+                    outcome
+                        .successful_transactions()
+                        .into_iter()
+                        .map(|t| t.intent_hash)
+                        .collect_vec(),
+                    vec![tx.intent_hash]
+                )
+            }
+        }
+
+        mod no_fail {
+            use super::*;
+
+            #[actix_rt::test]
+            async fn multi_accounts_multi_personas_all_single_factor_controlled() {
+                multi_accounts_multi_personas_all_single_factor_controlled_with_sim_user(
+                    SimulatedUser::prudent_no_fail(),
+                )
+                .await;
+
+                // Same result with lazy user, not able to skip without failures.
+                multi_accounts_multi_personas_all_single_factor_controlled_with_sim_user(
+                    SimulatedUser::lazy_sign_minimum([]),
+                )
+                .await
+            }
+
+            #[actix_rt::test]
+            async fn multi_securified_entities() {
+                multi_securified_entities_with_sim_user(Vector {
+                    simulated_user: SimulatedUser::prudent_no_fail(),
+                    expected: Expected {
+                        successful_txs_signature_count: 32,
+                        // We always end early
+                        // `Device` FactorSourceKind never got used since it
+                        // we are done after YubiKey.
+                        signed_factor_source_kinds: IndexSet::<FactorSourceKind>::from_iter([
+                            FactorSourceKind::Ledger,
+                            FactorSourceKind::Arculus,
+                            FactorSourceKind::Yubikey,
+                        ]),
+                        expected_skipped_factor_source_count: 0,
+                    },
+                })
+                .await;
+
+                multi_securified_entities_with_sim_user(Vector {
+                    simulated_user: SimulatedUser::lazy_sign_minimum([]),
+                    expected: Expected {
+                        successful_txs_signature_count: 24,
+                        // We always end early, this lazy user was able to skip
+                        // Ledger.
+                        signed_factor_source_kinds: IndexSet::<FactorSourceKind>::from_iter([
+                            FactorSourceKind::Arculus,
+                            FactorSourceKind::Yubikey,
+                            FactorSourceKind::Device,
+                        ]),
+                        expected_skipped_factor_source_count: 2,
+                    },
+                })
+                .await;
+            }
         }
     }
 
