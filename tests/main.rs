@@ -655,6 +655,19 @@ mod signing_tests {
                     t3.clone().intent_hash,
                 ])
             );
+
+            // Assert sorted in increasing "friction order".
+            assert_eq!(
+                outcome
+                    .signatures_of_successful_transactions()
+                    .iter()
+                    .map(|f| { f.factor_source_id().kind })
+                    .collect::<IndexSet::<FactorSourceKind>>(),
+                factor_sources
+                    .iter()
+                    .map(|f| { f.factor_source_id().kind })
+                    .collect::<IndexSet::<FactorSourceKind>>()
+            );
         }
     }
 
