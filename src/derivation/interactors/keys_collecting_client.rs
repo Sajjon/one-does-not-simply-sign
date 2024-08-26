@@ -11,7 +11,7 @@ impl KeysCollectingClient {
 
     pub async fn use_factor_sources(
         &self,
-        factor_sources: IndexSet<FactorSource>,
+        factor_sources: IndexSet<HDFactorSource>,
         collector: &KeysCollector,
     ) -> Result<()> {
         match &self.interactor {

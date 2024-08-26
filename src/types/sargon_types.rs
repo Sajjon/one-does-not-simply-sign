@@ -43,12 +43,12 @@ impl<T: From<Uuid>> IDStepper<T> {
 #[derive(Clone, Copy, PartialEq, Eq, std::hash::Hash, derive_more::Display, derive_more::Debug)]
 #[display("{kind}:{id}")]
 #[debug("{}", self.to_string())]
-pub struct FactorSourceID {
+pub struct FactorSourceIDFromHash {
     pub kind: FactorSourceKind,
     pub id: Uuid,
 }
 
-impl FactorSourceID {
+impl FactorSourceIDFromHash {
     fn with_details(kind: FactorSourceKind, id: Uuid) -> Self {
         Self { kind, id }
     }
@@ -71,7 +71,7 @@ impl FactorSourceID {
     }
 }
 
-impl HasSampleValues for FactorSourceID {
+impl HasSampleValues for FactorSourceIDFromHash {
     fn sample() -> Self {
         Self::with_details(FactorSourceKind::Device, Uuid::from_bytes([0xde; 16]))
     }
@@ -82,13 +82,13 @@ impl HasSampleValues for FactorSourceID {
 
 #[derive(Clone, PartialEq, Eq, std::hash::Hash, derive_more::Debug)]
 #[debug("{:#?}", id)]
-pub struct FactorSource {
+pub struct HDFactorSource {
     pub last_used: SystemTime,
-    id: FactorSourceID,
+    id: FactorSourceIDFromHash,
 }
 
-impl FactorSource {
-    pub fn factor_source_id(&self) -> FactorSourceID {
+impl HDFactorSource {
+    pub fn factor_source_id(&self) -> FactorSourceIDFromHash {
         self.id
     }
     pub fn factor_source_kind(&self) -> FactorSourceKind {
@@ -96,7 +96,7 @@ impl FactorSource {
     }
     pub fn new(kind: FactorSourceKind) -> Self {
         Self {
-            id: FactorSourceID::new(kind),
+            id: FactorSourceIDFromHash::new(kind),
             last_used: SystemTime::UNIX_EPOCH,
         }
     }
@@ -120,12 +120,12 @@ impl FactorSource {
     }
 }
 
-impl PartialOrd for FactorSource {
+impl PartialOrd for HDFactorSource {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))
     }
 }
-impl Ord for FactorSource {
+impl Ord for HDFactorSource {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         match self.factor_source_kind().cmp(&other.factor_source_kind()) {
             core::cmp::Ordering::Equal => {}
@@ -168,7 +168,42 @@ impl HasSampleValues for FactorSourceKind {
     }
 }
 
-pub type DerivationIndex = u32;
+pub type HDPathValue = u32;
+
+#[derive(
+    Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, derive_more::Display, derive_more::Debug,
+)]
+#[display("{value}")]
+#[debug("{value}")]
+pub struct HDPathComponent {
+    pub value: HDPathValue,
+}
+pub const BIP32_SECURIFIED_HALF: u32 = 0x4000_0000;
+pub(crate) const BIP32_HARDENED: u32 = 0x8000_0000;
+
+impl HDPathComponent {
+    pub fn non_hardened(value: HDPathValue) -> Self {
+        assert!(
+            value < BIP32_HARDENED,
+            "Passed value was hardened, expected it to not be."
+        );
+        Self { value }
+    }
+    pub fn securified(value: HDPathValue) -> Self {
+        Self::non_hardened(value + BIP32_SECURIFIED_HALF)
+    }
+    pub fn to_bytes(&self) -> Vec<u8> {
+        self.value.to_be_bytes().to_vec()
+    }
+}
+impl HasSampleValues for HDPathComponent {
+    fn sample() -> Self {
+        Self::non_hardened(0)
+    }
+    fn sample_other() -> Self {
+        Self::non_hardened(1)
+    }
+}
 
 #[repr(u8)]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, derive_more::Display, derive_more::Debug)]
@@ -230,7 +265,7 @@ pub struct DerivationPath {
     pub network_id: NetworkID,
     pub entity_kind: CAP26EntityKind,
     pub key_kind: CAP26KeyKind,
-    pub index: DerivationIndex,
+    pub index: HDPathComponent,
 }
 
 impl DerivationPath {
@@ -238,7 +273,7 @@ impl DerivationPath {
         network_id: NetworkID,
         entity_kind: CAP26EntityKind,
         key_kind: CAP26KeyKind,
-        index: DerivationIndex,
+        index: HDPathComponent,
     ) -> Self {
         Self {
             network_id,
@@ -247,7 +282,20 @@ impl DerivationPath {
             index,
         }
     }
-    pub fn account_tx(network_id: NetworkID, index: DerivationIndex) -> Self {
+    pub fn at(
+        network_id: NetworkID,
+        entity_kind: CAP26EntityKind,
+        key_kind: CAP26KeyKind,
+        index: HDPathValue,
+    ) -> Self {
+        Self::new(
+            network_id,
+            entity_kind,
+            key_kind,
+            HDPathComponent::non_hardened(index),
+        )
+    }
+    pub fn account_tx(network_id: NetworkID, index: HDPathComponent) -> Self {
         Self::new(
             network_id,
             CAP26EntityKind::Account,
@@ -261,7 +309,7 @@ impl DerivationPath {
         vec.push(self.network_id.discriminant());
         vec.push(self.entity_kind.discriminant());
         vec.push(self.key_kind.discriminant());
-        vec.extend(self.index.to_be_bytes());
+        vec.extend(self.index.to_bytes());
         vec
     }
 }
@@ -269,10 +317,10 @@ impl DerivationPath {
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct PublicKey {
     /// this emulates the mnemonic
-    factor_source_id: FactorSourceID,
+    factor_source_id: FactorSourceIDFromHash,
 }
 impl PublicKey {
-    pub fn new(factor_source_id: FactorSourceID) -> Self {
+    pub fn new(factor_source_id: FactorSourceIDFromHash) -> Self {
         Self { factor_source_id }
     }
     pub fn to_bytes(&self) -> Vec<u8> {
@@ -296,7 +344,10 @@ impl HierarchicalDeterministicPublicKey {
         }
     }
 
-    pub fn mocked_with(derivation_path: DerivationPath, factor_source_id: &FactorSourceID) -> Self {
+    pub fn mocked_with(
+        derivation_path: DerivationPath,
+        factor_source_id: &FactorSourceIDFromHash,
+    ) -> Self {
         Self::new(derivation_path, PublicKey::new(*factor_source_id))
     }
 
@@ -308,7 +359,7 @@ impl HierarchicalDeterministicPublicKey {
 #[derive(Clone, PartialEq, Eq, std::hash::Hash, derive_more::Debug)]
 #[debug("{}", self.debug_str())]
 pub struct HierarchicalDeterministicFactorInstance {
-    pub factor_source_id: FactorSourceID,
+    pub factor_source_id: FactorSourceIDFromHash,
     pub public_key: HierarchicalDeterministicPublicKey,
 }
 
@@ -323,7 +374,7 @@ impl HierarchicalDeterministicFactorInstance {
 
     pub fn new(
         public_key: HierarchicalDeterministicPublicKey,
-        factor_source_id: FactorSourceID,
+        factor_source_id: FactorSourceIDFromHash,
     ) -> Self {
         Self {
             public_key,
@@ -335,7 +386,10 @@ impl HierarchicalDeterministicFactorInstance {
         self.public_key.derivation_path.clone()
     }
 
-    pub fn mocked_with(derivation_path: DerivationPath, factor_source_id: &FactorSourceID) -> Self {
+    pub fn mocked_with(
+        derivation_path: DerivationPath,
+        factor_source_id: &FactorSourceIDFromHash,
+    ) -> Self {
         Self::new(
             HierarchicalDeterministicPublicKey::mocked_with(derivation_path, factor_source_id),
             *factor_source_id,
@@ -345,8 +399,8 @@ impl HierarchicalDeterministicFactorInstance {
     pub fn tx_on_network(
         entity_kind: CAP26EntityKind,
         network_id: NetworkID,
-        index: DerivationIndex,
-        factor_source_id: FactorSourceID,
+        index: HDPathComponent,
+        factor_source_id: FactorSourceIDFromHash,
     ) -> Self {
         let derivation_path =
             DerivationPath::new(network_id, entity_kind, CAP26KeyKind::T9n, index);
@@ -357,13 +411,16 @@ impl HierarchicalDeterministicFactorInstance {
 
     pub fn mainnet_tx(
         entity_kind: CAP26EntityKind,
-        index: DerivationIndex,
-        factor_source_id: FactorSourceID,
+        index: HDPathComponent,
+        factor_source_id: FactorSourceIDFromHash,
     ) -> Self {
         Self::tx_on_network(entity_kind, NetworkID::Mainnet, index, factor_source_id)
     }
 
-    pub fn mainnet_tx_account(index: DerivationIndex, factor_source_id: FactorSourceID) -> Self {
+    pub fn mainnet_tx_account(
+        index: HDPathComponent,
+        factor_source_id: FactorSourceIDFromHash,
+    ) -> Self {
         Self::mainnet_tx(CAP26EntityKind::Account, index, factor_source_id)
     }
 
@@ -374,10 +431,13 @@ impl HierarchicalDeterministicFactorInstance {
 
 impl HasSampleValues for HierarchicalDeterministicFactorInstance {
     fn sample() -> Self {
-        Self::mainnet_tx_account(0, FactorSourceID::sample())
+        Self::mainnet_tx_account(HDPathComponent::sample(), FactorSourceIDFromHash::sample())
     }
     fn sample_other() -> Self {
-        Self::mainnet_tx_account(1, FactorSourceID::sample_other())
+        Self::mainnet_tx_account(
+            HDPathComponent::sample_other(),
+            FactorSourceIDFromHash::sample_other(),
+        )
     }
 }
 
@@ -544,9 +604,9 @@ pub trait IsEntity: Into<AccountOrPersona> + Clone {
     fn e7() -> Self;
 
     fn securified_mainnet(
-        index: u32,
+        index: HDPathComponent,
         name: impl AsRef<str>,
-        make_matrix: fn(u32) -> MatrixOfFactorInstances,
+        make_matrix: fn(HDPathComponent) -> MatrixOfFactorInstances,
     ) -> Self {
         Self::new(name, make_matrix(index))
     }
@@ -554,13 +614,13 @@ pub trait IsEntity: Into<AccountOrPersona> + Clone {
     fn unsecurified_mainnet(
         index: u32,
         name: impl AsRef<str>,
-        factor_source_id: FactorSourceID,
+        factor_source_id: FactorSourceIDFromHash,
     ) -> Self {
         Self::new(
             name,
             EntitySecurityState::Unsecured(HierarchicalDeterministicFactorInstance::mainnet_tx(
                 Self::kind(),
-                index,
+                HDPathComponent::non_hardened(index),
                 factor_source_id,
             )),
         )
@@ -716,7 +776,7 @@ impl<T: Clone + Into<AddressOfAccountOrPersona> + EntityKindSpecifier + From<Str
 {
     /// mainnet
     pub(crate) fn sample_unsecurified() -> Self {
-        Self::unsecurified_mainnet(0, "Alice", FactorSourceID::fs0())
+        Self::unsecurified_mainnet(0, "Alice", FactorSourceIDFromHash::fs0())
     }
 
     /// mainnet
@@ -747,13 +807,13 @@ impl<T: Clone + Into<AddressOfAccountOrPersona> + EntityKindSpecifier + From<Str
     pub fn unsecurified_mainnet(
         index: u32,
         name: impl AsRef<str>,
-        factor_source_id: FactorSourceID,
+        factor_source_id: FactorSourceIDFromHash,
     ) -> Self {
         Self::new(
             name,
             EntitySecurityState::Unsecured(HierarchicalDeterministicFactorInstance::mainnet_tx(
                 Self::entity_kind(),
-                index,
+                HDPathComponent::non_hardened(index),
                 factor_source_id,
             )),
         )
@@ -819,7 +879,7 @@ where
 }
 
 pub type MatrixOfFactorInstances = MatrixOfFactors<HierarchicalDeterministicFactorInstance>;
-pub type MatrixOfFactorSources = MatrixOfFactors<FactorSource>;
+pub type MatrixOfFactorSources = MatrixOfFactors<HDFactorSource>;
 
 /// For unsecurified entities we map single factor -> single threshold factor.
 /// Which is used by ROLA.
@@ -954,14 +1014,14 @@ impl ManifestSummary {
 }
 
 pub struct Profile {
-    pub factor_sources: IndexSet<FactorSource>,
+    pub factor_sources: IndexSet<HDFactorSource>,
     pub accounts: HashMap<AccountAddress, Account>,
     pub personas: HashMap<IdentityAddress, Persona>,
 }
 
 impl Profile {
     pub fn new<'a, 'p>(
-        factor_sources: IndexSet<FactorSource>,
+        factor_sources: IndexSet<HDFactorSource>,
         accounts: impl IntoIterator<Item = &'a Account>,
         personas: impl IntoIterator<Item = &'p Persona>,
     ) -> Self {

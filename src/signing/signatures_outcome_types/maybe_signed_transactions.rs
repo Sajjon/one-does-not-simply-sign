@@ -120,8 +120,8 @@ impl HasSampleValues for MaybeSignedTransactions {
             OwnedFactorInstance::new(
                 AddressOfAccountOrPersona::sample(),
                 HierarchicalDeterministicFactorInstance::mainnet_tx_account(
-                    0,
-                    FactorSourceID::sample(),
+                    HDPathComponent::non_hardened(0),
+                    FactorSourceIDFromHash::sample(),
                 ),
             ),
         );
@@ -130,8 +130,8 @@ impl HasSampleValues for MaybeSignedTransactions {
             OwnedFactorInstance::new(
                 AddressOfAccountOrPersona::sample(),
                 HierarchicalDeterministicFactorInstance::mainnet_tx_account(
-                    1,
-                    FactorSourceID::sample_other(),
+                    HDPathComponent::non_hardened(1),
+                    FactorSourceIDFromHash::sample_other(),
                 ),
             ),
         );
@@ -144,8 +144,8 @@ impl HasSampleValues for MaybeSignedTransactions {
             OwnedFactorInstance::new(
                 AddressOfAccountOrPersona::sample(),
                 HierarchicalDeterministicFactorInstance::mainnet_tx_account(
-                    2,
-                    FactorSourceID::sample_third(),
+                    HDPathComponent::non_hardened(2),
+                    FactorSourceIDFromHash::sample_third(),
                 ),
             ),
         );
@@ -154,8 +154,8 @@ impl HasSampleValues for MaybeSignedTransactions {
             OwnedFactorInstance::new(
                 AddressOfAccountOrPersona::sample(),
                 HierarchicalDeterministicFactorInstance::mainnet_tx_account(
-                    3,
-                    FactorSourceID::sample_fourth(),
+                    HDPathComponent::non_hardened(3),
+                    FactorSourceIDFromHash::sample_fourth(),
                 ),
             ),
         );
@@ -180,8 +180,8 @@ impl HasSampleValues for MaybeSignedTransactions {
             OwnedFactorInstance::new(
                 AddressOfAccountOrPersona::sample(),
                 HierarchicalDeterministicFactorInstance::mainnet_tx_account(
-                    10,
-                    FactorSourceID::sample(),
+                    HDPathComponent::non_hardened(10),
+                    FactorSourceIDFromHash::sample(),
                 ),
             ),
         );
@@ -190,8 +190,8 @@ impl HasSampleValues for MaybeSignedTransactions {
             OwnedFactorInstance::new(
                 AddressOfAccountOrPersona::sample(),
                 HierarchicalDeterministicFactorInstance::mainnet_tx_account(
-                    11,
-                    FactorSourceID::sample_other(),
+                    HDPathComponent::non_hardened(11),
+                    FactorSourceIDFromHash::sample_other(),
                 ),
             ),
         );
@@ -200,8 +200,8 @@ impl HasSampleValues for MaybeSignedTransactions {
             OwnedFactorInstance::new(
                 AddressOfAccountOrPersona::sample(),
                 HierarchicalDeterministicFactorInstance::mainnet_tx_account(
-                    12,
-                    FactorSourceID::sample_third(),
+                    HDPathComponent::non_hardened(12),
+                    FactorSourceIDFromHash::sample_third(),
                 ),
             ),
         );
@@ -249,8 +249,8 @@ mod tests {
             OwnedFactorInstance::new(
                 AddressOfAccountOrPersona::sample(),
                 HierarchicalDeterministicFactorInstance::mainnet_tx_account(
-                    0,
-                    FactorSourceID::sample(),
+                    HDPathComponent::non_hardened(0),
+                    FactorSourceIDFromHash::sample(),
                 ),
             ),
         );
@@ -269,8 +269,8 @@ mod tests {
             OwnedFactorInstance::new(
                 AddressOfAccountOrPersona::sample(),
                 HierarchicalDeterministicFactorInstance::mainnet_tx_account(
-                    0,
-                    FactorSourceID::sample(),
+                    HDPathComponent::non_hardened(0),
+                    FactorSourceIDFromHash::sample(),
                 ),
             ),
         );

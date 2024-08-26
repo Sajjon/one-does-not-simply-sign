@@ -2,13 +2,13 @@ use crate::prelude::*;
 
 #[derive(Clone, Debug)]
 pub struct Keyring {
-    pub factor_source_id: FactorSourceID,
+    pub factor_source_id: FactorSourceIDFromHash,
     pub paths: IndexSet<DerivationPath>,
     derived: RefCell<IndexSet<HierarchicalDeterministicFactorInstance>>,
 }
 
 impl Keyring {
-    pub fn new(factor_source_id: FactorSourceID, paths: IndexSet<DerivationPath>) -> Self {
+    pub fn new(factor_source_id: FactorSourceIDFromHash, paths: IndexSet<DerivationPath>) -> Self {
         Self {
             factor_source_id,
             paths,
@@ -38,11 +38,13 @@ impl Keyring {
 
 #[derive(Default, Clone, Debug)]
 pub struct Keyrings {
-    keyrings: RefCell<IndexMap<FactorSourceID, Keyring>>,
+    keyrings: RefCell<IndexMap<FactorSourceIDFromHash, Keyring>>,
 }
 
 impl Keyrings {
-    pub fn new(derivation_paths: IndexMap<FactorSourceID, IndexSet<DerivationPath>>) -> Self {
+    pub fn new(
+        derivation_paths: IndexMap<FactorSourceIDFromHash, IndexSet<DerivationPath>>,
+    ) -> Self {
         let keyrings = derivation_paths
             .into_iter()
             .map(|(factor_source_id, derivation_paths)| {
@@ -51,7 +53,7 @@ impl Keyrings {
                     Keyring::new(factor_source_id, derivation_paths),
                 )
             })
-            .collect::<IndexMap<FactorSourceID, Keyring>>();
+            .collect::<IndexMap<FactorSourceIDFromHash, Keyring>>();
         Self {
             keyrings: RefCell::new(keyrings),
         }
@@ -67,7 +69,7 @@ impl Keyrings {
         )
     }
 
-    pub fn keyring_for(&self, factor_source_id: &FactorSourceID) -> Option<Keyring> {
+    pub fn keyring_for(&self, factor_source_id: &FactorSourceIDFromHash) -> Option<Keyring> {
         self.keyrings
             .borrow()
             .get(factor_source_id)
@@ -85,22 +87,24 @@ impl Keyrings {
 }
 
 pub struct KeysCollectorPreprocessor {
-    derivation_paths: IndexMap<FactorSourceID, IndexSet<DerivationPath>>,
+    derivation_paths: IndexMap<FactorSourceIDFromHash, IndexSet<DerivationPath>>,
 }
 
 impl KeysCollectorPreprocessor {
-    pub fn new(derivation_paths: IndexMap<FactorSourceID, IndexSet<DerivationPath>>) -> Self {
+    pub fn new(
+        derivation_paths: IndexMap<FactorSourceIDFromHash, IndexSet<DerivationPath>>,
+    ) -> Self {
         Self { derivation_paths }
     }
 
     pub(crate) fn preprocess(
         &self,
-        all_factor_sources_in_profile: IndexSet<FactorSource>,
+        all_factor_sources_in_profile: IndexSet<HDFactorSource>,
     ) -> (Keyrings, IndexSet<FactorSourcesOfKind>) {
         let all_factor_sources_in_profile = all_factor_sources_in_profile
             .into_iter()
             .map(|f| (f.factor_source_id(), f))
-            .collect::<HashMap<FactorSourceID, FactorSource>>();
+            .collect::<HashMap<FactorSourceIDFromHash, HDFactorSource>>();
 
         let factor_sources_of_kind = sort_group_factors(
             self.derivation_paths

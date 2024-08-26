@@ -11,7 +11,7 @@ impl SignWithFactorClient {
 
     pub async fn use_factor_sources(
         &self,
-        factor_sources: IndexSet<FactorSource>,
+        factor_sources: IndexSet<HDFactorSource>,
         collector: &SignaturesCollector,
     ) -> Result<()> {
         match &self.interactor {

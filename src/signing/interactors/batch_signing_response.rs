@@ -7,10 +7,10 @@ use crate::prelude::*;
 #[derive(Clone, PartialEq, Eq, derive_more::Debug)]
 #[debug("BatchSigningResponse {{ signatures: {:#?} }}", signatures.values().map(|f| format!("{:#?}", f)).join(", "))]
 pub struct BatchSigningResponse {
-    pub signatures: IndexMap<FactorSourceID, IndexSet<HDSignature>>,
+    pub signatures: IndexMap<FactorSourceIDFromHash, IndexSet<HDSignature>>,
 }
 impl BatchSigningResponse {
-    pub fn new(signatures: IndexMap<FactorSourceID, IndexSet<HDSignature>>) -> Self {
+    pub fn new(signatures: IndexMap<FactorSourceIDFromHash, IndexSet<HDSignature>>) -> Self {
         Self { signatures }
     }
 }

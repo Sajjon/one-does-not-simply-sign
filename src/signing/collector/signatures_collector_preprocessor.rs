@@ -5,17 +5,17 @@ pub struct SignaturesCollectorPreprocessor {
 }
 
 pub fn sort_group_factors(
-    used_factor_sources: HashSet<FactorSource>,
+    used_factor_sources: HashSet<HDFactorSource>,
 ) -> IndexSet<FactorSourcesOfKind> {
     let factors_of_kind = used_factor_sources
         .into_iter()
         .into_grouping_map_by(|x| x.factor_source_kind())
-        .collect::<IndexSet<FactorSource>>();
+        .collect::<IndexSet<HDFactorSource>>();
 
     let mut factors_of_kind = factors_of_kind
         .into_iter()
         .map(|(k, v)| (k, v.into_iter().sorted().collect::<IndexSet<_>>()))
-        .collect::<IndexMap<FactorSourceKind, IndexSet<FactorSource>>>();
+        .collect::<IndexMap<FactorSourceKind, IndexSet<HDFactorSource>>>();
 
     factors_of_kind.sort_keys();
 
@@ -32,7 +32,7 @@ impl SignaturesCollectorPreprocessor {
 
     pub(super) fn preprocess(
         self,
-        all_factor_sources_in_profile: IndexSet<FactorSource>,
+        all_factor_sources_in_profile: IndexSet<HDFactorSource>,
     ) -> (Petitions, IndexSet<FactorSourcesOfKind>) {
         let transactions = self.transactions;
         let mut petitions_for_all_transactions = IndexMap::<IntentHash, PetitionTransaction>::new();
@@ -40,13 +40,13 @@ impl SignaturesCollectorPreprocessor {
         let all_factor_sources_in_profile = all_factor_sources_in_profile
             .into_iter()
             .map(|f| (f.factor_source_id(), f))
-            .collect::<HashMap<FactorSourceID, FactorSource>>();
+            .collect::<HashMap<FactorSourceIDFromHash, HDFactorSource>>();
 
-        let mut factor_to_payloads = HashMap::<FactorSourceID, IndexSet<IntentHash>>::new();
+        let mut factor_to_payloads = HashMap::<FactorSourceIDFromHash, IndexSet<IntentHash>>::new();
 
-        let mut used_factor_sources = HashSet::<FactorSource>::new();
+        let mut used_factor_sources = HashSet::<HDFactorSource>::new();
 
-        let mut use_factor_in_tx = |id: &FactorSourceID, txid: &IntentHash| {
+        let mut use_factor_in_tx = |id: &FactorSourceIDFromHash, txid: &IntentHash| {
             if let Some(ref mut txids) = factor_to_payloads.get_mut(id) {
                 txids.insert(txid.clone());
             } else {

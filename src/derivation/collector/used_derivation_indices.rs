@@ -4,9 +4,15 @@ use std::ops::Range;
 
 use crate::prelude::*;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum KeySpace {
+    Unsecurified,
+    Securified,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CreateNextDerivationPathRequest {
-    pub factor_source_id: FactorSourceID,
+    pub factor_source_id: FactorSourceIDFromHash,
     pub network_id: NetworkID,
     pub key_kind: CAP26KeyKind,
     pub entity_kind: CAP26EntityKind,
@@ -15,7 +21,7 @@ pub struct CreateNextDerivationPathRequest {
 
 impl CreateNextDerivationPathRequest {
     pub fn new(
-        factor_source_id: FactorSourceID,
+        factor_source_id: FactorSourceIDFromHash,
         network_id: NetworkID,
         key_kind: CAP26KeyKind,
         entity_kind: CAP26EntityKind,
@@ -35,16 +41,16 @@ pub trait UsedDerivationIndices {
     fn next_derivation_index_with_request(
         &self,
         request: CreateNextDerivationPathRequest,
-    ) -> DerivationIndex;
+    ) -> HDPathComponent;
 
     fn next_derivation_index_for(
         &self,
-        factor_source_id: FactorSourceID,
+        factor_source_id: FactorSourceIDFromHash,
         network_id: NetworkID,
         key_kind: CAP26KeyKind,
         entity_kind: CAP26EntityKind,
         key_space: KeySpace,
-    ) -> DerivationIndex {
+    ) -> HDPathComponent {
         let request = CreateNextDerivationPathRequest::new(
             factor_source_id,
             network_id,
@@ -57,7 +63,7 @@ pub trait UsedDerivationIndices {
 
     fn next_derivation_path(
         &self,
-        factor_source_id: FactorSourceID,
+        factor_source_id: FactorSourceIDFromHash,
         network_id: NetworkID,
         key_kind: CAP26KeyKind,
         entity_kind: CAP26EntityKind,

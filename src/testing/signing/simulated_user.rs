@@ -7,7 +7,7 @@ use std::{
 
 use indexmap::IndexSet;
 
-use crate::FactorSourceID;
+use crate::FactorSourceIDFromHash;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum SigningUserInput {
@@ -34,19 +34,24 @@ impl SimulatedUser {
 #[derive(Debug, Clone, Default)]
 pub struct SimulatedFailures {
     /// Set of FactorSources which should always fail.
-    simulated_failures: IndexSet<FactorSourceID>,
+    simulated_failures: IndexSet<FactorSourceIDFromHash>,
 }
 impl SimulatedFailures {
-    pub fn with_details(simulated_failures: IndexSet<FactorSourceID>) -> Self {
+    pub fn with_details(simulated_failures: IndexSet<FactorSourceIDFromHash>) -> Self {
         Self { simulated_failures }
     }
 
-    pub fn with_simulated_failures(failures: impl IntoIterator<Item = FactorSourceID>) -> Self {
+    pub fn with_simulated_failures(
+        failures: impl IntoIterator<Item = FactorSourceIDFromHash>,
+    ) -> Self {
         Self::with_details(IndexSet::from_iter(failures))
     }
 
     /// If needed, simulates failure for ALL factor sources or NONE.
-    pub fn simulate_failure_if_needed(&self, factor_source_ids: IndexSet<FactorSourceID>) -> bool {
+    pub fn simulate_failure_if_needed(
+        &self,
+        factor_source_ids: IndexSet<FactorSourceIDFromHash>,
+    ) -> bool {
         factor_source_ids
             .into_iter()
             .all(|id| self.simulated_failures.contains(&id))
@@ -90,7 +95,9 @@ impl SimulatedUser {
 
     /// Skips only if `invalid_tx_if_skipped` is empty
     /// (or if simulated failure for that factor source)
-    pub fn lazy_sign_minimum(simulated_failures: impl IntoIterator<Item = FactorSourceID>) -> Self {
+    pub fn lazy_sign_minimum(
+        simulated_failures: impl IntoIterator<Item = FactorSourceIDFromHash>,
+    ) -> Self {
         Self::new(
             SimulatedUserMode::lazy_sign_minimum(),
             SimulatedFailures::with_simulated_failures(simulated_failures),
@@ -128,7 +135,10 @@ impl SimulatedUser {
         }
     }
 
-    pub fn simulate_failure_if_needed(&self, factor_source_ids: IndexSet<FactorSourceID>) -> bool {
+    pub fn simulate_failure_if_needed(
+        &self,
+        factor_source_ids: IndexSet<FactorSourceIDFromHash>,
+    ) -> bool {
         if let Some(failures) = &self.failures {
             failures.simulate_failure_if_needed(factor_source_ids)
         } else {

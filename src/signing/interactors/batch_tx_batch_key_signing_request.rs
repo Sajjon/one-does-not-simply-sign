@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-/// A batch of keys (derivation paths) all being factor instances of a FactorSource
+/// A batch of keys (derivation paths) all being factor instances of a HDFactorSource
 /// with id `factor_source_id` to sign a single transaction with, which hash
 /// is `intent_hash`.
 #[derive(PartialEq, Eq, Clone, Debug, Hash)]
@@ -9,7 +9,7 @@ pub struct BatchKeySigningRequest {
     intent_hash: IntentHash,
 
     /// ID of factor to use to sign
-    pub factor_source_id: FactorSourceID,
+    pub factor_source_id: FactorSourceIDFromHash,
 
     /// The derivation paths to use to derive the private keys to sign with. The
     /// `factor_source_id` of each item must match `factor_source_id`.
@@ -27,7 +27,7 @@ impl BatchKeySigningRequest {
 
     pub fn new(
         intent_hash: IntentHash,
-        factor_source_id: FactorSourceID,
+        factor_source_id: FactorSourceIDFromHash,
         owned_factor_instances: IndexSet<OwnedFactorInstance>,
     ) -> Self {
         assert!(owned_factor_instances
@@ -46,7 +46,7 @@ impl BatchKeySigningRequest {
 #[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
 pub struct BatchTXBatchKeySigningRequest {
     /// The ID of the factor source used to sign each per_transaction
-    pub factor_source_id: FactorSourceID,
+    pub factor_source_id: FactorSourceIDFromHash,
 
     // The `factor_source_id` of each item must match `self.factor_source_id`.
     pub per_transaction: Vec<BatchKeySigningRequest>,
@@ -54,7 +54,7 @@ pub struct BatchTXBatchKeySigningRequest {
 
 impl BatchTXBatchKeySigningRequest {
     pub fn new(
-        factor_source_id: FactorSourceID,
+        factor_source_id: FactorSourceIDFromHash,
         per_transaction: IndexSet<BatchKeySigningRequest>,
     ) -> Self {
         assert!(per_transaction

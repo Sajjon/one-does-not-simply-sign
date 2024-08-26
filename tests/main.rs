@@ -12,9 +12,9 @@ mod common_tests {
 
     #[test]
     fn factors_source_ids() {
-        assert_eq!(FactorSourceID::fs0(), FactorSourceID::fs0());
-        assert_eq!(FactorSourceID::fs1(), FactorSourceID::fs1());
-        assert_ne!(FactorSourceID::fs0(), FactorSourceID::fs1());
+        assert_eq!(FactorSourceIDFromHash::fs0(), FactorSourceIDFromHash::fs0());
+        assert_eq!(FactorSourceIDFromHash::fs1(), FactorSourceIDFromHash::fs1());
+        assert_ne!(FactorSourceIDFromHash::fs0(), FactorSourceIDFromHash::fs1());
     }
 
     #[test]
@@ -43,13 +43,13 @@ mod key_derivation_tests {
         let factor_source = fs_at(0);
         let paths = [0, 1, 2]
             .into_iter()
-            .map(|i| DerivationPath::new(Mainnet, Account, T9n, i))
+            .map(|i| DerivationPath::at(Mainnet, Account, T9n, i))
             .collect::<IndexSet<_>>();
         let collector = KeysCollector::new(
-            FactorSource::all(),
+            HDFactorSource::all(),
             [(factor_source.factor_source_id(), paths.clone())]
                 .into_iter()
-                .collect::<IndexMap<FactorSourceID, IndexSet<DerivationPath>>>(),
+                .collect::<IndexMap<FactorSourceIDFromHash, IndexSet<DerivationPath>>>(),
             Arc::new(TestDerivationInteractors::fail()),
         );
         let outcome = collector.collect_keys().await;
@@ -65,7 +65,7 @@ mod key_derivation_tests {
             let factor_source = fs_at(0);
             let paths = [0, 1, 2]
                 .into_iter()
-                .map(|i| DerivationPath::new(Mainnet, Account, T9n, i))
+                .map(|i| DerivationPath::at(Mainnet, Account, T9n, i))
                 .collect::<IndexSet<_>>();
             let collector =
                 KeysCollector::new_test([(factor_source.factor_source_id(), paths.clone())]);
@@ -87,9 +87,9 @@ mod key_derivation_tests {
 
         #[actix_rt::test]
         async fn multi_keys_multi_factor_sources_single_index_per() {
-            let path = DerivationPath::account_tx(Mainnet, 0);
+            let path = DerivationPath::account_tx(Mainnet, HDPathComponent::non_hardened(0));
             let paths = IndexSet::from_iter([path]);
-            let factor_sources = FactorSource::all();
+            let factor_sources = HDFactorSource::all();
 
             let collector = KeysCollector::new_test(
                 factor_sources
@@ -124,10 +124,10 @@ mod key_derivation_tests {
         async fn multi_keys_multi_factor_sources_multi_paths() {
             let paths = [0, 1, 2]
                 .into_iter()
-                .map(|i| DerivationPath::new(Mainnet, Account, T9n, i))
+                .map(|i| DerivationPath::at(Mainnet, Account, T9n, i))
                 .collect::<IndexSet<_>>();
 
-            let factor_sources = FactorSource::all();
+            let factor_sources = HDFactorSource::all();
 
             let collector = KeysCollector::new_test(
                 factor_sources
@@ -166,49 +166,49 @@ mod key_derivation_tests {
             paths.extend(
                 [0, 1, 2]
                     .into_iter()
-                    .map(|i| DerivationPath::new(Mainnet, Account, T9n, i)),
+                    .map(|i| DerivationPath::at(Mainnet, Account, T9n, i)),
             );
 
             paths.extend(
                 [0, 1, 2]
                     .into_iter()
-                    .map(|i| DerivationPath::new(Stokenet, Account, T9n, i)),
+                    .map(|i| DerivationPath::at(Stokenet, Account, T9n, i)),
             );
 
             paths.extend(
                 [0, 1, 2]
                     .into_iter()
-                    .map(|i| DerivationPath::new(Mainnet, Identity, T9n, i)),
+                    .map(|i| DerivationPath::at(Mainnet, Identity, T9n, i)),
             );
 
             paths.extend(
                 [0, 1, 2]
                     .into_iter()
-                    .map(|i| DerivationPath::new(Stokenet, Identity, T9n, i)),
+                    .map(|i| DerivationPath::at(Stokenet, Identity, T9n, i)),
             );
 
             paths.extend(
                 [0, 1, 2]
                     .into_iter()
-                    .map(|i| DerivationPath::new(Mainnet, Account, Rola, i)),
+                    .map(|i| DerivationPath::at(Mainnet, Account, Rola, i)),
             );
 
             paths.extend(
                 [0, 1, 2]
                     .into_iter()
-                    .map(|i| DerivationPath::new(Stokenet, Account, Rola, i)),
+                    .map(|i| DerivationPath::at(Stokenet, Account, Rola, i)),
             );
 
             paths.extend(
                 [0, 1, 2]
                     .into_iter()
-                    .map(|i| DerivationPath::new(Mainnet, Identity, Rola, i)),
+                    .map(|i| DerivationPath::at(Mainnet, Identity, Rola, i)),
             );
 
             paths.extend(
                 [0, 1, 2]
                     .into_iter()
-                    .map(|i| DerivationPath::new(Stokenet, Identity, Rola, i)),
+                    .map(|i| DerivationPath::at(Stokenet, Identity, Rola, i)),
             );
 
             paths.extend(
@@ -216,12 +216,12 @@ mod key_derivation_tests {
                     0,
                     1,
                     2,
-                    KeySpace::SPLIT,
-                    KeySpace::SPLIT + 1,
-                    KeySpace::SPLIT + 2,
+                    BIP32_SECURIFIED_HALF,
+                    BIP32_SECURIFIED_HALF + 1,
+                    BIP32_SECURIFIED_HALF + 2,
                 ]
                 .into_iter()
-                .map(|i| DerivationPath::new(Mainnet, Account, T9n, i)),
+                .map(|i| DerivationPath::at(Mainnet, Account, T9n, i)),
             );
 
             paths.extend(
@@ -229,12 +229,12 @@ mod key_derivation_tests {
                     0,
                     1,
                     2,
-                    KeySpace::SPLIT,
-                    KeySpace::SPLIT + 1,
-                    KeySpace::SPLIT + 2,
+                    BIP32_SECURIFIED_HALF,
+                    BIP32_SECURIFIED_HALF + 1,
+                    BIP32_SECURIFIED_HALF + 2,
                 ]
                 .into_iter()
-                .map(|i| DerivationPath::new(Stokenet, Account, T9n, i)),
+                .map(|i| DerivationPath::at(Stokenet, Account, T9n, i)),
             );
 
             paths.extend(
@@ -242,12 +242,12 @@ mod key_derivation_tests {
                     0,
                     1,
                     2,
-                    KeySpace::SPLIT,
-                    KeySpace::SPLIT + 1,
-                    KeySpace::SPLIT + 2,
+                    BIP32_SECURIFIED_HALF,
+                    BIP32_SECURIFIED_HALF + 1,
+                    BIP32_SECURIFIED_HALF + 2,
                 ]
                 .into_iter()
-                .map(|i| DerivationPath::new(Mainnet, Identity, T9n, i)),
+                .map(|i| DerivationPath::at(Mainnet, Identity, T9n, i)),
             );
 
             paths.extend(
@@ -255,12 +255,12 @@ mod key_derivation_tests {
                     0,
                     1,
                     2,
-                    KeySpace::SPLIT,
-                    KeySpace::SPLIT + 1,
-                    KeySpace::SPLIT + 2,
+                    BIP32_SECURIFIED_HALF,
+                    BIP32_SECURIFIED_HALF + 1,
+                    BIP32_SECURIFIED_HALF + 2,
                 ]
                 .into_iter()
-                .map(|i| DerivationPath::new(Stokenet, Identity, T9n, i)),
+                .map(|i| DerivationPath::at(Stokenet, Identity, T9n, i)),
             );
 
             paths.extend(
@@ -268,12 +268,12 @@ mod key_derivation_tests {
                     0,
                     1,
                     2,
-                    KeySpace::SPLIT,
-                    KeySpace::SPLIT + 1,
-                    KeySpace::SPLIT + 2,
+                    BIP32_SECURIFIED_HALF,
+                    BIP32_SECURIFIED_HALF + 1,
+                    BIP32_SECURIFIED_HALF + 2,
                 ]
                 .into_iter()
-                .map(|i| DerivationPath::new(Mainnet, Account, Rola, i)),
+                .map(|i| DerivationPath::at(Mainnet, Account, Rola, i)),
             );
 
             paths.extend(
@@ -281,12 +281,12 @@ mod key_derivation_tests {
                     0,
                     1,
                     2,
-                    KeySpace::SPLIT,
-                    KeySpace::SPLIT + 1,
-                    KeySpace::SPLIT + 2,
+                    BIP32_SECURIFIED_HALF,
+                    BIP32_SECURIFIED_HALF + 1,
+                    BIP32_SECURIFIED_HALF + 2,
                 ]
                 .into_iter()
-                .map(|i| DerivationPath::new(Stokenet, Account, Rola, i)),
+                .map(|i| DerivationPath::at(Stokenet, Account, Rola, i)),
             );
 
             paths.extend(
@@ -294,12 +294,12 @@ mod key_derivation_tests {
                     0,
                     1,
                     2,
-                    KeySpace::SPLIT,
-                    KeySpace::SPLIT + 1,
-                    KeySpace::SPLIT + 2,
+                    BIP32_SECURIFIED_HALF,
+                    BIP32_SECURIFIED_HALF + 1,
+                    BIP32_SECURIFIED_HALF + 2,
                 ]
                 .into_iter()
-                .map(|i| DerivationPath::new(Mainnet, Identity, Rola, i)),
+                .map(|i| DerivationPath::at(Mainnet, Identity, Rola, i)),
             );
 
             paths.extend(
@@ -307,15 +307,15 @@ mod key_derivation_tests {
                     0,
                     1,
                     2,
-                    KeySpace::SPLIT,
-                    KeySpace::SPLIT + 1,
-                    KeySpace::SPLIT + 2,
+                    BIP32_SECURIFIED_HALF,
+                    BIP32_SECURIFIED_HALF + 1,
+                    BIP32_SECURIFIED_HALF + 2,
                 ]
                 .into_iter()
-                .map(|i| DerivationPath::new(Stokenet, Identity, Rola, i)),
+                .map(|i| DerivationPath::at(Stokenet, Identity, Rola, i)),
             );
 
-            let factor_sources = FactorSource::all();
+            let factor_sources = HDFactorSource::all();
 
             let collector = KeysCollector::new_test(
                 factor_sources
@@ -354,12 +354,12 @@ mod key_derivation_tests {
         use super::*;
 
         struct Expected {
-            index: DerivationIndex,
+            index: HDPathComponent,
         }
 
         async fn do_test(
             key_space: KeySpace,
-            factor_source: &FactorSource,
+            factor_source: &HDFactorSource,
             network_id: NetworkID,
             entity_kind: CAP26EntityKind,
             key_kind: CAP26KeyKind,
@@ -383,7 +383,7 @@ mod key_derivation_tests {
             use super::*;
 
             async fn test(
-                factor_source: &FactorSource,
+                factor_source: &HDFactorSource,
                 network_id: NetworkID,
                 entity_kind: CAP26EntityKind,
                 key_kind: CAP26KeyKind,
@@ -395,7 +395,7 @@ mod key_derivation_tests {
                     entity_kind,
                     key_kind,
                     Expected {
-                        index: KeySpace::SPLIT,
+                        index: HDPathComponent::non_hardened(BIP32_SECURIFIED_HALF),
                     },
                 )
                 .await
@@ -405,7 +405,7 @@ mod key_derivation_tests {
                 use super::*;
 
                 async fn each_factor(network_id: NetworkID, key_kind: CAP26KeyKind) {
-                    for factor_source in FactorSource::all().iter() {
+                    for factor_source in HDFactorSource::all().iter() {
                         test(factor_source, network_id, Account, key_kind).await
                     }
                 }
@@ -421,7 +421,7 @@ mod key_derivation_tests {
             use super::*;
 
             async fn test(
-                factor_source: &FactorSource,
+                factor_source: &HDFactorSource,
                 network_id: NetworkID,
                 entity_kind: CAP26EntityKind,
                 key_kind: CAP26KeyKind,
@@ -432,7 +432,9 @@ mod key_derivation_tests {
                     network_id,
                     entity_kind,
                     key_kind,
-                    Expected { index: 0 },
+                    Expected {
+                        index: HDPathComponent::non_hardened(0),
+                    },
                 )
                 .await
             }
@@ -441,7 +443,7 @@ mod key_derivation_tests {
                 use super::*;
 
                 async fn each_factor(network_id: NetworkID, key_kind: CAP26KeyKind) {
-                    for factor_source in FactorSource::all().iter() {
+                    for factor_source in HDFactorSource::all().iter() {
                         test(factor_source, network_id, Account, key_kind).await
                     }
                 }
@@ -471,7 +473,7 @@ mod key_derivation_tests {
                 use super::*;
 
                 async fn each_factor(network_id: NetworkID, key_kind: CAP26KeyKind) {
-                    for factor_source in FactorSource::all().iter() {
+                    for factor_source in HDFactorSource::all().iter() {
                         test(factor_source, network_id, Identity, key_kind).await
                     }
                 }
@@ -512,7 +514,7 @@ mod signing_tests {
         async fn multi_accounts_multi_personas_all_single_factor_controlled_with_sim_user(
             sim: SimulatedUser,
         ) {
-            let factor_sources = &FactorSource::all();
+            let factor_sources = &HDFactorSource::all();
             let a0 = &Account::a0();
             let a1 = &Account::a1();
             let a2 = &Account::a2();
@@ -621,7 +623,7 @@ mod signing_tests {
             expected_skipped_factor_source_count: usize,
         }
         async fn multi_securified_entities_with_sim_user(vector: Vector) {
-            let factor_sources = &FactorSource::all();
+            let factor_sources = &HDFactorSource::all();
 
             let a4 = &Account::a4();
             let a5 = &Account::a5();
@@ -697,7 +699,7 @@ mod signing_tests {
             async fn multi_securified_entities() {
                 multi_securified_entities_with_sim_user(Vector {
                     simulated_user: SimulatedUser::prudent_with_failures(
-                        SimulatedFailures::with_simulated_failures([FactorSourceID::fs1()]),
+                        SimulatedFailures::with_simulated_failures([FactorSourceIDFromHash::fs1()]),
                     ),
                     expected: Expected {
                         successful_txs_signature_count: 24,
@@ -716,7 +718,7 @@ mod signing_tests {
 
             #[actix_rt::test]
             async fn many_failing_tx() {
-                let factor_sources = &FactorSource::all();
+                let factor_sources = &HDFactorSource::all();
                 let a0 = &Account::a0();
                 let p3 = &Persona::p3();
                 let failing_transactions = (0..100)
@@ -732,7 +734,9 @@ mod signing_tests {
                     all_transactions,
                     Arc::new(TestSignatureCollectingInteractors::new(
                         SimulatedUser::prudent_with_failures(
-                            SimulatedFailures::with_simulated_failures([FactorSourceID::fs0()]),
+                            SimulatedFailures::with_simulated_failures([
+                                FactorSourceIDFromHash::fs0(),
+                            ]),
                         ),
                     )),
                     &profile,
@@ -828,8 +832,8 @@ mod signing_tests {
             #[actix_rt::test]
             async fn prudent_user_single_tx_two_accounts_same_factor_source() {
                 let collector = SignaturesCollector::test_prudent([TXToSign::new([
-                    Account::unsecurified_mainnet(0, "A0", FactorSourceID::fs0()),
-                    Account::unsecurified_mainnet(1, "A1", FactorSourceID::fs0()),
+                    Account::unsecurified_mainnet(0, "A0", FactorSourceIDFromHash::fs0()),
+                    Account::unsecurified_mainnet(1, "A1", FactorSourceIDFromHash::fs0()),
                 ])]);
 
                 let outcome = collector.collect_signatures().await;
@@ -842,8 +846,14 @@ mod signing_tests {
                         .map(|s| s.derivation_path())
                         .collect::<HashSet<_>>(),
                     [
-                        DerivationPath::account_tx(NetworkID::Mainnet, 0),
-                        DerivationPath::account_tx(NetworkID::Mainnet, 1),
+                        DerivationPath::account_tx(
+                            NetworkID::Mainnet,
+                            HDPathComponent::non_hardened(0)
+                        ),
+                        DerivationPath::account_tx(
+                            NetworkID::Mainnet,
+                            HDPathComponent::non_hardened(1)
+                        ),
                     ]
                     .into_iter()
                     .collect::<HashSet<_>>()
@@ -1066,12 +1076,12 @@ mod signing_tests {
                         .owned_factor_instance()
                         .factor_instance()
                         .factor_source_id,
-                    FactorSourceID::fs4()
+                    FactorSourceIDFromHash::fs4()
                 );
 
                 assert_eq!(
                     outcome.skipped_factor_sources(),
-                    IndexSet::just(FactorSourceID::fs1())
+                    IndexSet::just(FactorSourceIDFromHash::fs1())
                 )
             }
 
@@ -1079,16 +1089,20 @@ mod signing_tests {
                 E: IsEntity,
             >() {
                 let collector = SignaturesCollector::test_lazy_sign_minimum_no_failures([
-                    TXToSign::new([E::securified_mainnet(0, "all override", |idx| {
-                        MatrixOfFactorInstances::override_only(FactorSource::all().into_iter().map(
-                            |f| {
-                                HierarchicalDeterministicFactorInstance::mainnet_tx_account(
-                                    idx,
-                                    f.factor_source_id(),
-                                )
-                            },
-                        ))
-                    })]),
+                    TXToSign::new([E::securified_mainnet(
+                        HDPathComponent::securified(0),
+                        "all override",
+                        |idx| {
+                            MatrixOfFactorInstances::override_only(
+                                HDFactorSource::all().into_iter().map(|f| {
+                                    HierarchicalDeterministicFactorInstance::mainnet_tx_account(
+                                        idx,
+                                        f.factor_source_id(),
+                                    )
+                                }),
+                            )
+                        },
+                    )]),
                 ]);
                 let outcome = collector.collect_signatures().await;
                 assert!(outcome.successful());
@@ -1115,7 +1129,7 @@ mod signing_tests {
             }
 
             async fn fail_get_skipped_e0<E: IsEntity>() {
-                let failing = IndexSet::<_>::from_iter([FactorSourceID::fs0()]);
+                let failing = IndexSet::<_>::from_iter([FactorSourceIDFromHash::fs0()]);
                 let collector = SignaturesCollector::test_prudent_with_failures(
                     [TXToSign::new([E::e0()])],
                     SimulatedFailures::with_simulated_failures(failing.clone()),
@@ -1192,7 +1206,7 @@ mod signing_tests {
             async fn failure_e0<E: IsEntity>() {
                 let collector = SignaturesCollector::test_prudent_with_failures(
                     [TXToSign::new([E::e0()])],
-                    SimulatedFailures::with_simulated_failures([FactorSourceID::fs0()]),
+                    SimulatedFailures::with_simulated_failures([FactorSourceIDFromHash::fs0()]),
                 );
                 let outcome = collector.collect_signatures().await;
                 assert!(!outcome.successful());
@@ -1203,7 +1217,7 @@ mod signing_tests {
             >() {
                 let collector = SignaturesCollector::test_prudent_with_failures(
                     [TXToSign::new([E::e4()])],
-                    SimulatedFailures::with_simulated_failures([FactorSourceID::fs3()]),
+                    SimulatedFailures::with_simulated_failures([FactorSourceIDFromHash::fs3()]),
                 );
                 let outcome = collector.collect_signatures().await;
                 assert!(outcome.successful());
@@ -1213,7 +1227,10 @@ mod signing_tests {
                         .into_iter()
                         .map(|f| f.factor_source_id())
                         .collect::<IndexSet<_>>(),
-                    IndexSet::<_>::from_iter([FactorSourceID::fs0(), FactorSourceID::fs5()])
+                    IndexSet::<_>::from_iter([
+                        FactorSourceIDFromHash::fs0(),
+                        FactorSourceIDFromHash::fs5()
+                    ])
                 );
             }
 
@@ -1222,13 +1239,13 @@ mod signing_tests {
             >() {
                 let collector = SignaturesCollector::test_prudent_with_failures(
                     [TXToSign::new([E::e4()])],
-                    SimulatedFailures::with_simulated_failures([FactorSourceID::fs3()]),
+                    SimulatedFailures::with_simulated_failures([FactorSourceIDFromHash::fs3()]),
                 );
                 let outcome = collector.collect_signatures().await;
                 assert!(outcome.successful());
                 assert_eq!(
                     outcome.skipped_factor_sources(),
-                    IndexSet::<_>::from_iter([FactorSourceID::fs3()])
+                    IndexSet::<_>::from_iter([FactorSourceIDFromHash::fs3()])
                 );
             }
 

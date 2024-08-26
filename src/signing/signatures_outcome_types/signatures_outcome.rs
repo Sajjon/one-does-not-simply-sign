@@ -20,7 +20,7 @@ pub struct SignaturesOutcome {
     failed_transactions: MaybeSignedTransactions,
 
     /// List of ids of all factor sources which failed.
-    skipped_factor_sources: IndexSet<FactorSourceID>,
+    skipped_factor_sources: IndexSet<FactorSourceIDFromHash>,
 }
 
 impl SignaturesOutcome {
@@ -30,7 +30,7 @@ impl SignaturesOutcome {
     pub fn new(
         successful_transactions: MaybeSignedTransactions,
         failed_transactions: MaybeSignedTransactions,
-        skipped_factor_sources: impl IntoIterator<Item = FactorSourceID>,
+        skipped_factor_sources: impl IntoIterator<Item = FactorSourceIDFromHash>,
     ) -> Self {
         let skipped_factor_sources = skipped_factor_sources.into_iter().collect::<IndexSet<_>>();
         let successful_hashes: IndexSet<IntentHash> = successful_transactions
@@ -74,7 +74,7 @@ impl SignaturesOutcome {
         self.failed_transactions.clone().transactions()
     }
 
-    pub fn skipped_factor_sources(&self) -> IndexSet<FactorSourceID> {
+    pub fn skipped_factor_sources(&self) -> IndexSet<FactorSourceIDFromHash> {
         self.skipped_factor_sources.clone()
     }
 

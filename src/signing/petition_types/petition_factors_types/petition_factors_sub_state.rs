@@ -26,7 +26,10 @@ impl<F: FactorSourceReferencing> PetitionFactorsSubState<F> {
         self.factors.borrow().clone()
     }
 
-    pub(super) fn references_factor_source_by_id(&self, factor_source_id: FactorSourceID) -> bool {
+    pub(super) fn references_factor_source_by_id(
+        &self,
+        factor_source_id: FactorSourceIDFromHash,
+    ) -> bool {
         self.factors
             .borrow()
             .iter()
@@ -35,17 +38,17 @@ impl<F: FactorSourceReferencing> PetitionFactorsSubState<F> {
 }
 
 pub trait FactorSourceReferencing: std::hash::Hash + PartialEq + Eq + Clone {
-    fn factor_source_id(&self) -> FactorSourceID;
+    fn factor_source_id(&self) -> FactorSourceIDFromHash;
 }
 
 impl FactorSourceReferencing for HierarchicalDeterministicFactorInstance {
-    fn factor_source_id(&self) -> FactorSourceID {
+    fn factor_source_id(&self) -> FactorSourceIDFromHash {
         self.factor_source_id
     }
 }
 
 impl FactorSourceReferencing for HDSignature {
-    fn factor_source_id(&self) -> FactorSourceID {
+    fn factor_source_id(&self) -> FactorSourceIDFromHash {
         self.owned_factor_instance()
             .factor_instance()
             .factor_source_id
