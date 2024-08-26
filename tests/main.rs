@@ -43,7 +43,7 @@ mod key_derivation_tests {
         let factor_source = fs_at(0);
         let paths = [0, 1, 2]
             .into_iter()
-            .map(|i| DerivationPath::new(Mainnet, Account, T9n, i))
+            .map(|i| DerivationPath::at(Mainnet, Account, T9n, i))
             .collect::<IndexSet<_>>();
         let collector = KeysCollector::new(
             FactorSource::all(),
@@ -65,7 +65,7 @@ mod key_derivation_tests {
             let factor_source = fs_at(0);
             let paths = [0, 1, 2]
                 .into_iter()
-                .map(|i| DerivationPath::new(Mainnet, Account, T9n, i))
+                .map(|i| DerivationPath::at(Mainnet, Account, T9n, i))
                 .collect::<IndexSet<_>>();
             let collector =
                 KeysCollector::new_test([(factor_source.factor_source_id(), paths.clone())]);
@@ -87,7 +87,7 @@ mod key_derivation_tests {
 
         #[actix_rt::test]
         async fn multi_keys_multi_factor_sources_single_index_per() {
-            let path = DerivationPath::account_tx(Mainnet, 0);
+            let path = DerivationPath::account_tx(Mainnet, HDPathComponent::non_hardened(0));
             let paths = IndexSet::from_iter([path]);
             let factor_sources = FactorSource::all();
 
@@ -124,7 +124,7 @@ mod key_derivation_tests {
         async fn multi_keys_multi_factor_sources_multi_paths() {
             let paths = [0, 1, 2]
                 .into_iter()
-                .map(|i| DerivationPath::new(Mainnet, Account, T9n, i))
+                .map(|i| DerivationPath::at(Mainnet, Account, T9n, i))
                 .collect::<IndexSet<_>>();
 
             let factor_sources = FactorSource::all();
@@ -166,49 +166,49 @@ mod key_derivation_tests {
             paths.extend(
                 [0, 1, 2]
                     .into_iter()
-                    .map(|i| DerivationPath::new(Mainnet, Account, T9n, i)),
+                    .map(|i| DerivationPath::at(Mainnet, Account, T9n, i)),
             );
 
             paths.extend(
                 [0, 1, 2]
                     .into_iter()
-                    .map(|i| DerivationPath::new(Stokenet, Account, T9n, i)),
+                    .map(|i| DerivationPath::at(Stokenet, Account, T9n, i)),
             );
 
             paths.extend(
                 [0, 1, 2]
                     .into_iter()
-                    .map(|i| DerivationPath::new(Mainnet, Identity, T9n, i)),
+                    .map(|i| DerivationPath::at(Mainnet, Identity, T9n, i)),
             );
 
             paths.extend(
                 [0, 1, 2]
                     .into_iter()
-                    .map(|i| DerivationPath::new(Stokenet, Identity, T9n, i)),
+                    .map(|i| DerivationPath::at(Stokenet, Identity, T9n, i)),
             );
 
             paths.extend(
                 [0, 1, 2]
                     .into_iter()
-                    .map(|i| DerivationPath::new(Mainnet, Account, Rola, i)),
+                    .map(|i| DerivationPath::at(Mainnet, Account, Rola, i)),
             );
 
             paths.extend(
                 [0, 1, 2]
                     .into_iter()
-                    .map(|i| DerivationPath::new(Stokenet, Account, Rola, i)),
+                    .map(|i| DerivationPath::at(Stokenet, Account, Rola, i)),
             );
 
             paths.extend(
                 [0, 1, 2]
                     .into_iter()
-                    .map(|i| DerivationPath::new(Mainnet, Identity, Rola, i)),
+                    .map(|i| DerivationPath::at(Mainnet, Identity, Rola, i)),
             );
 
             paths.extend(
                 [0, 1, 2]
                     .into_iter()
-                    .map(|i| DerivationPath::new(Stokenet, Identity, Rola, i)),
+                    .map(|i| DerivationPath::at(Stokenet, Identity, Rola, i)),
             );
 
             paths.extend(
@@ -216,12 +216,12 @@ mod key_derivation_tests {
                     0,
                     1,
                     2,
-                    KeySpace::SPLIT,
-                    KeySpace::SPLIT + 1,
-                    KeySpace::SPLIT + 2,
+                    BIP32_SECURIFIED_HALF,
+                    BIP32_SECURIFIED_HALF + 1,
+                    BIP32_SECURIFIED_HALF + 2,
                 ]
                 .into_iter()
-                .map(|i| DerivationPath::new(Mainnet, Account, T9n, i)),
+                .map(|i| DerivationPath::at(Mainnet, Account, T9n, i)),
             );
 
             paths.extend(
@@ -229,12 +229,12 @@ mod key_derivation_tests {
                     0,
                     1,
                     2,
-                    KeySpace::SPLIT,
-                    KeySpace::SPLIT + 1,
-                    KeySpace::SPLIT + 2,
+                    BIP32_SECURIFIED_HALF,
+                    BIP32_SECURIFIED_HALF + 1,
+                    BIP32_SECURIFIED_HALF + 2,
                 ]
                 .into_iter()
-                .map(|i| DerivationPath::new(Stokenet, Account, T9n, i)),
+                .map(|i| DerivationPath::at(Stokenet, Account, T9n, i)),
             );
 
             paths.extend(
@@ -242,12 +242,12 @@ mod key_derivation_tests {
                     0,
                     1,
                     2,
-                    KeySpace::SPLIT,
-                    KeySpace::SPLIT + 1,
-                    KeySpace::SPLIT + 2,
+                    BIP32_SECURIFIED_HALF,
+                    BIP32_SECURIFIED_HALF + 1,
+                    BIP32_SECURIFIED_HALF + 2,
                 ]
                 .into_iter()
-                .map(|i| DerivationPath::new(Mainnet, Identity, T9n, i)),
+                .map(|i| DerivationPath::at(Mainnet, Identity, T9n, i)),
             );
 
             paths.extend(
@@ -255,12 +255,12 @@ mod key_derivation_tests {
                     0,
                     1,
                     2,
-                    KeySpace::SPLIT,
-                    KeySpace::SPLIT + 1,
-                    KeySpace::SPLIT + 2,
+                    BIP32_SECURIFIED_HALF,
+                    BIP32_SECURIFIED_HALF + 1,
+                    BIP32_SECURIFIED_HALF + 2,
                 ]
                 .into_iter()
-                .map(|i| DerivationPath::new(Stokenet, Identity, T9n, i)),
+                .map(|i| DerivationPath::at(Stokenet, Identity, T9n, i)),
             );
 
             paths.extend(
@@ -268,12 +268,12 @@ mod key_derivation_tests {
                     0,
                     1,
                     2,
-                    KeySpace::SPLIT,
-                    KeySpace::SPLIT + 1,
-                    KeySpace::SPLIT + 2,
+                    BIP32_SECURIFIED_HALF,
+                    BIP32_SECURIFIED_HALF + 1,
+                    BIP32_SECURIFIED_HALF + 2,
                 ]
                 .into_iter()
-                .map(|i| DerivationPath::new(Mainnet, Account, Rola, i)),
+                .map(|i| DerivationPath::at(Mainnet, Account, Rola, i)),
             );
 
             paths.extend(
@@ -281,12 +281,12 @@ mod key_derivation_tests {
                     0,
                     1,
                     2,
-                    KeySpace::SPLIT,
-                    KeySpace::SPLIT + 1,
-                    KeySpace::SPLIT + 2,
+                    BIP32_SECURIFIED_HALF,
+                    BIP32_SECURIFIED_HALF + 1,
+                    BIP32_SECURIFIED_HALF + 2,
                 ]
                 .into_iter()
-                .map(|i| DerivationPath::new(Stokenet, Account, Rola, i)),
+                .map(|i| DerivationPath::at(Stokenet, Account, Rola, i)),
             );
 
             paths.extend(
@@ -294,12 +294,12 @@ mod key_derivation_tests {
                     0,
                     1,
                     2,
-                    KeySpace::SPLIT,
-                    KeySpace::SPLIT + 1,
-                    KeySpace::SPLIT + 2,
+                    BIP32_SECURIFIED_HALF,
+                    BIP32_SECURIFIED_HALF + 1,
+                    BIP32_SECURIFIED_HALF + 2,
                 ]
                 .into_iter()
-                .map(|i| DerivationPath::new(Mainnet, Identity, Rola, i)),
+                .map(|i| DerivationPath::at(Mainnet, Identity, Rola, i)),
             );
 
             paths.extend(
@@ -307,12 +307,12 @@ mod key_derivation_tests {
                     0,
                     1,
                     2,
-                    KeySpace::SPLIT,
-                    KeySpace::SPLIT + 1,
-                    KeySpace::SPLIT + 2,
+                    BIP32_SECURIFIED_HALF,
+                    BIP32_SECURIFIED_HALF + 1,
+                    BIP32_SECURIFIED_HALF + 2,
                 ]
                 .into_iter()
-                .map(|i| DerivationPath::new(Stokenet, Identity, Rola, i)),
+                .map(|i| DerivationPath::at(Stokenet, Identity, Rola, i)),
             );
 
             let factor_sources = FactorSource::all();
@@ -354,7 +354,7 @@ mod key_derivation_tests {
         use super::*;
 
         struct Expected {
-            index: DerivationIndex,
+            index: HDPathComponent,
         }
 
         async fn do_test(
@@ -395,7 +395,7 @@ mod key_derivation_tests {
                     entity_kind,
                     key_kind,
                     Expected {
-                        index: KeySpace::SPLIT,
+                        index: HDPathComponent::non_hardened(BIP32_SECURIFIED_HALF),
                     },
                 )
                 .await
@@ -432,7 +432,9 @@ mod key_derivation_tests {
                     network_id,
                     entity_kind,
                     key_kind,
-                    Expected { index: 0 },
+                    Expected {
+                        index: HDPathComponent::non_hardened(0),
+                    },
                 )
                 .await
             }
@@ -842,8 +844,14 @@ mod signing_tests {
                         .map(|s| s.derivation_path())
                         .collect::<HashSet<_>>(),
                     [
-                        DerivationPath::account_tx(NetworkID::Mainnet, 0),
-                        DerivationPath::account_tx(NetworkID::Mainnet, 1),
+                        DerivationPath::account_tx(
+                            NetworkID::Mainnet,
+                            HDPathComponent::non_hardened(0)
+                        ),
+                        DerivationPath::account_tx(
+                            NetworkID::Mainnet,
+                            HDPathComponent::non_hardened(1)
+                        ),
                     ]
                     .into_iter()
                     .collect::<HashSet<_>>()
@@ -1079,16 +1087,20 @@ mod signing_tests {
                 E: IsEntity,
             >() {
                 let collector = SignaturesCollector::test_lazy_sign_minimum_no_failures([
-                    TXToSign::new([E::securified_mainnet(0, "all override", |idx| {
-                        MatrixOfFactorInstances::override_only(FactorSource::all().into_iter().map(
-                            |f| {
-                                HierarchicalDeterministicFactorInstance::mainnet_tx_account(
-                                    idx,
-                                    f.factor_source_id(),
-                                )
-                            },
-                        ))
-                    })]),
+                    TXToSign::new([E::securified_mainnet(
+                        HDPathComponent::securified(0),
+                        "all override",
+                        |idx| {
+                            MatrixOfFactorInstances::override_only(
+                                FactorSource::all().into_iter().map(|f| {
+                                    HierarchicalDeterministicFactorInstance::mainnet_tx_account(
+                                        idx,
+                                        f.factor_source_id(),
+                                    )
+                                }),
+                            )
+                        },
+                    )]),
                 ]);
                 let outcome = collector.collect_signatures().await;
                 assert!(outcome.successful());

@@ -168,7 +168,42 @@ impl HasSampleValues for FactorSourceKind {
     }
 }
 
-pub type DerivationIndex = u32;
+pub type HDPathValue = u32;
+
+#[derive(
+    Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, derive_more::Display, derive_more::Debug,
+)]
+#[display("{value}")]
+#[debug("{value}")]
+pub struct HDPathComponent {
+    pub value: HDPathValue,
+}
+pub const BIP32_SECURIFIED_HALF: u32 = 0x4000_0000;
+pub(crate) const BIP32_HARDENED: u32 = 0x8000_0000;
+
+impl HDPathComponent {
+    pub fn non_hardened(value: HDPathValue) -> Self {
+        assert!(
+            value < BIP32_HARDENED,
+            "Passed value was hardened, expected it to not be."
+        );
+        Self { value }
+    }
+    pub fn securified(value: HDPathValue) -> Self {
+        Self::non_hardened(value + BIP32_SECURIFIED_HALF)
+    }
+    pub fn to_bytes(&self) -> Vec<u8> {
+        self.value.to_be_bytes().to_vec()
+    }
+}
+impl HasSampleValues for HDPathComponent {
+    fn sample() -> Self {
+        Self::non_hardened(0)
+    }
+    fn sample_other() -> Self {
+        Self::non_hardened(1)
+    }
+}
 
 #[repr(u8)]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, derive_more::Display, derive_more::Debug)]
@@ -230,7 +265,7 @@ pub struct DerivationPath {
     pub network_id: NetworkID,
     pub entity_kind: CAP26EntityKind,
     pub key_kind: CAP26KeyKind,
-    pub index: DerivationIndex,
+    pub index: HDPathComponent,
 }
 
 impl DerivationPath {
@@ -238,7 +273,7 @@ impl DerivationPath {
         network_id: NetworkID,
         entity_kind: CAP26EntityKind,
         key_kind: CAP26KeyKind,
-        index: DerivationIndex,
+        index: HDPathComponent,
     ) -> Self {
         Self {
             network_id,
@@ -247,7 +282,20 @@ impl DerivationPath {
             index,
         }
     }
-    pub fn account_tx(network_id: NetworkID, index: DerivationIndex) -> Self {
+    pub fn at(
+        network_id: NetworkID,
+        entity_kind: CAP26EntityKind,
+        key_kind: CAP26KeyKind,
+        index: HDPathValue,
+    ) -> Self {
+        Self::new(
+            network_id,
+            entity_kind,
+            key_kind,
+            HDPathComponent::non_hardened(index),
+        )
+    }
+    pub fn account_tx(network_id: NetworkID, index: HDPathComponent) -> Self {
         Self::new(
             network_id,
             CAP26EntityKind::Account,
@@ -261,7 +309,7 @@ impl DerivationPath {
         vec.push(self.network_id.discriminant());
         vec.push(self.entity_kind.discriminant());
         vec.push(self.key_kind.discriminant());
-        vec.extend(self.index.to_be_bytes());
+        vec.extend(self.index.to_bytes());
         vec
     }
 }
@@ -345,7 +393,7 @@ impl HierarchicalDeterministicFactorInstance {
     pub fn tx_on_network(
         entity_kind: CAP26EntityKind,
         network_id: NetworkID,
-        index: DerivationIndex,
+        index: HDPathComponent,
         factor_source_id: FactorSourceID,
     ) -> Self {
         let derivation_path =
@@ -357,13 +405,13 @@ impl HierarchicalDeterministicFactorInstance {
 
     pub fn mainnet_tx(
         entity_kind: CAP26EntityKind,
-        index: DerivationIndex,
+        index: HDPathComponent,
         factor_source_id: FactorSourceID,
     ) -> Self {
         Self::tx_on_network(entity_kind, NetworkID::Mainnet, index, factor_source_id)
     }
 
-    pub fn mainnet_tx_account(index: DerivationIndex, factor_source_id: FactorSourceID) -> Self {
+    pub fn mainnet_tx_account(index: HDPathComponent, factor_source_id: FactorSourceID) -> Self {
         Self::mainnet_tx(CAP26EntityKind::Account, index, factor_source_id)
     }
 
@@ -374,10 +422,13 @@ impl HierarchicalDeterministicFactorInstance {
 
 impl HasSampleValues for HierarchicalDeterministicFactorInstance {
     fn sample() -> Self {
-        Self::mainnet_tx_account(0, FactorSourceID::sample())
+        Self::mainnet_tx_account(HDPathComponent::sample(), FactorSourceID::sample())
     }
     fn sample_other() -> Self {
-        Self::mainnet_tx_account(1, FactorSourceID::sample_other())
+        Self::mainnet_tx_account(
+            HDPathComponent::sample_other(),
+            FactorSourceID::sample_other(),
+        )
     }
 }
 
@@ -544,9 +595,9 @@ pub trait IsEntity: Into<AccountOrPersona> + Clone {
     fn e7() -> Self;
 
     fn securified_mainnet(
-        index: u32,
+        index: HDPathComponent,
         name: impl AsRef<str>,
-        make_matrix: fn(u32) -> MatrixOfFactorInstances,
+        make_matrix: fn(HDPathComponent) -> MatrixOfFactorInstances,
     ) -> Self {
         Self::new(name, make_matrix(index))
     }
@@ -560,7 +611,7 @@ pub trait IsEntity: Into<AccountOrPersona> + Clone {
             name,
             EntitySecurityState::Unsecured(HierarchicalDeterministicFactorInstance::mainnet_tx(
                 Self::kind(),
-                index,
+                HDPathComponent::non_hardened(index),
                 factor_source_id,
             )),
         )
@@ -753,7 +804,7 @@ impl<T: Clone + Into<AddressOfAccountOrPersona> + EntityKindSpecifier + From<Str
             name,
             EntitySecurityState::Unsecured(HierarchicalDeterministicFactorInstance::mainnet_tx(
                 Self::entity_kind(),
-                index,
+                HDPathComponent::non_hardened(index),
                 factor_source_id,
             )),
         )

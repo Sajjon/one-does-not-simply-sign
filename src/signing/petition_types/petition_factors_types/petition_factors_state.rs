@@ -121,8 +121,10 @@ mod tests {
 
         let intent_hash = IntentHash::sample();
 
-        let factor_instance =
-            HierarchicalDeterministicFactorInstance::mainnet_tx_account(0, FactorSourceID::fs0());
+        let factor_instance = HierarchicalDeterministicFactorInstance::mainnet_tx_account(
+            HDPathComponent::non_hardened(0),
+            FactorSourceID::fs0(),
+        );
         let sign_input = HDSignatureInput::new(
             intent_hash,
             OwnedFactorInstance::new(AddressOfAccountOrPersona::sample(), factor_instance.clone()),
@@ -140,8 +142,10 @@ mod tests {
         let sut = Sut::new();
 
         let intent_hash = IntentHash::sample();
-        let factor_instance =
-            HierarchicalDeterministicFactorInstance::mainnet_tx_account(0, FactorSourceID::fs0());
+        let factor_instance = HierarchicalDeterministicFactorInstance::mainnet_tx_account(
+            HDPathComponent::non_hardened(0),
+            FactorSourceID::fs0(),
+        );
 
         sut.did_skip(&factor_instance, false);
 

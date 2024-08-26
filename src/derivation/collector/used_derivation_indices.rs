@@ -4,6 +4,12 @@ use std::ops::Range;
 
 use crate::prelude::*;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum KeySpace {
+    Unsecurified,
+    Securified,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CreateNextDerivationPathRequest {
     pub factor_source_id: FactorSourceID,
@@ -35,7 +41,7 @@ pub trait UsedDerivationIndices {
     fn next_derivation_index_with_request(
         &self,
         request: CreateNextDerivationPathRequest,
-    ) -> DerivationIndex;
+    ) -> HDPathComponent;
 
     fn next_derivation_index_for(
         &self,
@@ -44,7 +50,7 @@ pub trait UsedDerivationIndices {
         key_kind: CAP26KeyKind,
         entity_kind: CAP26EntityKind,
         key_space: KeySpace,
-    ) -> DerivationIndex {
+    ) -> HDPathComponent {
         let request = CreateNextDerivationPathRequest::new(
             factor_source_id,
             network_id,

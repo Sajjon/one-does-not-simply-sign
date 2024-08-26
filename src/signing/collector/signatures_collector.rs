@@ -378,7 +378,7 @@ mod tests {
                         NetworkID::Mainnet,
                         CAP26EntityKind::Account,
                         CAP26KeyKind::T9n,
-                        6
+                        HDPathComponent::non_hardened(6)
                     ),
                     5
                 )

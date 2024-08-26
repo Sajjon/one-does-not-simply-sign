@@ -143,7 +143,9 @@ impl FactorSourceID {
 
 impl HierarchicalDeterministicFactorInstance {
     pub fn f(entity_kind: CAP26EntityKind, idx: u32) -> impl Fn(FactorSourceID) -> Self {
-        move |id: FactorSourceID| Self::mainnet_tx(entity_kind, idx, id)
+        move |id: FactorSourceID| {
+            Self::mainnet_tx(entity_kind, HDPathComponent::non_hardened(idx), id)
+        }
     }
 }
 

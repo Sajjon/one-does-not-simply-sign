@@ -340,7 +340,7 @@ mod tests {
             OwnedFactorInstance::new(
                 entity.address(),
                 HierarchicalDeterministicFactorInstance::mainnet_tx_account(
-                    0,
+                    HDPathComponent::non_hardened(0),
                     FactorSourceID::fs0(),
                 ),
             ),
@@ -360,7 +360,7 @@ mod tests {
                 OwnedFactorInstance::new(
                     sut.entity.clone(),
                     HierarchicalDeterministicFactorInstance::mainnet_tx_account(
-                        6,
+                        HDPathComponent::non_hardened(6),
                         FactorSourceID::fs1(),
                     ),
                 ),
