@@ -10,14 +10,14 @@ impl TestSigningParallelInteractor {
     }
 }
 
-#[async_trait]
+#[async_trait::async_trait]
 impl IsTestInteractor for TestSigningParallelInteractor {
     fn simulated_user(&self) -> SimulatedUser {
         self.simulated_user.clone()
     }
 }
 
-#[async_trait]
+#[async_trait::async_trait]
 impl SignWithFactorParallelInteractor for TestSigningParallelInteractor {
     async fn sign(
         &self,
