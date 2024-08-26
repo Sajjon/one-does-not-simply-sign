@@ -14,7 +14,7 @@ use crate::prelude::*;
 /// where it does not make any sense to let user in parallel answer multiple
 /// questions from different security questions factor sources (in fact we
 /// might not even even allow multiple SecurityQuestionsFactorSources to be used).
-#[async_trait]
+#[async_trait::async_trait]
 pub trait SignWithFactorSerialInteractor {
     async fn sign(
         &self,
