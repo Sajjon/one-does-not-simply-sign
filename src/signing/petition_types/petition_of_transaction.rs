@@ -31,9 +31,15 @@ impl PetitionTransaction {
     /// the signatures, even if it the transaction was failed, all signatures
     /// will be returned (which might be empty).
     ///
-    /// The third value in the tuple `(_, _, IndexSet<FactorSourceID>)` contains the
+    /// The third value in the tuple `(_, _, IndexSet<FactorSourceIDFromHash>)` contains the
     /// id of all the factor sources which was skipped.
-    pub fn outcome(self) -> (bool, IndexSet<HDSignature>, IndexSet<FactorSourceID>) {
+    pub fn outcome(
+        self,
+    ) -> (
+        bool,
+        IndexSet<HDSignature>,
+        IndexSet<FactorSourceIDFromHash>,
+    ) {
         let for_entities = self
             .for_entities
             .into_inner()
@@ -68,7 +74,7 @@ impl PetitionTransaction {
 
     pub fn all_factor_instances_of_source(
         &self,
-        factor_source_id: &FactorSourceID,
+        factor_source_id: &FactorSourceIDFromHash,
     ) -> IndexSet<OwnedFactorInstance> {
         self._all_factor_instances()
             .into_iter()
@@ -84,7 +90,7 @@ impl PetitionTransaction {
         for_entity.add_signature(signature.clone());
     }
 
-    pub fn skipped_factor_source(&self, factor_source_id: &FactorSourceID) {
+    pub fn skipped_factor_source(&self, factor_source_id: &FactorSourceIDFromHash) {
         let mut for_entities = self.for_entities.borrow_mut();
         for petition in for_entities.values_mut() {
             petition.skipped_factor_source_if_relevant(factor_source_id)
@@ -93,7 +99,7 @@ impl PetitionTransaction {
 
     pub(crate) fn input_for_interactor(
         &self,
-        factor_source_id: &FactorSourceID,
+        factor_source_id: &FactorSourceIDFromHash,
     ) -> BatchKeySigningRequest {
         BatchKeySigningRequest::new(
             self.intent_hash.clone(),
@@ -104,7 +110,7 @@ impl PetitionTransaction {
 
     pub fn invalid_transactions_if_skipped(
         &self,
-        factor_source_id: &FactorSourceID,
+        factor_source_id: &FactorSourceIDFromHash,
     ) -> IndexSet<InvalidTransactionIfSkipped> {
         self.for_entities
             .borrow()

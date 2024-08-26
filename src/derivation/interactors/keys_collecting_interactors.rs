@@ -23,11 +23,11 @@ impl KeyDerivationInteractor {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParallelBatchKeyDerivationRequest {
-    pub per_factor_source: IndexMap<FactorSourceID, SerialBatchKeyDerivationRequest>,
+    pub per_factor_source: IndexMap<FactorSourceIDFromHash, SerialBatchKeyDerivationRequest>,
 }
 impl ParallelBatchKeyDerivationRequest {
     pub fn new(
-        per_factor_source: IndexMap<FactorSourceID, SerialBatchKeyDerivationRequest>,
+        per_factor_source: IndexMap<FactorSourceIDFromHash, SerialBatchKeyDerivationRequest>,
     ) -> Self {
         Self { per_factor_source }
     }
@@ -35,12 +35,12 @@ impl ParallelBatchKeyDerivationRequest {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SerialBatchKeyDerivationRequest {
-    pub factor_source_id: FactorSourceID,
+    pub factor_source_id: FactorSourceIDFromHash,
     pub derivation_paths: IndexSet<DerivationPath>,
 }
 impl SerialBatchKeyDerivationRequest {
     pub fn new(
-        factor_source_id: FactorSourceID,
+        factor_source_id: FactorSourceIDFromHash,
         derivation_paths: IndexSet<DerivationPath>,
     ) -> Self {
         Self {
@@ -53,12 +53,12 @@ impl SerialBatchKeyDerivationRequest {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BatchDerivationResponse {
     pub per_factor_source:
-        IndexMap<FactorSourceID, IndexSet<HierarchicalDeterministicFactorInstance>>,
+        IndexMap<FactorSourceIDFromHash, IndexSet<HierarchicalDeterministicFactorInstance>>,
 }
 impl BatchDerivationResponse {
     pub fn new(
         per_factor_source: IndexMap<
-            FactorSourceID,
+            FactorSourceIDFromHash,
             IndexSet<HierarchicalDeterministicFactorInstance>,
         >,
     ) -> Self {

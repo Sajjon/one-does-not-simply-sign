@@ -47,7 +47,7 @@ impl PetitionFactorsState {
 
     /// # Panics
     /// Panics if this factor source has already been skipped or signed with.
-    fn assert_not_referencing_factor_source(&self, factor_source_id: FactorSourceID) {
+    fn assert_not_referencing_factor_source(&self, factor_source_id: FactorSourceIDFromHash) {
         assert!(
             !self.references_factor_source_by_id(factor_source_id),
             "Programmer error! Factor source {:#?} already used, should only be referenced once.",
@@ -80,7 +80,7 @@ impl PetitionFactorsState {
         PetitionFactorsStateSnapshot::new(self.signed().snapshot(), self.skipped().snapshot())
     }
 
-    fn references_factor_source_by_id(&self, factor_source_id: FactorSourceID) -> bool {
+    fn references_factor_source_by_id(&self, factor_source_id: FactorSourceIDFromHash) -> bool {
         self.signed()
             .references_factor_source_by_id(factor_source_id)
             || self
@@ -123,7 +123,7 @@ mod tests {
 
         let factor_instance = HierarchicalDeterministicFactorInstance::mainnet_tx_account(
             HDPathComponent::non_hardened(0),
-            FactorSourceID::fs0(),
+            FactorSourceIDFromHash::fs0(),
         );
         let sign_input = HDSignatureInput::new(
             intent_hash,
@@ -144,7 +144,7 @@ mod tests {
         let intent_hash = IntentHash::sample();
         let factor_instance = HierarchicalDeterministicFactorInstance::mainnet_tx_account(
             HDPathComponent::non_hardened(0),
-            FactorSourceID::fs0(),
+            FactorSourceIDFromHash::fs0(),
         );
 
         sut.did_skip(&factor_instance, false);

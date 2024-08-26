@@ -73,13 +73,13 @@ impl PetitionFactors {
         ))
     }
 
-    pub fn did_skip_if_relevant(&self, factor_source_id: &FactorSourceID, simulated: bool) {
+    pub fn did_skip_if_relevant(&self, factor_source_id: &FactorSourceIDFromHash, simulated: bool) {
         if let Some(_x_) = self.reference_to_factor_source_with_id(factor_source_id) {
             self.did_skip(factor_source_id, simulated)
         }
     }
 
-    fn did_skip(&self, factor_source_id: &FactorSourceID, simulated: bool) {
+    fn did_skip(&self, factor_source_id: &FactorSourceIDFromHash, simulated: bool) {
         let factor_instance = self.expect_reference_to_factor_source_with_id(factor_source_id);
         self.state.borrow_mut().did_skip(factor_instance, simulated);
     }
@@ -111,12 +111,15 @@ impl PetitionFactors {
         state.add_signature(signature)
     }
 
-    pub fn references_factor_source_with_id(&self, factor_source_id: &FactorSourceID) -> bool {
+    pub fn references_factor_source_with_id(
+        &self,
+        factor_source_id: &FactorSourceIDFromHash,
+    ) -> bool {
         self.reference_to_factor_source_with_id(factor_source_id)
             .is_some()
     }
 
-    pub fn skip_if_references(&self, factor_source_id: &FactorSourceID, simulated: bool) {
+    pub fn skip_if_references(&self, factor_source_id: &FactorSourceIDFromHash, simulated: bool) {
         if self.references_factor_source_with_id(factor_source_id) {
             self.did_skip(factor_source_id, simulated)
         }
@@ -124,7 +127,7 @@ impl PetitionFactors {
 
     fn expect_reference_to_factor_source_with_id(
         &self,
-        factor_source_id: &FactorSourceID,
+        factor_source_id: &FactorSourceIDFromHash,
     ) -> &HierarchicalDeterministicFactorInstance {
         self.reference_to_factor_source_with_id(factor_source_id)
             .expect("Programmer error! Factor source not found in factors.")
@@ -132,7 +135,7 @@ impl PetitionFactors {
 
     fn reference_to_factor_source_with_id(
         &self,
-        factor_source_id: &FactorSourceID,
+        factor_source_id: &FactorSourceIDFromHash,
     ) -> Option<&HierarchicalDeterministicFactorInstance> {
         self.input.reference_factor_source_with_id(factor_source_id)
     }

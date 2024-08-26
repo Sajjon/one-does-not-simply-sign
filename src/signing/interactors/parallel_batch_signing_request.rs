@@ -7,7 +7,7 @@ use crate::prelude::*;
 pub struct ParallelBatchSigningRequest {
     /// Per factor source, a set of transactions to sign, with
     /// multiple derivations paths.
-    pub per_factor_source: IndexMap<FactorSourceID, BatchTXBatchKeySigningRequest>,
+    pub per_factor_source: IndexMap<FactorSourceIDFromHash, BatchTXBatchKeySigningRequest>,
 
     /// A collection of transactions which would be invalid if the user skips
     /// signing with this factor source.
@@ -16,7 +16,7 @@ pub struct ParallelBatchSigningRequest {
 
 impl ParallelBatchSigningRequest {
     pub fn new(
-        per_factor_source: IndexMap<FactorSourceID, BatchTXBatchKeySigningRequest>,
+        per_factor_source: IndexMap<FactorSourceIDFromHash, BatchTXBatchKeySigningRequest>,
         invalid_transactions_if_skipped: IndexSet<InvalidTransactionIfSkipped>,
     ) -> Self {
         Self {

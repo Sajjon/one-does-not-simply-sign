@@ -8,7 +8,7 @@ pub(crate) struct Petitions {
     /// Lookup from factor to TXID.
     ///
     ///
-    /// The same FactorSource might be required by many payloads
+    /// The same HDFactorSource might be required by many payloads
     /// and per payload might be required by many entities, e.g. transactions
     /// `t0` and `t1`, where
     /// `t0` is signed by accounts: A and B
@@ -16,7 +16,7 @@ pub(crate) struct Petitions {
     ///
     /// Where A, B, C and D, all use the factor source, e.g. some arculus
     /// card which the user has setup as a factor (source) for all these accounts.
-    pub factor_to_txid: HashMap<FactorSourceID, IndexSet<IntentHash>>,
+    pub factor_to_txid: HashMap<FactorSourceIDFromHash, IndexSet<IntentHash>>,
 
     /// Lookup from TXID to signatures builders, sorted according to the order of
     /// transactions passed to the SignaturesBuilder.
@@ -25,7 +25,7 @@ pub(crate) struct Petitions {
 
 impl Petitions {
     pub(crate) fn new(
-        factor_to_txid: HashMap<FactorSourceID, IndexSet<IntentHash>>,
+        factor_to_txid: HashMap<FactorSourceIDFromHash, IndexSet<IntentHash>>,
         txid_to_petition: IndexMap<IntentHash, PetitionTransaction>,
     ) -> Self {
         Self {
@@ -80,7 +80,7 @@ impl Petitions {
 
     pub fn invalid_transactions_if_skipped(
         &self,
-        factor_source_id: &FactorSourceID,
+        factor_source_id: &FactorSourceIDFromHash,
     ) -> IndexSet<InvalidTransactionIfSkipped> {
         let txids = self.factor_to_txid.get(factor_source_id).unwrap();
         txids
@@ -95,7 +95,7 @@ impl Petitions {
 
     pub(crate) fn input_for_interactor(
         &self,
-        factor_source_id: &FactorSourceID,
+        factor_source_id: &FactorSourceIDFromHash,
     ) -> BatchTXBatchKeySigningRequest {
         let txids = self.factor_to_txid.get(factor_source_id).unwrap();
         let per_transaction = txids
@@ -116,7 +116,7 @@ impl Petitions {
         petition.add_signature(signature.clone())
     }
 
-    fn skip_factor_source_with_id(&self, skipped_factor_source_id: &FactorSourceID) {
+    fn skip_factor_source_with_id(&self, skipped_factor_source_id: &FactorSourceIDFromHash) {
         let binding = self.txid_to_petition.borrow();
         let txids = self.factor_to_txid.get(skipped_factor_source_id).unwrap();
         txids.into_iter().for_each(|txid| {
@@ -164,7 +164,7 @@ impl HasSampleValues for Petitions {
         let p0 = PetitionTransaction::sample();
         Self::new(
             HashMap::from_iter([(
-                FactorSourceID::fs0(),
+                FactorSourceIDFromHash::fs0(),
                 IndexSet::from_iter([p0.intent_hash.clone()]),
             )]),
             IndexMap::from_iter([(p0.intent_hash.clone(), p0)]),
@@ -175,7 +175,7 @@ impl HasSampleValues for Petitions {
         let p1 = PetitionTransaction::sample();
         Self::new(
             HashMap::from_iter([(
-                FactorSourceID::fs1(),
+                FactorSourceIDFromHash::fs1(),
                 IndexSet::from_iter([p1.intent_hash.clone()]),
             )]),
             IndexMap::from_iter([(p1.intent_hash.clone(), p1)]),

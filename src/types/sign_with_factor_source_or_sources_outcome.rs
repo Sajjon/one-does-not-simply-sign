@@ -10,7 +10,7 @@ pub enum SignWithFactorSourceOrSourcesOutcome<T> {
     /// The user skipped signing with the factor sources with ids
     #[debug("Skipped")]
     Skipped {
-        ids_of_skipped_factors_sources: Vec<FactorSourceID>,
+        ids_of_skipped_factors_sources: Vec<FactorSourceIDFromHash>,
     },
 }
 
@@ -21,14 +21,14 @@ impl<T> SignWithFactorSourceOrSourcesOutcome<T> {
         }
     }
 
-    pub fn skipped(ids_of_skipped_factors_sources: IndexSet<FactorSourceID>) -> Self {
+    pub fn skipped(ids_of_skipped_factors_sources: IndexSet<FactorSourceIDFromHash>) -> Self {
         Self::Skipped {
             ids_of_skipped_factors_sources: ids_of_skipped_factors_sources
                 .into_iter()
                 .collect_vec(),
         }
     }
-    pub fn skipped_factor_source(factor_source_id: FactorSourceID) -> Self {
+    pub fn skipped_factor_source(factor_source_id: FactorSourceIDFromHash) -> Self {
         Self::skipped(IndexSet::from_iter([factor_source_id]))
     }
 }

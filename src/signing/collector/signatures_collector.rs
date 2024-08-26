@@ -27,7 +27,7 @@ impl SignaturesCollector {
     /// Used by our tests. But Sargon will typically wanna use `SignaturesCollector::new` and passing
     /// it a
     pub(crate) fn with(
-        all_factor_sources_in_profile: IndexSet<FactorSource>,
+        all_factor_sources_in_profile: IndexSet<HDFactorSource>,
         transactions: IndexSet<TXToSign>,
         interactors: Arc<dyn SignatureCollectingInteractors>,
     ) -> Self {
@@ -44,7 +44,7 @@ impl SignaturesCollector {
     }
 
     pub fn with_signers_extraction<F>(
-        all_factor_sources_in_profile: IndexSet<FactorSource>,
+        all_factor_sources_in_profile: IndexSet<HDFactorSource>,
         transactions: IndexSet<TransactionIntent>,
         interactors: Arc<dyn SignatureCollectingInteractors>,
         extract_signers: F,
@@ -170,7 +170,7 @@ impl SignaturesCollector {
 impl SignaturesCollector {
     fn input_for_interactor(
         &self,
-        factor_source_id: &FactorSourceID,
+        factor_source_id: &FactorSourceIDFromHash,
     ) -> BatchTXBatchKeySigningRequest {
         self.state
             .borrow()
@@ -181,7 +181,7 @@ impl SignaturesCollector {
 
     pub(crate) fn request_for_serial_interactor(
         &self,
-        factor_source_id: &FactorSourceID,
+        factor_source_id: &FactorSourceIDFromHash,
     ) -> SerialBatchSigningRequest {
         let batch_signing_request = self.input_for_interactor(factor_source_id);
 
@@ -195,13 +195,13 @@ impl SignaturesCollector {
 
     pub(crate) fn request_for_parallel_interactor(
         &self,
-        factor_source_ids: IndexSet<FactorSourceID>,
+        factor_source_ids: IndexSet<FactorSourceIDFromHash>,
     ) -> ParallelBatchSigningRequest {
         let per_factor_source = factor_source_ids
             .clone()
             .iter()
             .map(|fid| (*fid, self.input_for_interactor(fid)))
-            .collect::<IndexMap<FactorSourceID, BatchTXBatchKeySigningRequest>>();
+            .collect::<IndexMap<FactorSourceIDFromHash, BatchTXBatchKeySigningRequest>>();
 
         let invalid_transactions_if_skipped =
             self.invalid_transactions_if_skipped_factor_sources(factor_source_ids);
@@ -212,7 +212,7 @@ impl SignaturesCollector {
 
     pub(super) fn invalid_transactions_if_skipped(
         &self,
-        factor_source_id: &FactorSourceID,
+        factor_source_id: &FactorSourceIDFromHash,
     ) -> IndexSet<InvalidTransactionIfSkipped> {
         self.state
             .borrow()
@@ -223,7 +223,7 @@ impl SignaturesCollector {
 
     fn invalid_transactions_if_skipped_factor_sources(
         &self,
-        factor_source_ids: IndexSet<FactorSourceID>,
+        factor_source_ids: IndexSet<FactorSourceIDFromHash>,
     ) -> IndexSet<InvalidTransactionIfSkipped> {
         factor_source_ids
             .into_iter()
@@ -307,7 +307,7 @@ mod tests {
 
     #[actix_rt::test]
     async fn valid_profile() {
-        let factors_sources = FactorSource::all();
+        let factors_sources = HDFactorSource::all();
         let persona = Persona::p0();
         let collector = SignaturesCollector::new(
             IndexSet::from_iter([TransactionIntent::new([], [persona.entity_address()])]),
@@ -323,7 +323,7 @@ mod tests {
 
     #[test]
     fn test_profile() {
-        let factor_sources = &FactorSource::all();
+        let factor_sources = &HDFactorSource::all();
         let a0 = &Account::a0();
         let a1 = &Account::a1();
         let a2 = &Account::a2();
@@ -389,11 +389,11 @@ mod tests {
         let assert_petition = |t: &TransactionIntent,
                                threshold_factors: HashMap<
             AddressOfAccountOrPersona,
-            HashSet<FactorSourceID>,
+            HashSet<FactorSourceIDFromHash>,
         >,
                                override_factors: HashMap<
             AddressOfAccountOrPersona,
-            HashSet<FactorSourceID>,
+            HashSet<FactorSourceIDFromHash>,
         >| {
             let petitions_ref = petitions.txid_to_petition.borrow();
             let petition = petitions_ref.get(&t.intent_hash).unwrap();
@@ -460,10 +460,22 @@ mod tests {
         assert_petition(
             &t0,
             HashMap::from_iter([
-                (a0.address(), HashSet::from_iter([FactorSourceID::fs0()])),
-                (a1.address(), HashSet::from_iter([FactorSourceID::fs1()])),
-                (p0.address(), HashSet::from_iter([FactorSourceID::fs0()])),
-                (p1.address(), HashSet::from_iter([FactorSourceID::fs1()])),
+                (
+                    a0.address(),
+                    HashSet::from_iter([FactorSourceIDFromHash::fs0()]),
+                ),
+                (
+                    a1.address(),
+                    HashSet::from_iter([FactorSourceIDFromHash::fs1()]),
+                ),
+                (
+                    p0.address(),
+                    HashSet::from_iter([FactorSourceIDFromHash::fs0()]),
+                ),
+                (
+                    p1.address(),
+                    HashSet::from_iter([FactorSourceIDFromHash::fs1()]),
+                ),
             ]),
             HashMap::new(),
         );
@@ -471,9 +483,18 @@ mod tests {
         assert_petition(
             &t1,
             HashMap::from_iter([
-                (a0.address(), HashSet::from_iter([FactorSourceID::fs0()])),
-                (a1.address(), HashSet::from_iter([FactorSourceID::fs1()])),
-                (a2.address(), HashSet::from_iter([FactorSourceID::fs0()])),
+                (
+                    a0.address(),
+                    HashSet::from_iter([FactorSourceIDFromHash::fs0()]),
+                ),
+                (
+                    a1.address(),
+                    HashSet::from_iter([FactorSourceIDFromHash::fs1()]),
+                ),
+                (
+                    a2.address(),
+                    HashSet::from_iter([FactorSourceIDFromHash::fs0()]),
+                ),
             ]),
             HashMap::new(),
         );
@@ -481,9 +502,18 @@ mod tests {
         assert_petition(
             &t2,
             HashMap::from_iter([
-                (p0.address(), HashSet::from_iter([FactorSourceID::fs0()])),
-                (p1.address(), HashSet::from_iter([FactorSourceID::fs1()])),
-                (p2.address(), HashSet::from_iter([FactorSourceID::fs0()])),
+                (
+                    p0.address(),
+                    HashSet::from_iter([FactorSourceIDFromHash::fs0()]),
+                ),
+                (
+                    p1.address(),
+                    HashSet::from_iter([FactorSourceIDFromHash::fs1()]),
+                ),
+                (
+                    p2.address(),
+                    HashSet::from_iter([FactorSourceIDFromHash::fs0()]),
+                ),
             ]),
             HashMap::new(),
         );
@@ -494,28 +524,34 @@ mod tests {
                 (
                     a6.address(),
                     HashSet::from_iter([
-                        FactorSourceID::fs0(),
-                        FactorSourceID::fs3(),
-                        FactorSourceID::fs5(),
+                        FactorSourceIDFromHash::fs0(),
+                        FactorSourceIDFromHash::fs3(),
+                        FactorSourceIDFromHash::fs5(),
                     ]),
                 ),
                 (
                     p6.address(),
                     HashSet::from_iter([
-                        FactorSourceID::fs0(),
-                        FactorSourceID::fs3(),
-                        FactorSourceID::fs5(),
+                        FactorSourceIDFromHash::fs0(),
+                        FactorSourceIDFromHash::fs3(),
+                        FactorSourceIDFromHash::fs5(),
                     ]),
                 ),
             ]),
             HashMap::from_iter([
                 (
                     a6.address(),
-                    HashSet::from_iter([FactorSourceID::fs1(), FactorSourceID::fs4()]),
+                    HashSet::from_iter([
+                        FactorSourceIDFromHash::fs1(),
+                        FactorSourceIDFromHash::fs4(),
+                    ]),
                 ),
                 (
                     p6.address(),
-                    HashSet::from_iter([FactorSourceID::fs1(), FactorSourceID::fs4()]),
+                    HashSet::from_iter([
+                        FactorSourceIDFromHash::fs1(),
+                        FactorSourceIDFromHash::fs4(),
+                    ]),
                 ),
             ]),
         );

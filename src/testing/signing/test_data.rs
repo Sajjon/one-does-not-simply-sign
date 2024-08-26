@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-impl FactorSource {
+impl HDFactorSource {
     /// Device
     pub fn fs0() -> Self {
         Self::device()
@@ -66,30 +66,30 @@ impl UuidStepper {
     }
 }
 
-pub static ALL_FACTOR_SOURCES: Lazy<[FactorSource; 10]> = Lazy::new(|| {
+pub static ALL_FACTOR_SOURCES: Lazy<[HDFactorSource; 10]> = Lazy::new(|| {
     [
-        FactorSource::fs0(),
-        FactorSource::fs1(),
-        FactorSource::fs2(),
-        FactorSource::fs3(),
-        FactorSource::fs4(),
-        FactorSource::fs5(),
-        FactorSource::fs6(),
-        FactorSource::fs7(),
-        FactorSource::fs8(),
-        FactorSource::fs9(),
+        HDFactorSource::fs0(),
+        HDFactorSource::fs1(),
+        HDFactorSource::fs2(),
+        HDFactorSource::fs3(),
+        HDFactorSource::fs4(),
+        HDFactorSource::fs5(),
+        HDFactorSource::fs6(),
+        HDFactorSource::fs7(),
+        HDFactorSource::fs8(),
+        HDFactorSource::fs9(),
     ]
 });
 
-pub fn fs_at(index: usize) -> FactorSource {
+pub fn fs_at(index: usize) -> HDFactorSource {
     ALL_FACTOR_SOURCES[index].clone()
 }
 
-pub fn fs_id_at(index: usize) -> FactorSourceID {
+pub fn fs_id_at(index: usize) -> FactorSourceIDFromHash {
     fs_at(index).factor_source_id()
 }
 
-impl FactorSourceID {
+impl FactorSourceIDFromHash {
     /// Device
     pub fn fs0() -> Self {
         fs_id_at(0)
@@ -142,8 +142,8 @@ impl FactorSourceID {
 }
 
 impl HierarchicalDeterministicFactorInstance {
-    pub fn f(entity_kind: CAP26EntityKind, idx: u32) -> impl Fn(FactorSourceID) -> Self {
-        move |id: FactorSourceID| {
+    pub fn f(entity_kind: CAP26EntityKind, idx: u32) -> impl Fn(FactorSourceIDFromHash) -> Self {
+        move |id: FactorSourceIDFromHash| {
             Self::mainnet_tx(entity_kind, HDPathComponent::non_hardened(idx), id)
         }
     }
@@ -153,43 +153,43 @@ impl MatrixOfFactorInstances {
     /// Securified { Single Threshold only }
     pub fn m2<F>(fi: F) -> Self
     where
-        F: Fn(FactorSourceID) -> HierarchicalDeterministicFactorInstance,
+        F: Fn(FactorSourceIDFromHash) -> HierarchicalDeterministicFactorInstance,
     {
-        Self::single_threshold(fi(FactorSourceID::fs0()))
+        Self::single_threshold(fi(FactorSourceIDFromHash::fs0()))
     }
 
     /// Securified { Single Override only }
     pub fn m3<F>(fi: F) -> Self
     where
-        F: Fn(FactorSourceID) -> HierarchicalDeterministicFactorInstance,
+        F: Fn(FactorSourceIDFromHash) -> HierarchicalDeterministicFactorInstance,
     {
-        Self::single_override(fi(FactorSourceID::fs1()))
+        Self::single_override(fi(FactorSourceIDFromHash::fs1()))
     }
 
     /// Securified { Threshold factors only #3 }
     pub fn m4<F>(fi: F) -> Self
     where
-        F: Fn(FactorSourceID) -> HierarchicalDeterministicFactorInstance,
+        F: Fn(FactorSourceIDFromHash) -> HierarchicalDeterministicFactorInstance,
     {
-        type F = FactorSourceID;
+        type F = FactorSourceIDFromHash;
         Self::threshold_only([F::fs0(), F::fs3(), F::fs5()].map(fi), 2)
     }
 
     /// Securified { Override factors only #2 }
     pub fn m5<F>(fi: F) -> Self
     where
-        F: Fn(FactorSourceID) -> HierarchicalDeterministicFactorInstance,
+        F: Fn(FactorSourceIDFromHash) -> HierarchicalDeterministicFactorInstance,
     {
-        type F = FactorSourceID;
+        type F = FactorSourceIDFromHash;
         Self::override_only([F::fs1(), F::fs4()].map(&fi))
     }
 
     /// Securified { Threshold #3 and Override factors #2  }
     pub fn m6<F>(fi: F) -> Self
     where
-        F: Fn(FactorSourceID) -> HierarchicalDeterministicFactorInstance,
+        F: Fn(FactorSourceIDFromHash) -> HierarchicalDeterministicFactorInstance,
     {
-        type F = FactorSourceID;
+        type F = FactorSourceIDFromHash;
         Self::new(
             [F::fs0(), F::fs3(), F::fs5()].map(&fi),
             2,
@@ -200,9 +200,9 @@ impl MatrixOfFactorInstances {
     /// Securified { Threshold only # 5/5 }
     pub fn m7<F>(fi: F) -> Self
     where
-        F: Fn(FactorSourceID) -> HierarchicalDeterministicFactorInstance,
+        F: Fn(FactorSourceIDFromHash) -> HierarchicalDeterministicFactorInstance,
     {
-        type F = FactorSourceID;
+        type F = FactorSourceIDFromHash;
         Self::threshold_only(
             [F::fs2(), F::fs6(), F::fs7(), F::fs8(), F::fs9()].map(&fi),
             5,
@@ -213,12 +213,12 @@ impl MatrixOfFactorInstances {
 impl Account {
     /// Alice | 0 | Unsecurified { Device }
     pub fn a0() -> Self {
-        Self::unsecurified_mainnet(0, "Alice", FactorSourceID::fs0())
+        Self::unsecurified_mainnet(0, "Alice", FactorSourceIDFromHash::fs0())
     }
 
     /// Bob | 1 | Unsecurified { Ledger }
     pub fn a1() -> Self {
-        Self::unsecurified_mainnet(1, "Bob", FactorSourceID::fs1())
+        Self::unsecurified_mainnet(1, "Bob", FactorSourceIDFromHash::fs1())
     }
 
     /// Carla | 2 | Securified { Single Threshold only }
@@ -285,12 +285,12 @@ impl Account {
 impl Persona {
     /// Satoshi | 0 | Unsecurified { Device }
     pub fn p0() -> Self {
-        Self::unsecurified_mainnet(0, "Satoshi", FactorSourceID::fs0())
+        Self::unsecurified_mainnet(0, "Satoshi", FactorSourceIDFromHash::fs0())
     }
 
     /// Batman | 1 | Unsecurified { Ledger }
     pub fn p1() -> Self {
-        Self::unsecurified_mainnet(1, "Batman", FactorSourceID::fs1())
+        Self::unsecurified_mainnet(1, "Batman", FactorSourceIDFromHash::fs1())
     }
 
     /// Ziggy | 2 | Securified { Single Threshold only }

@@ -20,7 +20,7 @@ pub struct KeysCollector {
 
 impl KeysCollector {
     fn with_preprocessor(
-        all_factor_sources_in_profile: impl Into<IndexSet<FactorSource>>,
+        all_factor_sources_in_profile: impl Into<IndexSet<HDFactorSource>>,
         interactors: Arc<dyn KeysCollectingInteractors>,
         preprocessor: KeysCollectorPreprocessor,
     ) -> Self {
@@ -37,8 +37,8 @@ impl KeysCollector {
     }
 
     pub fn new(
-        all_factor_sources_in_profile: IndexSet<FactorSource>,
-        derivation_paths: IndexMap<FactorSourceID, IndexSet<DerivationPath>>,
+        all_factor_sources_in_profile: IndexSet<HDFactorSource>,
+        derivation_paths: IndexMap<FactorSourceIDFromHash, IndexSet<DerivationPath>>,
         interactors: Arc<dyn KeysCollectingInteractors>,
     ) -> Self {
         let preprocessor = KeysCollectorPreprocessor::new(derivation_paths);
@@ -67,7 +67,7 @@ impl KeysCollector {
 impl KeysCollector {
     fn input_for_interactor(
         &self,
-        factor_source_id: &FactorSourceID,
+        factor_source_id: &FactorSourceIDFromHash,
     ) -> SerialBatchKeyDerivationRequest {
         let keyring = self
             .state
@@ -83,7 +83,7 @@ impl KeysCollector {
 
     pub(crate) fn request_for_parallel_interactor(
         &self,
-        factor_sources_ids: IndexSet<FactorSourceID>,
+        factor_sources_ids: IndexSet<FactorSourceIDFromHash>,
     ) -> ParallelBatchKeyDerivationRequest {
         ParallelBatchKeyDerivationRequest::new(
             factor_sources_ids
@@ -95,7 +95,7 @@ impl KeysCollector {
 
     pub(crate) fn request_for_serial_interactor(
         &self,
-        factor_source_id: &FactorSourceID,
+        factor_source_id: &FactorSourceIDFromHash,
     ) -> SerialBatchKeyDerivationRequest {
         self.input_for_interactor(factor_source_id)
     }
@@ -118,12 +118,12 @@ impl KeysCollector {
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct KeyDerivationOutcome {
     pub factors_by_source:
-        IndexMap<FactorSourceID, IndexSet<HierarchicalDeterministicFactorInstance>>,
+        IndexMap<FactorSourceIDFromHash, IndexSet<HierarchicalDeterministicFactorInstance>>,
 }
 impl KeyDerivationOutcome {
     pub fn new(
         factors_by_source: IndexMap<
-            FactorSourceID,
+            FactorSourceIDFromHash,
             IndexSet<HierarchicalDeterministicFactorInstance>,
         >,
     ) -> Self {

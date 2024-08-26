@@ -9,7 +9,7 @@ pub struct HDSignature {
 
     /// The ECDSA/EdDSA signature produced by the private key of the
     /// `owned_hd_factor_instance.public_key`,
-    /// derived by the FactorSource identified by
+    /// derived by the HDFactorSource identified by
     /// `owned_hd_factor_instance.factor_source_id` and which
     /// was derived at `owned_hd_factor_instance.derivation_path`.
     pub signature: Signature,
@@ -34,7 +34,7 @@ impl HDSignature {
         &self.input.owned_factor_instance
     }
 
-    pub fn factor_source_id(&self) -> FactorSourceID {
+    pub fn factor_source_id(&self) -> FactorSourceIDFromHash {
         self.owned_factor_instance()
             .factor_instance()
             .factor_source_id

@@ -91,7 +91,7 @@ impl DeriveKeyWithFactorParallelInteractor for TestDerivationParallelInteractor 
         request: ParallelBatchKeyDerivationRequest,
     ) -> Result<BatchDerivationResponse> {
         let pairs_result: Result<
-            IndexMap<FactorSourceID, IndexSet<HierarchicalDeterministicFactorInstance>>,
+            IndexMap<FactorSourceIDFromHash, IndexSet<HierarchicalDeterministicFactorInstance>>,
         > = request
             .per_factor_source
             .into_iter()
@@ -150,8 +150,8 @@ impl DeriveKeyWithFactorSerialInteractor for TestDerivationSerialInteractor {
 
 impl KeysCollector {
     pub fn new_test_with_factor_sources(
-        all_factor_sources_in_profile: impl IntoIterator<Item = FactorSource>,
-        derivation_paths: impl IntoIterator<Item = (FactorSourceID, IndexSet<DerivationPath>)>,
+        all_factor_sources_in_profile: impl IntoIterator<Item = HDFactorSource>,
+        derivation_paths: impl IntoIterator<Item = (FactorSourceIDFromHash, IndexSet<DerivationPath>)>,
     ) -> Self {
         Self::new(
             all_factor_sources_in_profile.into_iter().collect(),
@@ -161,13 +161,13 @@ impl KeysCollector {
     }
 
     pub fn new_test(
-        derivation_paths: impl IntoIterator<Item = (FactorSourceID, IndexSet<DerivationPath>)>,
+        derivation_paths: impl IntoIterator<Item = (FactorSourceIDFromHash, IndexSet<DerivationPath>)>,
     ) -> Self {
-        Self::new_test_with_factor_sources(FactorSource::all(), derivation_paths)
+        Self::new_test_with_factor_sources(HDFactorSource::all(), derivation_paths)
     }
 
     pub fn with(
-        factor_source: &FactorSource,
+        factor_source: &HDFactorSource,
         network_id: NetworkID,
         key_kind: CAP26KeyKind,
         entity_kind: CAP26EntityKind,

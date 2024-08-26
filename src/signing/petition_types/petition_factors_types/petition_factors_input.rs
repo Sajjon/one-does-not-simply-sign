@@ -51,7 +51,7 @@ impl PetitionFactorsInput {
 
     pub fn reference_factor_source_with_id(
         &self,
-        factor_source_id: &FactorSourceID,
+        factor_source_id: &FactorSourceIDFromHash,
     ) -> Option<&HierarchicalDeterministicFactorInstance> {
         self.factors
             .iter()

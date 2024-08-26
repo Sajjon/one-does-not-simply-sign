@@ -98,7 +98,7 @@ impl PetitionEntity {
         self.union_of(|f| f.all_skipped())
     }
 
-    pub fn all_skipped_factor_sources(&self) -> IndexSet<FactorSourceID> {
+    pub fn all_skipped_factor_sources(&self) -> IndexSet<FactorSourceIDFromHash> {
         self.all_skipped_factor_instance()
             .into_iter()
             .map(|f| f.factor_source_id)
@@ -143,7 +143,7 @@ impl PetitionEntity {
         self.both(r#do, |_, _| ())
     }
 
-    pub fn skipped_factor_source_if_relevant(&self, factor_source_id: &FactorSourceID) {
+    pub fn skipped_factor_source_if_relevant(&self, factor_source_id: &FactorSourceIDFromHash) {
         self.both_void(|l| l.skip_if_references(factor_source_id, true));
     }
 
@@ -166,7 +166,7 @@ impl PetitionEntity {
 
     pub fn invalid_transactions_if_skipped(
         &self,
-        factor_source_id: &FactorSourceID,
+        factor_source_id: &FactorSourceIDFromHash,
     ) -> IndexSet<InvalidTransactionIfSkipped> {
         let skip_status = self.status_if_skipped_factor_source(factor_source_id);
         match skip_status {
@@ -196,7 +196,7 @@ impl PetitionEntity {
 
     pub fn status_if_skipped_factor_source(
         &self,
-        factor_source_id: &FactorSourceID,
+        factor_source_id: &FactorSourceIDFromHash,
     ) -> PetitionFactorsStatus {
         let simulation = self.clone();
         simulation
@@ -207,7 +207,7 @@ impl PetitionEntity {
 
     pub fn did_skip_if_relevant(
         &self,
-        factor_source_id: &FactorSourceID,
+        factor_source_id: &FactorSourceIDFromHash,
         simulated: bool,
     ) -> Result<()> {
         self.both_void(|l| l.did_skip_if_relevant(factor_source_id, simulated));
@@ -315,9 +315,9 @@ mod tests {
         Account::securified_mainnet(0, "Jane Doe", |idx| {
             let fi = HierarchicalDeterministicFactorInstance::f(CAP26EntityKind::Account, idx);
             MatrixOfFactorInstances::new(
-                [FactorSourceID::fs0()].map(&fi),
+                [FactorSourceIDFromHash::fs0()].map(&fi),
                 1,
-                [FactorSourceID::fs0()].map(&fi),
+                [FactorSourceIDFromHash::fs0()].map(&fi),
             )
         });
     }
@@ -329,9 +329,9 @@ mod tests {
         let entity = Account::securified_mainnet(0, "Jane Doe", |idx| {
             let fi = HierarchicalDeterministicFactorInstance::f(CAP26EntityKind::Account, idx);
             MatrixOfFactorInstances::new(
-                [FactorSourceID::fs0()].map(&fi),
+                [FactorSourceIDFromHash::fs0()].map(&fi),
                 1,
-                [FactorSourceID::fs1()].map(&fi),
+                [FactorSourceIDFromHash::fs1()].map(&fi),
             )
         });
         let sut = Sut::from_entity(entity.clone(), intent_hash.clone());
@@ -341,7 +341,7 @@ mod tests {
                 entity.address(),
                 HierarchicalDeterministicFactorInstance::mainnet_tx_account(
                     HDPathComponent::non_hardened(0),
-                    FactorSourceID::fs0(),
+                    FactorSourceIDFromHash::fs0(),
                 ),
             ),
         );
@@ -361,22 +361,22 @@ mod tests {
                     sut.entity.clone(),
                     HierarchicalDeterministicFactorInstance::mainnet_tx_account(
                         HDPathComponent::non_hardened(6),
-                        FactorSourceID::fs1(),
+                        FactorSourceIDFromHash::fs1(),
                     ),
                 ),
             ),
         ));
-        let can_skip = |f: FactorSourceID| {
+        let can_skip = |f: FactorSourceIDFromHash| {
             assert!(sut
-                // Already signed with override factor `FactorSourceID::fs1()`. Thus
+                // Already signed with override factor `FactorSourceIDFromHash::fs1()`. Thus
                 // can skip
                 .invalid_transactions_if_skipped(&f)
                 .is_empty())
         };
-        can_skip(FactorSourceID::fs0());
-        can_skip(FactorSourceID::fs3());
-        can_skip(FactorSourceID::fs4());
-        can_skip(FactorSourceID::fs5());
+        can_skip(FactorSourceIDFromHash::fs0());
+        can_skip(FactorSourceIDFromHash::fs3());
+        can_skip(FactorSourceIDFromHash::fs4());
+        can_skip(FactorSourceIDFromHash::fs5());
     }
 
     #[test]

@@ -121,7 +121,7 @@ impl HasSampleValues for MaybeSignedTransactions {
                 AddressOfAccountOrPersona::sample(),
                 HierarchicalDeterministicFactorInstance::mainnet_tx_account(
                     HDPathComponent::non_hardened(0),
-                    FactorSourceID::sample(),
+                    FactorSourceIDFromHash::sample(),
                 ),
             ),
         );
@@ -131,7 +131,7 @@ impl HasSampleValues for MaybeSignedTransactions {
                 AddressOfAccountOrPersona::sample(),
                 HierarchicalDeterministicFactorInstance::mainnet_tx_account(
                     HDPathComponent::non_hardened(1),
-                    FactorSourceID::sample_other(),
+                    FactorSourceIDFromHash::sample_other(),
                 ),
             ),
         );
@@ -145,7 +145,7 @@ impl HasSampleValues for MaybeSignedTransactions {
                 AddressOfAccountOrPersona::sample(),
                 HierarchicalDeterministicFactorInstance::mainnet_tx_account(
                     HDPathComponent::non_hardened(2),
-                    FactorSourceID::sample_third(),
+                    FactorSourceIDFromHash::sample_third(),
                 ),
             ),
         );
@@ -155,7 +155,7 @@ impl HasSampleValues for MaybeSignedTransactions {
                 AddressOfAccountOrPersona::sample(),
                 HierarchicalDeterministicFactorInstance::mainnet_tx_account(
                     HDPathComponent::non_hardened(3),
-                    FactorSourceID::sample_fourth(),
+                    FactorSourceIDFromHash::sample_fourth(),
                 ),
             ),
         );
@@ -181,7 +181,7 @@ impl HasSampleValues for MaybeSignedTransactions {
                 AddressOfAccountOrPersona::sample(),
                 HierarchicalDeterministicFactorInstance::mainnet_tx_account(
                     HDPathComponent::non_hardened(10),
-                    FactorSourceID::sample(),
+                    FactorSourceIDFromHash::sample(),
                 ),
             ),
         );
@@ -191,7 +191,7 @@ impl HasSampleValues for MaybeSignedTransactions {
                 AddressOfAccountOrPersona::sample(),
                 HierarchicalDeterministicFactorInstance::mainnet_tx_account(
                     HDPathComponent::non_hardened(11),
-                    FactorSourceID::sample_other(),
+                    FactorSourceIDFromHash::sample_other(),
                 ),
             ),
         );
@@ -201,7 +201,7 @@ impl HasSampleValues for MaybeSignedTransactions {
                 AddressOfAccountOrPersona::sample(),
                 HierarchicalDeterministicFactorInstance::mainnet_tx_account(
                     HDPathComponent::non_hardened(12),
-                    FactorSourceID::sample_third(),
+                    FactorSourceIDFromHash::sample_third(),
                 ),
             ),
         );
@@ -250,7 +250,7 @@ mod tests {
                 AddressOfAccountOrPersona::sample(),
                 HierarchicalDeterministicFactorInstance::mainnet_tx_account(
                     HDPathComponent::non_hardened(0),
-                    FactorSourceID::sample(),
+                    FactorSourceIDFromHash::sample(),
                 ),
             ),
         );
@@ -270,7 +270,7 @@ mod tests {
                 AddressOfAccountOrPersona::sample(),
                 HierarchicalDeterministicFactorInstance::mainnet_tx_account(
                     HDPathComponent::non_hardened(0),
-                    FactorSourceID::sample(),
+                    FactorSourceIDFromHash::sample(),
                 ),
             ),
         );
