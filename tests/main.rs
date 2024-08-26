@@ -713,6 +713,55 @@ mod signing_tests {
                 })
                 .await;
             }
+
+            #[actix_rt::test]
+            async fn many_failing_tx() {
+                let factor_sources = &FactorSource::all();
+                let a0 = &Account::a0();
+                let p3 = &Persona::p3();
+                let failing_transactions = (0..100)
+                    .map(|_| TransactionIntent::address_of([a0], []))
+                    .collect::<IndexSet<_>>();
+                let tx = TransactionIntent::address_of([], [p3]);
+                let mut all_transactions = failing_transactions.clone();
+                all_transactions.insert(tx.clone());
+
+                let profile = Profile::new(factor_sources.clone(), [a0], [p3]);
+
+                let collector = SignaturesCollector::new(
+                    all_transactions,
+                    Arc::new(TestSignatureCollectingInteractors::new(
+                        SimulatedUser::prudent_with_failures(
+                            SimulatedFailures::with_simulated_failures([FactorSourceID::fs0()]),
+                        ),
+                    )),
+                    &profile,
+                )
+                .unwrap();
+
+                let outcome = collector.collect_signatures().await;
+                assert!(!outcome.successful());
+                assert_eq!(
+                    outcome
+                        .failed_transactions()
+                        .iter()
+                        .map(|t| t.intent_hash.clone())
+                        .collect_vec(),
+                    failing_transactions
+                        .iter()
+                        .map(|t| t.intent_hash.clone())
+                        .collect_vec()
+                );
+
+                assert_eq!(
+                    outcome
+                        .successful_transactions()
+                        .into_iter()
+                        .map(|t| t.intent_hash)
+                        .collect_vec(),
+                    vec![tx.intent_hash]
+                )
+            }
         }
 
         mod no_fail {
